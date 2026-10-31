@@ -81,9 +81,17 @@ Esta sección actualiza únicamente los datos del entorno descritos arriba.
 - Carpeta de contenido confirmada por Alain: `C:\Users\Alain\Atraco3D\Assets\Party`.
 - Unity confirmado por Alain: `6000.3.27f2`, según `ProjectSettings/ProjectVersion.txt`. Mantener esta versión.
 - Instalados: URP `17.3.0`, Input System `1.20.1`, AI Navigation `2.0.16` y Timeline `1.8.13`.
-- Instalación verificada: Netcode for GameObjects `2.13.3`, Multiplayer Services `2.4.1`, Multiplayer Play Mode `2.0.2`, Cinemachine `3.1.7`, ProBuilder `6.1.4`, Cloud Save `3.4.2` y Authentication `3.8.0`. Alain confirmó que Console no muestra errores y los servicios están configurados. La prueba funcional online corresponde a Task 02.
+- Instalación verificada: Netcode for GameObjects `2.13.3`, Multiplayer Services `2.4.1`, Multiplayer Play Mode `2.0.2`, Cinemachine `3.1.7`, ProBuilder `6.1.4`, Cloud Save `3.4.2` y Authentication `3.8.0`. Alain confirmó que Console no muestra errores y los servicios están configurados. La prueba funcional online corresponde a Task 02, después del arte según el orden vigente de TASKS.md.
 - Multiplayer Center está instalado; no sustituye los paquetes anteriores.
 - RTK funciona por invocación explícita. La ausencia de un hook automático no impide usar `rtk`; consultar `RTK.md`.
 - GDD recibido y revisado: `Assets/Party/docs/GDD.pdf` (18 páginas). Diferencias y cobertura registradas en `Assets/Party/docs/GDD-REVISION.md`. El PDF original se conserva íntegro.
-- Task 00 completada: paquetes verificados y prueba del entorno confirmada por Alain el 2026-10-31. Crear el commit de cierre correspondiente. Task 01 sigue pendiente; no iniciarla sin indicación de Alain.
+- Task 00 completada: paquetes verificados y prueba del entorno confirmada por Alain el 2026-10-31. Commit de cierre: `1c3dbdc`. Task 01 validada por Alain: captura con 9 pruebas correctas y autorización para continuar con Blender. Registrar su commit de cierre antes de empezar el arte.
 - Informe y pasos: `Assets/Party/docs/TASK-00-Entorno.md`.
+
+## Prioridad confirmada por Alain — 2026-10-31
+
+Después de Task 01: conectar Blender y crear mapa, personajes, accesorios, vehículos, armas y herramientas. Después del arte aprobado: clips, prototipo de red y dinámicas. Seguir la sección de orden vigente de TASKS.md; Task 02 ya no precede al arte. Mantener Unity 6000.3.27f2.
+
+## Producción de arte autorizada
+
+Alain pidió continuar con Blender para realizar todos los diseños requeridos. Progresar por los hitos de conexión, estilo y lotes de modelos, conservando capturas y scripts. La aprobación visual de Alain sigue pendiente para cada entrega; no marcar diseños como aprobados ni simular el rig de Mixamo sin los archivos necesarios.

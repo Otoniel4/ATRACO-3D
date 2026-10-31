@@ -8,6 +8,20 @@ Hitos: al terminar cada bloque marcado como **HITO**, se hace una prueba complet
 
 ---
 
+## Orden de ejecución vigente — confirmado por Alain
+
+Actualización del 31 de octubre de 2026: Alain pide completar Task 01 y después producir los diseños y modelos en Blender antes de implementar la red y las dinámicas. Esta sección define el orden de trabajo; los números de las tareas se conservan como identificadores.
+
+1. Task 00: entorno (completada).
+2. Task 01: arquitectura base (completada y validada por Alain).
+3. Task 03: conexión con Blender por MCP y exportación de prueba.
+4. Arte: Task 03.1 (estilo), 03.2 (cuerpos y preparación del rig), 03.3 (ropa y variantes), 03.5 (mapa modular), 03.6 (vehículos), 03.7 (accesorios e interiores) y 03.8 (armas y herramientas).
+5. Task 03.4: clips y preparación de animaciones una vez aprobados los diseños.
+6. Task 02: prototipo de red, antes de integrar dinámicas compartidas.
+7. Tasks 04–34: animación en juego, movimiento, interacción, combate, semáforos, tráfico y demás sistemas, en su orden y con sus pruebas online.
+
+Se mantiene una tarea a la vez y la validación de Alain antes del cierre y commit. Ninguna tarea se considera completada por cambiar su prioridad.
+
 # BLOQUE A — Base técnica
 
 ## [x] Task 00 — Entorno y verificación
@@ -16,7 +30,7 @@ Hitos: al terminar cada bloque marcado como **HITO**, se hace una prueba complet
 - **Alain hace:** instalar los paquetes faltantes; activar Relay, Lobby y Cloud Save en Unity Cloud.
 - **Criterios:** herramientas activas, paquetes instalados, Git listo, carpeta `Party/` confirmada.
 
-## [ ] Task 01 — Arquitectura base
+## [x] Task 01 — Arquitectura base
 - **Objetivo:** carpetas, namespaces, Assembly Definitions y sistema de eventos.
 - **Patrones / SOLID:** Observer (canales de eventos con ScriptableObjects), D (dependencias por eventos e interfaces).
 - **El agente hace:** crear en `Party/` las carpetas `Scripts/{Core,Player,Animation,Networking,AI,City,Traffic,Heist,Police,Vehicles,Economy,UI,Audio}`, `Art/{Characters,City,Vehicles,Props,Animations,Materials}`, `Prefabs`, `Scenes`, `Data`; Assembly Definitions por módulo; canales de eventos; interfaces base (`IInteractable`, `IDamageable`, `IDetectable`, `IArrestable`, `IIntimidatable`).
@@ -78,6 +92,12 @@ Hitos: al terminar cada bloque marcado como **HITO**, se hace una prueba complet
 - **El agente hace:** generar estantes, productos variados, cajas registradoras, refrigeradores, vitrinas, joyas, escritorios, sillas, cajeros, caja fuerte, bóveda, cámaras de seguridad, luces de alarma, maniquíes, teléfono, bolsas de botín, celulares.
 - **Alain hace:** aprobar con capturas.
 - **Criterios:** suficientes props para que ningún local se vea vacío.
+
+## [ ] Task 03.8 — Armas y herramientas propias
+- **Objetivo:** diseños low-poly de las armas, herramientas y consumibles del GDD antes de implementar su dinámica.
+- **El agente hace:** crear con Blender por MCP los modelos de pistola, escopeta, táser, rifle y porra, más palanca, ganzúa, bridas, taladro, cortavidrios, dispositivo de hackeo, termita, gancho, humo, granada aturdidora y EMP; conservar scripts bpy y exportar con escala correcta, puntos de agarre y piezas móviles separadas donde sea necesario. Sin disparos ni efectos implementados en esta tarea.
+- **Alain hace:** aprobar las capturas y revisar la escala y orientación en Unity.
+- **Criterios:** modelos propios aprobados y exportaciones reutilizables; los NPC guardias solo llevan porra y los únicos NPC con armas de fuego son los policías.
 
 # BLOQUE B — Jugador
 
