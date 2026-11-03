@@ -35,3 +35,31 @@ Thumbs.db
 sysinfo.txt
 *.stackdump
 crashlytics-build.properties
+
+# Cache y copias de seguridad del proceso de arte.
+/Assets/Party/Art/BlenderScripts/__pycache__/
+/Assets/Party/Art/BlenderScripts/__pycache__.meta
+/Assets/Party/Art/BlenderSources~/*.blend1
+
+# Salidas regenerables del botón «Crear y probar juego» y respaldos automáticos de escenas.
+/Assets/Party/Generated/
+/Assets/Party/Generated.meta
+/Assets/Party/Scenes/Backups/
+/Assets/Party/Scenes/Backups.meta
+
+# Cachés, compilados y registros de los scripts de Blender y pruebas: se regeneran al ejecutarlos.
+__pycache__/
+*.pyc
+*.blend1
+/Assets/Party/Art/BlenderScripts/**/bin/
+/Assets/Party/Art/BlenderScripts/**/obj/
+/Assets/Party/Art/BlenderScripts/**/*.log
+
+# Binarios de trabajo de Blender en carpetas «~» (Unity las ignora): quedan en el disco local, fuera de git, por el cupo LFS de GitHub.
+**/*~/**/*.blend
+**/*~/**/*.fbx
+**/*~/**/*.png
+**/*~/**/*.jpg
+**/*~/**/*.jpeg
+**/*~/**/*.gif
+**/*~/**/*.mp4

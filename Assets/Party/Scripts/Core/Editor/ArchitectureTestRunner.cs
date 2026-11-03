@@ -34,7 +34,6 @@ namespace Alarma.Core.Editor
             RunTests();
         }
 
-        [MenuItem("Alarma/Validation/Run Architecture Tests")]
         public static void RunTests()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)

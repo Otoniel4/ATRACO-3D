@@ -85,7 +85,7 @@ Esta sección actualiza únicamente los datos del entorno descritos arriba.
 - Multiplayer Center está instalado; no sustituye los paquetes anteriores.
 - RTK funciona por invocación explícita. La ausencia de un hook automático no impide usar `rtk`; consultar `RTK.md`.
 - GDD recibido y revisado: `Assets/Party/docs/GDD.pdf` (18 páginas). Diferencias y cobertura registradas en `Assets/Party/docs/GDD-REVISION.md`. El PDF original se conserva íntegro.
-- Task 00 completada: paquetes verificados y prueba del entorno confirmada por Alain el 2026-10-31. Commit de cierre: `1c3dbdc`. Task 01 validada por Alain: captura con 9 pruebas correctas y autorización para continuar con Blender. Registrar su commit de cierre antes de empezar el arte.
+- Task 00 completada: paquetes verificados y prueba del entorno confirmada por Alain el 2026-10-31. Commit de cierre: `1c3dbdc`. Task 01 validada por Alain: captura con 9 pruebas correctas y autorización para continuar con Blender. Commit de cierre de Task 01: `afa86c4`.
 - Informe y pasos: `Assets/Party/docs/TASK-00-Entorno.md`.
 
 ## Prioridad confirmada por Alain — 2026-10-31
@@ -95,3 +95,19 @@ Después de Task 01: conectar Blender y crear mapa, personajes, accesorios, veh�
 ## Producción de arte autorizada
 
 Alain pidió continuar con Blender para realizar todos los diseños requeridos. Progresar por los hitos de conexión, estilo y lotes de modelos, conservando capturas y scripts. La aprobación visual de Alain sigue pendiente para cada entrega; no marcar diseños como aprobados ni simular el rig de Mixamo sin los archivos necesarios.
+
+## Revisión de personajes con referencias — 2026-10-31
+
+Alain rechazó la simplicidad del primer lote y aportó 14 láminas: diez civiles, dos guardias y dos policías. Se creó una revisión separada en `Assets/Party/Art/Characters/ReferenceV2` y `BlenderSources~/Alarma_Characters_ReferenceV2.blend`. La geometría y las capturas están disponibles para corrección y aprobación; aún no igualan todos los detalles de las láminas. Los rig de Mixamo, pesos, Humanoid y clips siguen pendientes. No cerrar Tasks 03.2, 03.3 ni 03.4 hasta cumplir sus pruebas. Mantener Unity 6000.3.27f2 y el resto del arte existente.
+
+## Rechazo explícito de V2 — 2026-10-31
+
+Alain rechazó V2 por falta de similitud y cuerpo deforme. No usarla ni continuar su rig o variantes. Rehacer primero el civil masculino de chaqueta naranja con referencias frontal, lateral y posterior calibradas. No declarar corregido el personaje por tener geometría cerrada o exportar sin errores. Las tareas de personajes y animación permanecen abiertas.
+
+## Foco actualizado: estructura femenina — 2026-10-31
+
+Alain volvió a señalar anatomía deforme y adjuntó la referencia 02 (mujer con chaqueta denim). Priorizar esta mujer y la estructura corporal sobre el rostro. Se creó `FemaleBody_AnatomyStudy`: una única base continua y un rig diagnóstico de 29 huesos para ensayar articulaciones. Es un estudio pendiente de revisión y refinamiento, no el personaje acabado ni el rig Mixamo final. La V2 sigue rechazada. No generar variantes hasta resolver esta base.
+
+## Ajuste de ambas bases autorizado — 2026-10-31
+
+Alain confirmó que la estructura continua femenina va bien y autorizó ajustar cintura y demás proporciones, y crear después una base masculina esbelta. Se conservaron dos copias nuevas en `BodyBases_Refined.blend`, con rigs diagnósticos independientes y pruebas de flexión. La aprobación anterior corresponde a la dirección de la estructura, no al personaje terminado ni a Humanoid. La V2 sigue rechazada; ropa y rig final pendientes.

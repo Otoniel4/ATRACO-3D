@@ -22,6 +22,10 @@ Actualización del 31 de octubre de 2026: Alain pide completar Task 01 y despué
 
 Se mantiene una tarea a la vez y la validación de Alain antes del cierre y commit. Ninguna tarea se considera completada por cambiar su prioridad.
 
+### Ampliación autorizada — 2026-11-02
+
+Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, junto con interiores más diseñados. Se prepara Ciudad viva R5 como revisión animada de arte y prototipo local aislado: clips propios, rutinas y un constructor de demo. Esta solicitud permite esa preparación ahora. Task 02 continúa antes de integrar decisiones compartidas/sincronización online. No se modifica ninguna casilla ni se da por terminada una task por compilar o renderizar; faltan revisión R5 y prueba en Unity de Alain.
+
 # BLOQUE A — Base técnica
 
 ## [x] Task 00 — Entorno y verificación
@@ -333,3 +337,54 @@ Se mantiene una tarea a la vez y la validación de Alain antes del cierre y comm
 - **Criterios:** crear sala, robar, escapar o ser arrestado, vender, comprar y guardar, sin errores.
 
 **HITO 4:** juego completo de la versión actual.
+
+## Revisión de personajes con referencias — 2026-10-31
+
+Alain rechazó la simplicidad del primer lote y aportó 14 láminas: diez civiles, dos guardias y dos policías. Se creó una revisión separada en `Assets/Party/Art/Characters/ReferenceV2` y `BlenderSources~/Alarma_Characters_ReferenceV2.blend`. La geometría y las capturas están disponibles para corrección y aprobación; aún no igualan todos los detalles de las láminas. Los rig de Mixamo, pesos, Humanoid y clips siguen pendientes. No cerrar Tasks 03.2, 03.3 ni 03.4 hasta cumplir sus pruebas. Mantener Unity 6000.3.27f2 y el resto del arte existente.
+
+## Rechazo explícito de V2 — 2026-10-31
+
+Alain rechazó V2 por falta de similitud y cuerpo deforme. No usarla ni continuar su rig o variantes. Rehacer primero el civil masculino de chaqueta naranja con referencias frontal, lateral y posterior calibradas. No declarar corregido el personaje por tener geometría cerrada o exportar sin errores. Las tareas de personajes y animación permanecen abiertas.
+
+## Foco actualizado: estructura femenina — 2026-10-31
+
+Alain volvió a señalar anatomía deforme y adjuntó la referencia 02 (mujer con chaqueta denim). Priorizar esta mujer y la estructura corporal sobre el rostro. Se creó `FemaleBody_AnatomyStudy`: una única base continua y un rig diagnóstico de 29 huesos para ensayar articulaciones. Es un estudio pendiente de revisión y refinamiento, no el personaje acabado ni el rig Mixamo final. La V2 sigue rechazada. No generar variantes hasta resolver esta base.
+
+## Ajuste de ambas bases autorizado — 2026-10-31
+
+Alain confirmó que la estructura continua femenina va bien y autorizó ajustar cintura y demás proporciones, y crear después una base masculina esbelta. Se conservaron dos copias nuevas en `BodyBases_Refined.blend`, con rigs diagnósticos independientes y pruebas de flexión. La aprobación anterior corresponde a la dirección de la estructura, no al personaje terminado ni a Humanoid. La V2 sigue rechazada; ropa y rig final pendientes.
+
+### Corrección solicitada de ciudad viva R6 — 2026-11-02
+
+Corregir dentro de la ampliación actual: circulación sin bloqueo mutuo, ambas manos, tareas de selección/agarre, compra, cobro y filas. Preparación R6 entregada con demo local y revisión Blender; prueba en Play y aprobación visual pendientes. La petición autoriza esta corrección y sus tareas ambientales ahora; no cierra Task 02 ni autoriza declarar sincronización online. No se cambia ninguna casilla por las pruebas automatizadas.
+
+### Prueba integrada autorizada R7 — 2026-11-02
+
+Alain pide una sola entrada en Alarma para preparar y probar lo creado. Se entrega preparación local con ciudad completa por partes, jugador/cámara de revisión, catálogo, interiores y compras de NPC; corrige el fallo del generador R6. La petición autoriza estos controles locales de revisión ahora, sin dar por terminadas Tasks 02/04/05 ni otros sistemas del GDD. Construcción y Play en Unity deben probarse por Alain antes de cerrar cualquier criterio. No se modifican casillas.
+
+### Corrección de integración R8 — 2026-11-02
+
+R7 rechazada por Alain durante Play. Se corrigen dentro de la prueba integrada actual: animaciones de locomoción, bolsa/cámara, puertas, contactos y rodeos de NPC, población de aceras, grafos de compra, mapa sin traslado y comprobación de vegetación contra asfalto. Entrega en docs/Correcciones-Prueba-R8.md. Verificaciones de fuentes superadas; prueba en Unity y aprobación pendientes. No se modifica ninguna casilla.
+
+### Corrección de prueba R9 — 2026-11-02
+
+R8 rechazada por Alain. Dentro de la misma corrección: mapa 3 × 3 km solicitado, inicio en escondite, cinco comercios reconstruidos con mercancía, fila y caja, calibración espacial FBX, puertas y recorrido de salida, animación de carrera y macetas. Fuentes y pruebas fuera del editor verificadas; comprobaciones físicas integradas en el mismo botón y prueba de Alain pendientes. Ver docs/Ciudad-3km-R9.md. No se cambia ninguna casilla ni se avanza a red.
+
+## Mantenimiento y corrección R9.2 — 2026-11-02
+
+Alain pidió revisar el proyecto, reducir su tamaño (68,8 GB) y corregir el error de «Crear y probar juego» y la locomoción. Unity se mantiene en 6000.3.27f2 por decisión de Alain.
+- Error corregido: la comprobación física usaba `SceneManager.CreateScene`, que solo existe en Play; ahora usa `EditorSceneManager.NewPreviewScene` y se detiene si no obtiene física propia.
+- Tamaño: el botón dejaba una copia de 2–3,6 GB por clic en `Generated/` y Unity reimportaba cada una (Library 48,7 GB). Se borraron las seis copias, los FBX `export/` de R4–R8 (R9 no los usa; .blend, .json y scripts se conservan) y Library. Resultado: 4,4 GB antes de reimportar.
+- Regla nueva: el constructor conserva solo la preparación vigente; si falla, borra su carpeta y escribe `Generated/AlarmaPlaytestFailure.json`. `Generated/` y `Scenes/Backups/` quedan fuera de Git.
+- Mallas físicas: vértices soldados entre triángulos vecinos; misma forma, varias veces menos disco y cocinado.
+- Locomoción del jugador de revisión: aceleración y frenado graduales, giro 720°/s, velocidad estable al Animator con amortiguación y sin correr en el sitio contra paredes.
+Compilado con dotnet contra las DLL instaladas. Prueba en Unity de Alain pendiente; no se cambia ninguna casilla.
+
+### Vegetación ligera R9.3 — 2026-11-03
+
+Alain autorizó aligerar la vegetación para bajar el peso del proyecto. Se mantiene posición, cantidad, colores y viento de cada planta; cambia el detalle de cada malla.
+- `PlaytestR9~/lighten_vegetation.py` lee `Villa_Alarma_3000_R9.blend` (sin modificarlo) y guarda `Villa_Alarma_3000_R9_Ligera.blend`. Árboles: por especie, la reducción de LOD que conserva más superficie de hojas con 1800 triángulos. Follaje de macetas: 15 %. Pasto: LOD2 intacto; LOD0/LOD1 limitados a 600.
+- Ciudad: 141,6 M → 42,4 M triángulos. FBX de las 153 celdas: 1687 MB → 630 MB. `world.json` conserva piezas, roles, colisiones y viento.
+- `export_world.py` acepta `ALARMA_R9_WORLD`; Unity: build `playtest-r9-3`, tangentes desactivadas en la ciudad (colores planos).
+- Alain aprobó la vegetación en Unity el 2026-11-03; el respaldo `export/World_R9_Original` se borró. La exportación anterior se regenera desde `Villa_Alarma_3000_R9.blend`.
+Capturas Blender antes/después entregadas. Prueba en Unity, medición final de disco y aprobación visual de Alain pendientes; no se cambia ninguna casilla.
