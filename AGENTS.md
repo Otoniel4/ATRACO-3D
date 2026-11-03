@@ -210,3 +210,10 @@ Alain autorizó aligerar la vegetación para bajar el peso del proyecto. Se mant
 - `export_world.py` acepta `ALARMA_R9_WORLD`; Unity: build `playtest-r9-3`, tangentes desactivadas en la ciudad (colores planos).
 - Alain aprobó la vegetación en Unity el 2026-11-03; el respaldo `export/World_R9_Original` se borró. La exportación anterior se regenera desde `Villa_Alarma_3000_R9.blend`.
 Capturas Blender antes/después entregadas. Prueba en Unity, medición final de disco y aprobación visual de Alain pendientes; no se cambia ninguna casilla.
+
+## Equipo nuevo, Blender MCP y arte con IA gratuita — 2026-11-03
+
+- Proyecto clonado desde GitHub en `C:\Users\Alain\ATRACO-3D`; el equipo anterior (`C:\Users\Alain\Atraco3D`) ya no está disponible. Los `.blend`, los FBX/PNG de carpetas `~` y `Generated/` no estaban en Git y se perdieron: la escena `Atraco.unity` tiene referencias rotas y «Crear y probar juego» no puede preparar R9. Alain decidió rehacer el arte antes de Task 02.
+- Blender 4.5.10 LTS y servidor `mcp-for-blender==2.2.6` registrados en `.mcp.json` (telemetría desactivada). Solo Hyper3D Rodin activo con la clave de prueba; el resto de integraciones apagadas. Detalle en `Assets/Party/Art/README.md`.
+- El ingeniero autorizó usar **planes gratuitos de IA generativa 3D** (Rodin, Meshy, Tripo) para crear los modelos. Esto amplía la regla de modelos hechos solo con Blender por MCP. Sigue prohibido descargar modelos o texturas ya hechos de bibliotecas. Cada modelo generado se limpia en Blender (low poly, colores planos, 1 unidad = 1 m) y se registra con su licencia en `docs/LICENSES.md`.
+- Task 03: puente comprobado con `Art/Validation/ConnectionCube_MCP.fbx` (1 × 1 × 1 m en Blender y en Unity) y captura `docs/Capturas/Task03_ConnectionCube_MCP.png`. Alain confirmó la prueba el 2026-11-03; Task 03 completada.
