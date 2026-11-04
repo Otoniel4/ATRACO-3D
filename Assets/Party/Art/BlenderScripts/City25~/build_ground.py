@@ -30,7 +30,7 @@ RIVER = PLAN['river']
 WATER = RIVER['width'] / 2
 
 # Alturas de cada capa: separadas lo justo para que no parpadeen a distancia.
-Z = dict(ground=0.0, asphalt=0.04, marking=0.06, slab=0.08, lot=0.09, sidewalk=0.10, water=-0.9, bed=-1.6)
+Z = dict(ground=0.0, corner=0.025, asphalt=0.045, marking=0.075, slab=0.08, lot=0.11, sidewalk=0.14, water=-0.9, bed=-1.6)
 COLORS = {  # sRGB
     'Cesped': (0.45, 0.56, 0.35), 'Asfalto': (0.21, 0.22, 0.24), 'Acera': (0.70, 0.69, 0.66), 'Bordillo': (0.84, 0.83, 0.80),
     'LineaBlanca': (0.94, 0.94, 0.91), 'LineaAmarilla': (0.96, 0.76, 0.22), 'Pavimento': (0.66, 0.62, 0.56), 'Concreto': (0.58, 0.58, 0.56),
@@ -292,6 +292,16 @@ def markings(sink, line, road, half, k, nodes):
     if k['lanes'] == 2 and road['kind'] != 'roundabout':
         strip(half / 2 - .07, .14, 'LineaBlanca', 3.0, 6.0)
         strip(-half / 2 - .07, .14, 'LineaBlanca', 3.0, 6.0)
+
+
+def corners(sink):
+    # Vereda por debajo del asfalto en cada cruce: tapa los huecos que dejan las aceras recortadas en las esquinas.
+    roads = {r['id']: r for r in PLAN['roads']}
+    for node in PLAN['intersections']:
+        kinds = [KINDS[roads[r]['kind']] for r in node['roads']]
+        half = max(k['width'] for k in kinds) / 2 + max(k['sidewalk'] for k in kinds) + 1.0
+        x, y = node['x'], node['y']
+        sink.quad((x - half, y - half), (x + half, y - half), (x + half, y + half), (x - half, y + half), Z['corner'], 'Acera')
 
 
 def crosswalks(sink):
@@ -593,6 +603,7 @@ sink = Sink()
 build_land(sink)
 surfaces(sink)
 build_roads(sink)
+corners(sink)
 crosswalks(sink)
 railings(sink)
 bridges(sink)

@@ -16,7 +16,7 @@ namespace Alarma.City.Playtest
         private void LateUpdate()
         {
             if(input==null || player==null)return;
-            if(input.Active){float sensitivity=settings!=null?settings.MouseSensitivity:1;yaw+=input.Look.x*.12f*sensitivity;pitch=Mathf.Clamp(pitch-input.Look.y*.10f*sensitivity,5,65);}
+            if(input.Active){float sensitivity=settings!=null?settings.MouseSensitivity:1;yaw+=input.Look.x*.12f*sensitivity;pitch=Mathf.Clamp(pitch-input.Look.y*.10f*sensitivity,-35,70);}
             Quaternion rotation=Quaternion.Euler(pitch,yaw,0);Vector3 target=player.position+Vector3.up*1.35f;Vector3 direction=-(rotation*Vector3.forward);float distance=4;
             if(Physics.SphereCast(target,.15f,direction,out var hit,distance,~((1<<29)|(1<<30)|(1<<31)),QueryTriggerInteraction.Ignore))distance=Mathf.Max(.35f,hit.distance-.10f);
             transform.position=target+direction*distance;transform.rotation=rotation;

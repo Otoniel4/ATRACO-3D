@@ -18,6 +18,8 @@ namespace Alarma.AI.CityLife
         private readonly HashSet<int> usedVariants = new HashSet<int>();
         private int serial, nextVariant;
         private float nextUpdate;
+        // Cada local recibe clientes de a uno, con pausas al azar: nadie llega en grupo.
+        private readonly Dictionary<ShopActivity, float> nextArrival = new Dictionary<ShopActivity, float>();
         private bool warnedLegacy;
         [SerializeField] private CityTrafficController traffic;
         private sealed class Resident { public PedestrianActor Actor; public ShopActivity Shop; public int Variant; }
@@ -44,8 +46,10 @@ namespace Alarma.AI.CityLife
                 usedVariants.Add(shop.ReservedVariant);
                 foreach (Resident resident in active) if (resident.Shop == shop) usedVariants.Add(resident.Variant);
                 int count = usedVariants.Count - 1;
+                if (nextArrival.TryGetValue(shop, out float arrival) && Time.time < arrival) continue;
                 while (count < settings.PerDistrict && active.Count < settings.PopulationBudget)
                 {
+                    nextArrival[shop] = Time.time + UnityEngine.Random.Range(6f, 14f);
                     int variant = ChooseVariant();
                     if (variant < 0) break;
                     usedVariants.Add(variant); count++;
@@ -58,6 +62,7 @@ namespace Alarma.AI.CityLife
                     if (!actor.Begin(id, spawn, shop, settings, shopper, start,shop.Traffic!=null?shop.Traffic:traffic))
                     { Pool(variant).Release(actor); continue; }
                     active.Add(new Resident { Actor = actor, Shop = shop, Variant = variant });
+                    break; // uno por vez: el siguiente llega después de la pausa
                 }
             }
             activeCount = active.Count;

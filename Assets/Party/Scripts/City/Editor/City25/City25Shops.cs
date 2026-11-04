@@ -35,7 +35,7 @@ namespace Alarma.City.Editor
             var graph = ScriptableObject.CreateInstance<TrafficGraph>();
             graph.Cells = Cells(shop, layout);
             AssetDatabase.CreateAsset(graph, folder + "/Data/Traffic_" + index + ".asset");
-            var traffic = root.gameObject.AddComponent<CityTrafficController>(); traffic.Configure(graph, .75f);
+            var traffic = root.gameObject.AddComponent<CityTrafficController>(); traffic.Configure(graph, .42f); // un paso de 0,5 m cada 0,42 s: unos 1,2 m/s, paso normal
             var activity = root.gameObject.AddComponent<ShopActivity>(); activity.ConfigureTraffic(traffic);
             Transform[] Snap(string name, float[] p) => Points(p, 2).Select((v, i) => Marker(root, shop, $"{name}_{i}", v, graph)).ToArray();
             Transform Free(string name, float[] p, int stride) => Marker(root, shop, name, Points(p, stride)[0], null);

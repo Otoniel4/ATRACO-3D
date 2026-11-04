@@ -45,7 +45,11 @@ namespace Alarma.City.Editor
         {
             var model = actor.GetComponentInChildren<Animator>(true).gameObject;
             var copy = new GameObject(id + "_Visual");
-            UnityEngine.Object.Instantiate(model).transform.SetParent(copy.transform, false);
+            var body = UnityEngine.Object.Instantiate(model);
+            body.transform.SetParent(copy.transform, false);
+            // Brazo con alcance (IK) para empujar puertas igual que los NPC.
+            var grip = body.GetComponentsInChildren<Transform>(true).First(t => t.name.StartsWith("Grip_R6_", StringComparison.Ordinal));
+            body.AddComponent<PedestrianReach>().Configure(grip);
             try { return PrefabUtility.SaveAsPrefabAsset(copy, folder + "/Prefabs/" + id + "_Visual.prefab"); }
             finally { UnityEngine.Object.DestroyImmediate(copy); }
         }

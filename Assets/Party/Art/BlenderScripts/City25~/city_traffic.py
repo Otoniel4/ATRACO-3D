@@ -11,6 +11,8 @@ from city_life import direction
 
 SPEED = {'street': 9.0, 'avenue': 12.5, 'boulevard': 13.5, 'ring': 15.0, 'roundabout': 7.0}  # m/s
 CONTROL = {'semaforo': 1, 'stop': 2, 'rotonda': 3}
+# Centro del carril desde el eje: en las calles queda a 2,5 m para dejar junto al bordillo la franja de autos estacionados.
+LANE_CENTER = {'street': 2.5}
 STEP = 5.0
 
 
@@ -95,7 +97,7 @@ def build_traffic(plan, signals):
                     if one_way:
                         off = (lane - (lanes - 1) / 2) * 3.4
                     else:
-                        off = (lane + .5) * k['width'] / 2 / lanes
+                        off = LANE_CENTER.get(road['kind'], (lane + .5) * k['width'] / 2 / lanes)
                     # Derecha del sentido de marcha: (uy, -ux) multiplicado por el sentido.
                     path = [(x + uy * d * off, y - ux * d * off) for (x, y), (ux, uy) in line]
                     start, end = (n0, n1) if d > 0 else (n1, n0)

@@ -260,7 +260,7 @@ def furnish_joyeria(lay):
     lay.block(-.6, B - 1.4, 1.8, B - .2)
     for x in (-1.5, 1.5):
         prop("LaserEmitter", x, B - 2.5, 0, H - .35)
-    use(a.box("VipCarpet", (0, 1.0, .105), (3.0, 9.0, .01), "Navy", 0), material("Alfombra_Joyeria", "5A2D6E"))
+    use(a.box("VipCarpet", (0, 1.0, .135), (3.0, 9.0, .02), "Navy", 0), material("Alfombra_Joyeria", "5A2D6E"))
     use(a.box("Mirror", (0, B - WALL - .05, 2.2), (2.4, .03, 1.6), "Navy", 0), material("Espejo", "D7E3EA"))
     use(a.box("MirrorFrame", (0, B - WALL - .02, 2.2), (2.6, .02, 1.8), "Navy", 0), gold)  # detrás del espejo
     till = counter(lay, "GlassCabinet")
@@ -308,7 +308,7 @@ def furnish_banco(lay):
     for x in (-W / 2 + 1.0, W / 2 - 1.0):
         prop("StorageCrate", x, B - 1.2, 0)
         use(a.sphere("Plant", (x, B - 1.2, 1.2), (.45, .45, .5), "Navy", 1), material("Planta", "4E8F55"))
-    use(a.box("BankStripe", (0, 0, .105), (2.2, D - 3, .01), "Navy", 0), material("Alfombra_Banco", "2C5E4A"))
+    use(a.box("BankStripe", (0, 0, .135), (2.2, D - 3, .02), "Navy", 0), material("Alfombra_Banco", "2C5E4A"))
     till = counter(lay, "BankCounter")
     cameras()
     return till, {}
@@ -326,8 +326,8 @@ def furnish_comida(lay):
     for i, x in enumerate((-1.5, 2.0, 5.5)):
         for j, y in enumerate((-4.0, -.5, 3.0)):
             prop("RestaurantTable", x, y, 0)
-            prop("Chair", x - .7, y, -90)
-            prop("Chair", x + .7, y, 90)
+            prop("Chair", x - .7, y, 90)   # el frente de la silla (-Y) gira hacia la mesa
+            prop("Chair", x + .7, y, -90)
             prop("ProductBox", x, y, 0, .83)
             lay.block(x - 1.0, y - .55, x + 1.0, y + .55)
             if (i + j) % 2 == 0:
@@ -355,7 +355,7 @@ def furnish_ropa(lay):
         use(a.box("FittingRoom", (x, B - 1.1, 1.2), (1.8, 1.8, 2.4), "Navy", .02), material("Probador", "E9E3EF"))
         use(a.box("Curtain", (x, B - 2.02, 1.2), (1.4, .04, 2.2), "Navy", 0), curtain)
     lay.block(-7.0, B - 2.1, -3.0, B - .2)
-    use(a.box("Rug", (2.0, 0, .105), (10.0, 9.0, .01), "Navy", 0), material("Alfombra_Ropa", "D8C9B0"))
+    use(a.box("Rug", (2.0, 0, .135), (10.0, 9.0, .02), "Navy", 0), material("Alfombra_Ropa", "D8C9B0"))
     till = counter(lay, "Checkout")
     cameras()
     return till, {}
@@ -388,13 +388,13 @@ def build_local(kind):
         use(a.box("Awning", (x, F - .7, 2.95), ((W - 1.8) / 10, 1.4, .06), "Navy", 0), stripe).rotation_euler = (math.radians(-14), 0, 0)
     lights(W, D, H, 4, 3)
     tile = material("ShopTile_" + kind, tile_hex)
-    tiles = [use(a.box("FloorTiles", (-W / 2 + 1 + i, -D / 2 + 1 + j, .102), (1.0, 1.0, .004), "Navy", 0), tile)
+    tiles = [use(a.box("FloorTiles", (-W / 2 + 1 + i, -D / 2 + 1 + j, .115), (1.0, 1.0, .01), "Navy", 0), tile)
              for i in range(int(W - 1)) for j in range(int(D - 1)) if (i + j) % 2 == 0]
     with bpy.context.temp_override(active_object=tiles[0], selected_editable_objects=tiles, selected_objects=tiles):
         bpy.ops.object.join()  # una sola malla para todas las baldosas
     for sx in (1, -1):
-        use(a.box("WallBand", (sx * (W / 2 - WALL - .01), 0, 2.7), (.02, D - 2 * WALL, .35), "Navy", 0), accent)
-    use(a.box("WallBand", (0, B - WALL - .01, 2.7), (W - 2 * WALL, .02, .35), "Navy", 0), accent)
+        use(a.box("WallBand", (sx * (W / 2 - WALL - .025), 0, 2.7), (.03, D - 2 * WALL, .35), "Navy", 0), accent)
+    use(a.box("WallBand", (0, B - WALL - .025, 2.7), (W - 2 * WALL, .03, .35), "Navy", 0), accent)
     lay = Layout()
     till, signs = furnish(lay)
     for label, (x, y) in signs.items():
@@ -406,7 +406,7 @@ def build_local(kind):
     layout = dict(kind=kind, model=root.name, width=W, depth=D, door_width=2.2, product=product, product_name=product_name, price_cents=price,
                   walkable=[min(inner[0][0], inner[1][0]), min(inner[0][1], inner[1][1]), max(inner[0][0], inner[1][0]), max(inner[0][1], inner[1][1])],
                   obstacles=lay.obstacles, stations=lay.stations, products=lay.products,
-                  sidewalk=[unity(-W / 2 + 1, F - 2.4), unity(W / 2 - 1, F - 2.4)],
+                  sidewalk=[unity(-4.0, F - 2.4), unity(4.0, F - 2.4)],  # frente a la puerta, sin pasar por mesas ni bancas
                   entry=[unity(0, F - 1.6), unity(0, F + .2), unity(0, F + 1.4)], exit=[unity(1.2, F + 1.4), unity(1.0, F + .2), unity(1.4, F - 1.6)], **till)
     return root, layout
 

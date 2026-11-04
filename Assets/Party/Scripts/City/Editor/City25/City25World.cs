@@ -55,7 +55,7 @@ namespace Alarma.City.Editor
                 if (o.HasPlace && prefabs.TryGetValue("Local_" + char.ToUpperInvariant(o.place.kind[0]) + o.place.kind.Substring(1), out var local)) prefab = local;
                 var parent = roots[Mathf.Clamp(o.sector[0], 0, count - 1), Mathf.Clamp(o.sector[1], 0, count - 1)];
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent.transform);
-                instance.transform.SetPositionAndRotation(City25Paths.World(o.x, o.y), Quaternion.Euler(0f, o.yaw, 0f));
+                instance.transform.SetPositionAndRotation(City25Paths.World(o.x, o.y) + Vector3.up * o.z, Quaternion.Euler(0f, o.yaw, 0f));
                 if (o.HasPlace) { instance.name = o.place.name + " (" + o.kit + ")"; result.Places.Add((o, instance)); }
                 if (o.signal >= 0) result.Signals.Add((o, instance));
                 result.Placed++;

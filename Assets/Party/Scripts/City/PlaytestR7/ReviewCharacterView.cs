@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Alarma.AI.CityLife;
 namespace Alarma.City.Playtest
 {
     // Cambia solo la presentación del jugador de revisión; no sustituye su controlador al cambiar de rol.
@@ -11,6 +12,7 @@ namespace Alarma.City.Playtest
         private static readonly int SpeedId=Animator.StringToHash("Speed");
         private GameObject visual;private Animator animator;
         public Animator CurrentAnimator=>animator;
+        public PedestrianReach CurrentReach{get;private set;}
         public int Role{get;private set;}
         public void Configure(ReviewInput controls,ReviewPlayerMotor movement,GameObject[] variants){input=controls;motor=movement;models=variants;}
         private void Start(){SelectRole(0);if(motor!=null)motor.SpeedChanged+=Animate;}
@@ -19,7 +21,7 @@ namespace Alarma.City.Playtest
         {
             if(index<0 || index>=models.Length || models[index]==null)return;Role=index;
             if(visual!=null){visual.SetActive(false);Destroy(visual);}visual=Instantiate(models[index],transform);visual.transform.localPosition=Vector3.zero;visual.transform.localRotation=Quaternion.identity;
-            SetLayer(visual.transform,30);animator=visual.GetComponentInChildren<Animator>();
+            SetLayer(visual.transform,30);animator=visual.GetComponentInChildren<Animator>();CurrentReach=visual.GetComponentInChildren<PedestrianReach>();
             if(animator!=null){animator.applyRootMotion=false;animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;animator.Rebind();animator.Update(0);}
             Bounds bounds=new Bounds(transform.position,Vector3.zero);bool found=false;
             foreach(var r in visual.GetComponentsInChildren<Renderer>())if(r.enabled){if(!found){bounds=r.bounds;found=true;}else bounds.Encapsulate(r.bounds);}

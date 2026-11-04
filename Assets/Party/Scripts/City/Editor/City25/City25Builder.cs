@@ -16,7 +16,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-13";
+        private const string Version = "ciudad25-15";
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -40,7 +40,7 @@ namespace Alarma.City.Editor
                 if (AssetDatabase.IsValidFolder(City25Paths.Output)) AssetDatabase.DeleteAsset(City25Paths.Output);
                 PrepareOutput();
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Kit y suelo", .05f);
-                var prefabs = City25Kit.Prepare(City25Paths.Read<KitManifest>(City25Paths.Kit + "/kit.json"));
+                var prefabs = City25Kit.Prepare(City25Kit.Manifest());
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Protagonistas", .45f);
                 var (roles, walkers, civilians, shoppers, guard, police) = City25Characters.Prepare(City25Paths.Output);
                 var city = City25Paths.Read<CityObjects>(City25Paths.Plan + "/city_objects.json");
@@ -131,7 +131,7 @@ namespace Alarma.City.Editor
         // Cambia cuando se regenera el plano, el kit, el suelo o el mapa: entonces hay que preparar de nuevo.
         private static string Stamp() => string.Join(",", new[]
         {
-            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
+            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
         }.Select(p => File.GetLastWriteTimeUtc(p).Ticks));
     }
 }

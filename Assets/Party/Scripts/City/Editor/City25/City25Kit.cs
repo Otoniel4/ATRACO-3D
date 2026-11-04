@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Alarma.AI.CityLife;
 using Alarma.AI.CityLife.Editor;
 using Alarma.Traffic;
@@ -21,6 +22,14 @@ namespace Alarma.City.Editor
         private const string Palette = "Assets/Party/Data/CarPalette.asset";
         // Taxi y patrulla conservan sus colores: el resto recibe una pintura al azar.
         private static readonly string[] FixedLivery = { "Car_Taxi", "Car_Police" };
+
+        // Kit del mundo R9 (export_kit.py) y kit de calle (build_street_kit.py) en un solo catálogo.
+        public static KitManifest Manifest()
+        {
+            var kit = City25Paths.Read<KitManifest>(City25Paths.Kit + "/kit.json");
+            var street = City25Paths.Read<KitManifest>(City25Paths.Kit + "/street_kit.json");
+            return new KitManifest { pieces = kit.pieces.Concat(street.pieces).ToArray() };
+        }
 
         public static Dictionary<string, GameObject> Prepare(KitManifest kit)
         {
@@ -48,7 +57,7 @@ namespace Alarma.City.Editor
                 prefabs[piece.id] = MakePrefab(piece, model, lamps);
             }
             var palette = CarColors();
-            foreach (string id in Cars) prefabs[id] = MakeVehicle(id, palette);
+            foreach (string id in Cars) prefabs[id] = MakeParked(id, palette);
             foreach (string path in shops) prefabs[Path.GetFileNameWithoutExtension(path)] = MakeShop(path);
             return prefabs;
         }
@@ -93,8 +102,9 @@ namespace Alarma.City.Editor
 
         public static GameObject CarModel(string id) => AssetDatabase.LoadAssetAtPath<GameObject>(City25Paths.Vehicles + "/" + id + ".fbx") ?? throw new FileNotFoundException("Falta el auto", id);
 
-        // Auto estacionado: el modelo con una caja de colisión y colores propios que no cambian.
-        private static GameObject MakeVehicle(string id, CarPalette palette)
+        // Auto estacionado: no se abre ni se mueve, así que sus ~120 piezas se juntan en una malla por material
+        // (unas 20). Las luces y el tablero van apagados. Pintura fija según su posición. Se regenera con la ciudad.
+        private static GameObject MakeParked(string id, CarPalette palette)
         {
             var root = new GameObject(id);
             try
@@ -102,11 +112,51 @@ namespace Alarma.City.Editor
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(CarModel(id));
                 model.transform.SetParent(root.transform, false);
                 var bounds = Bounds(root);
+                var groups = new Dictionary<Material, List<CombineInstance>>();
+                foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    var filter = renderer.GetComponent<MeshFilter>();
+                    if (filter == null || filter.sharedMesh == null) continue;
+                    var mesh = filter.sharedMesh;
+                    var materials = renderer.sharedMaterials;
+                    for (int i = 0; i < Mathf.Min(mesh.subMeshCount, materials.Length); i++)
+                    {
+                        if (materials[i] == null) continue;
+                        if (!groups.TryGetValue(materials[i], out var parts)) groups[materials[i]] = parts = new List<CombineInstance>();
+                        parts.Add(new CombineInstance { mesh = mesh, subMeshIndex = i, transform = root.transform.worldToLocalMatrix * renderer.transform.localToWorldMatrix });
+                    }
+                }
+                UnityEngine.Object.DestroyImmediate(model);
+                foreach (var group in groups)
+                {
+                    var combined = new Mesh { name = id + "_" + group.Key.name, indexFormat = IndexFormat.UInt32 };
+                    combined.CombineMeshes(group.Value.ToArray(), true, true);
+                    AssetDatabase.CreateAsset(combined, City25Paths.Output + "/Art/" + combined.name + ".asset");
+                    var part = new GameObject(group.Key.name);
+                    part.transform.SetParent(root.transform, false);
+                    part.AddComponent<MeshFilter>().sharedMesh = combined;
+                    part.AddComponent<MeshRenderer>().sharedMaterial = LightsOff(group.Key);
+                }
                 var box = root.AddComponent<BoxCollider>(); box.center = bounds.center; box.size = bounds.size;
                 root.AddComponent<CarAppearance>().Configure(palette, false, PaintRenderers(root, id), null);
-                return PrefabUtility.SaveAsPrefabAsset(root, Prefabs + "/" + id + ".prefab");
+                return PrefabUtility.SaveAsPrefabAsset(root, City25Paths.Output + "/Prefabs/" + id + "_Estacionado.prefab");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        // Copia sin emisión de los materiales que brillan (faros, pilotos, intermitentes, pantallas): un auto estacionado está apagado.
+        private static Material LightsOff(Material material)
+        {
+            if (!material.IsKeywordEnabled("_EMISSION")) return material;
+            string path = City25Paths.Output + "/Materials/" + material.name + "_Apagado.mat";
+            var off = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (off != null) return off;
+            off = new Material(material) { name = material.name + "_Apagado" };
+            off.DisableKeyword("_EMISSION");
+            off.SetColor("_EmissionColor", Color.black);
+            off.globalIlluminationFlags = MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+            AssetDatabase.CreateAsset(off, path);
+            return off;
         }
 
         // Blender exige nombres únicos en todo el archivo: desde el segundo auto las piezas llegan como «Seat_Driver.001».
@@ -219,6 +269,23 @@ namespace Alarma.City.Editor
                 case "playground":
                 case "basketballcourt":
                     break; // se puede caminar por encima
+                case "busstop":
+                case "kiosk":
+                case "billboard":
+                    // Se puede entrar bajo el techo de la parada o pasar entre los pilares del cartel.
+                    foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true)) filter.gameObject.AddComponent<MeshCollider>();
+                    break;
+                case "stopsign":
+                case "yieldsign":
+                case "speedsign":
+                    var post = root.AddComponent<BoxCollider>(); post.center = new Vector3(bounds.center.x, bounds.size.y / 2f, bounds.center.z); post.size = new Vector3(.15f, bounds.size.y, .15f);
+                    break;
+                case "bollards":
+                    foreach (float x in new[] { -1.2f, 0f, 1.2f })
+                    {
+                        var bollard = root.AddComponent<BoxCollider>(); bollard.center = new Vector3(bounds.center.x + x, bounds.size.y / 2f, bounds.center.z); bollard.size = new Vector3(.2f, bounds.size.y, .2f);
+                    }
+                    break;
                 default:
                     var box = root.AddComponent<BoxCollider>(); box.center = bounds.center; box.size = bounds.size;
                     break;

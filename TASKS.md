@@ -456,7 +456,7 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 - Menú de pausa (Esc): continuar, opciones (volumen, sensibilidad, pantalla completa, calidad; guardadas en el equipo con `GameSettings`), controles y salir. No congela el juego porque será online.
 - Orden siguiente acordado: 1) peatones por las aceras y pasos de cebra; 2) semáforos con ciclo y autos con conductor que los respetan, con autos rediseñados; 3) locales con puerta, interior lleno de productos y cajeros; NPC que entran, eligen, pagan y salen.
 
-## Ciudad viva 1: semáforos y peatones — 2026-11-03 (pendiente de prueba)
+## [x] Ciudad viva 1: semáforos y peatones — 2026-11-03 (confirmado por Alain)
 
 - Alain confirmó la limpieza y el menú de pausa («Sí, funciona»).
 - `City25~/city_life.py` → `city_life.json`: 195 semáforos con sus ejes y red peatonal (15 992 nodos, 871 pasos de cebra, 539 con semáforo, 98,6 % conectada).
@@ -466,7 +466,7 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 - Semáforos reorientados: las luces miran a los autos que llegan. Árboles de avenida junto al bordillo.
 - Siguiente: autos con conductor por carriles que respetan semáforos y pasos de cebra; autos rediseñados.
 
-## Ciudad viva 2: autos con conductor — 2026-11-03 (pendiente de prueba)
+## [x] Ciudad viva 2: autos con conductor — 2026-11-03 (confirmado por Alain)
 
 - Alain confirmó semáforos y peatones («Sí, funciona»).
 - `City25~/city_traffic.py` → `city_traffic.json`: 1518 carriles (circulación por la derecha, rotonda antihoraria), líneas de parada antes de los pasos de cebra, control al final (semáforo con eje, pare, ceda en rotonda) y carriles siguientes; vuelta en los 22 callejones sin salida.
@@ -474,7 +474,7 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 - Autos de `Art/Vehicles` (sedán, hatchback, SUV, taxi) para el tráfico y los estacionados; los autos del kit R9 quedaron retirados.
 - Siguiente: rediseño de los autos en Blender (más detalle, ruedas y puertas separadas) con capturas para aprobar; después locales con interior y compras.
 
-## Rediseño de autos — 2026-11-03 (v3 aprobado por Alain; integración pendiente de prueba)
+## [x] Rediseño de autos — 2026-11-03 (v3 e integración confirmados por Alain)
 
 - Alain confirmó el tráfico y pidió autos menos básicos, distintos entre sí, con conductor visible y luces.
 - `Art/BlenderScripts/build_vehicles.py` v3: ocho modelos (sedán, hatchback, SUV, pickup con caja de carga, furgoneta, deportivo con alerón, taxi, patrulla), carrocería curva con molduras de arcos, línea lateral, juntas de puertas, marcos cromados, faros con luz de día, intermitentes, pilotos envolventes y tercera luz de freno; conductor sentado al volante y acompañante opcional; vidrio semitransparente. 4,9–7,3 mil triángulos.
@@ -500,3 +500,19 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 - Fase 3 pendiente: guardias en las puertas de los locales.
 - Alain confirmó la fase 2 («Sí, funciona»; se corrigieron dos puntos bloqueados y nombres de materiales). Fase 3 lista para probar: `City25Security` coloca 17 puestos (2 guardias por banco, 1 por joyería y supermercado, 2 policías por comisaría) con los modelos `Security_Male` y `Police_Male` del elenco; `SentryLook` (Alarma.AI.Security) los hace mirar alrededor sin dejar su puesto.
 - Alain confirmó guardias y policías («Sí, funciona», 2026-11-04). Ciudad de 2 × 2 km completa para esta etapa: tráfico, peatones, semáforos, autos con conductor, 22 locales con interior y compras, y 17 puestos de seguridad.
+
+## [x] Pulido de ciudad y NPC — 2026-11-04 (confirmado por Alain)
+
+- Pedido de Alain: personajes lentos, puertas con gesto de empujar, postes unidos a árboles, sillas al revés, NPC quietos y en grupo, parpadeos, no se podía mirar al cielo, NPC fuera de la acera, compradores que solo llegan en grupo.
+- Hecho: árboles de acera a más de 4,5 m de postes y semáforos (0 casos); sillas del local de comida hacia la mesa; capas del suelo y de los locales más separadas (sin parpadeo); vereda bajo las esquinas de los cruces (sin triángulos de pasto); cámara con inclinación de -35° a 70°; compradores a ~1,2 m/s, de a uno cada 6–14 s y con camino de llegada solo frente a la puerta (las mesas de la vereda los bloqueaban); el jugador hace el gesto de empujar al abrir con E (`PedestrianReach`).
+- Postes sobre la calzada (reporte de Alain con captura): el plano ahora prueba cada poste contra todos los tramos de asfalto y las fachadas. Faroles junto al bordillo (0,7 m dentro de la vereda; 1,5 m del borde en el anillo, que no tiene vereda); si caen en otra calzada, en una fachada o sobre un mueble, no se ponen. Semáforos: si la esquina derecha cae en la calzada, retroceden por la vereda o pasan a la esquina izquierda. Resultado: 2341 faroles y 602 semáforos, 0 en asfalto, 0 en fachadas, 339 de 339 accesos con luz como antes, 0 árboles pegados a postes.
+
+## [x] Ciudad 3.0 — fase A: calles con más objetos — 2026-11-04 (confirmado por Alain)
+
+- Pedido de Alain: versión 3.0 del mapa de 2 × 2 km con más objetos, más dinámica y mejor hecha. Plan en 4 fases (A calles, B barrios y lugares, C dinámica, D revisión automática); Alain aprobó empezar por la A.
+- Kit nuevo hecho en Blender (`City25~/build_street_kit.py` → `Art/City/Kit25/Street/*.fbx`, `street_kit.json`, `street_materials.json`): parada de bus con techo, banca y caja de luz; kiosco con toldo, revistas y golosinas; hidrante; buzón; señales PARE, CEDA EL PASO, 40 y 60; fila de bolardos; contenedor de basura; tres carteles publicitarios de locales del juego (Burger Bandido, Banco Sin Prisa, Diamante Azul). Capturas en `City25~/renders/street_kit_*.png`.
+- Plano (`city_objects.py`, `street_details`): cada objeto se prueba como rectángulo contra la calzada, las fachadas, la franja por donde caminan los peatones (±0,8 m de su línea), las puertas de los locales y lo ya colocado; si no cabe se corre o no se pone. Colocados: 68 paradas, 12 kioscos, 13 carteles, 716 hidrantes, 162 buzones, 327 PARE, 6 CEDA, 308 de velocidad, 20 filas de bolardos frente a bancos, joyerías, supermercados y comisarías, 12 bicicleteros, 263 contenedores y 815 autos estacionados en las calles. Verificación independiente: 0 sobre la senda peatonal, carriles, fachadas o encimados.
+- Carriles de las calles a 2,5 m del eje (`city_traffic.py`) para dejar junto al bordillo la franja de estacionamiento. Los objetos llevan su altura (`z`): vereda 0,14 m, asfalto 0,045 m.
+- Unity: `City25Kit.Manifest()` junta los dos kits; colisiones por tipo (malla en parada, kiosco y cartel; poste en señales; un poste por bolardo); autos estacionados con una malla por material (de ~120 piezas a una por material) y luces apagadas, generados en `Generated/Ciudad2km`. Los prefabs anteriores `Kit25/Prefabs/Car_*.prefab` se movieron a `Atraco3D_Retirado/2026-11-04/`.
+- Corrección pedida por Alain (captura: contenedor en la calzada, «corrige cosas lógicas»): los contenedores ya no van en la calzada; 319 quedan en el terreno de departamentos, galpones, torres y algunos comercios, al costado del edificio y detrás de la línea de fachada. Otras reglas lógicas: kioscos solo en zonas de comercio y parque (no en antejardines), carteles solo en zonas comerciales, industriales y afueras (no entre casas), taxis no quedan estacionados en calles de barrio, la banca de fachada mira a la calle. Barrido de los muebles antiguos con la misma regla: 51 bancas, basureros, maceteros y mesas que pisaban la franja de los peatones o la calzada se acercaron a la fachada y 6 se quitaron por falta de lugar; ahora quedan a la altura de la vereda. Prueba de la franja peatonal con distancia exacta tramo-rectángulo. Verificación: 0 muebles en la calzada o en la franja peatonal, 0 contenedores en veredas, 0 encimados.
+- Alain confirmó en Unity la fase A con las correcciones lógicas y los postes fuera de la calzada («Sí, funciona», 2026-11-04). Siguiente: fase B (barrios con identidad y lugares nuevos), a la espera de su aprobación.

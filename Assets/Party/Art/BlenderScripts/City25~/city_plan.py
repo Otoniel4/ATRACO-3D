@@ -23,6 +23,7 @@ from city_traffic import build_traffic
 HERE = Path(__file__).resolve().parent
 UI = HERE.parent.parent / 'UI' / 'Map'
 KIT = HERE.parent.parent / 'City' / 'Kit25' / 'kit.json'
+STREET_KIT = KIT.with_name('street_kit.json')  # build_street_kit.py
 # Fuentes libres (OFL) que trae Blender; no se usan fuentes de Windows en recursos del juego.
 FONTS = Path('C:/Program Files/Blender Foundation/Blender 5.2/5.2/datafiles/fonts')
 CITY_SIZE = 2000         # lado de la ciudad en metros
@@ -594,11 +595,13 @@ def main():
     blocks, labels = build_blocks(roads)
     places = build_places(blocks)
     kit = json.loads(KIT.read_text(encoding='utf-8'))
+    kit['pieces'] += json.loads(STREET_KIT.read_text(encoding='utf-8'))['pieces']
     partial = dict(kinds=KINDS, roads=roads, intersections=intersections, blocks=blocks, places=places, park=[v * SCALE for v in PARK],
                    crosswalks=crosswalks)
     signals = build_signals(partial)
-    objects, _ = place_all(partial, labels, kit, HALF, CELL, river_distance, signals)
+    # La red peatonal va primero: el mobiliario nuevo se coloca fuera de la franja por donde caminan los peatones.
     life, _, life_stats = build_life(partial)
+    objects, _ = place_all(partial, labels, kit, HALF, CELL, river_distance, signals, life)
     (HERE / 'city_life.json').write_text(json.dumps(life, separators=(',', ':')), encoding='utf-8')
     traffic, traffic_stats = build_traffic(partial, signals)
     (HERE / 'city_traffic.json').write_text(json.dumps(traffic, separators=(',', ':')), encoding='utf-8')
