@@ -1,5 +1,16 @@
 # Arte de Alarma
 
+## Equipo actual y conexión con Blender — 2026-11-03
+
+El proyecto se clonó desde GitHub en un equipo nuevo, sin acceso al anterior. Los `.blend`, los FBX/PNG dentro de carpetas `~` y `Generated/` nunca estuvieron en Git y se perdieron. Las secciones R2–R9 de abajo son historial: sus binarios ya no existen. Siguen disponibles los FBX y prefabs del primer lote, y las recetas y JSON de diseño como referencia.
+
+- Blender **4.5.10 LTS** (`C:\Program Files\Blender Foundation\Blender 4.5`). Las recetas R3–R9 se escribieron para 4.5.
+- MCP: add-on `addon.py` y servidor `mcp-for-blender==2.2.6` (antes `blender-mcp`, repositorio `ahujasid/mcp-for-blender`). Se registra en `.mcp.json` de la raíz del proyecto con `DISABLE_TELEMETRY=true`. El add-on arranca su servidor solo al abrir Blender, en el puerto 9876.
+- Integraciones: solo **Hyper3D Rodin** activa, con la clave de prueba gratuita. Poly Haven, Sketchfab, Poly Pizza, Tripo, Meshy, Hunyuan y la telemetría del add-on quedan apagados.
+- Autorizado por el ingeniero: planes gratuitos de IA generativa 3D (Rodin, Meshy, Tripo). Sigue prohibido descargar modelos o texturas ya hechos de bibliotecas. Todo modelo generado se limpia en Blender (low poly, colores planos, 1 unidad = 1 m) y se registra con su licencia en `../docs/LICENSES.md`. Tripo gratis no permite uso comercial; Meshy gratis exige atribución (CC BY 4.0).
+- Conexión comprobada: `Validation/ConnectionCube_MCP.fbx` (1 × 1 × 1 m, origen en la base) creado por el puente, captura en `../docs/Capturas/Task03_ConnectionCube_MCP.png` e importación en Unity verificada por `BlenderImportValidator`.
+- Respaldo: los `.blend` nuevos de menos de 100 MB se guardan fuera de carpetas `~` para que entren en Git; los mayores necesitan una copia en la nube.
+
 ### Revisión vigente de ciudad: manos y compras R6
 
 Fuentes: `BlenderScripts/CityLifeR6~`; guía: `../docs/City-Life-R6.md`. Corrección de manos, tráfico y tareas de compra con filas/dependientes. Se conserva el mapa 4 × 4 km y el arte previo. Demo local Unity y revisión Blender horneada, pendientes de Play y aprobación de Alain.
@@ -26,7 +37,7 @@ La revisión actual del diseño de ciudad está en `BlenderScripts/Map4KmModernR
 Alain aprobó la dirección de personajes geométricos divertidos; la versión actual del elenco está en `BlenderScripts/CastLegsR3~`. El mapa de 4 × 4 km se entrega en `BlenderScripts/Map4Km~`, con fuentes, FBX completo, 64 sectores, 55 piezas de kit y capturas. Consultar `../docs/Map4Km.md`. Todo usa metros y colores planos cálidos. Mantener Unity 6000.3.27f2. La ciudad sigue pendiente de aprobación visual e integración funcional. Las secciones ReferenceV2 que siguen documentan una versión anterior rechazada; no son la guía vigente de personajes.
 
 
-Unity 6000.3.27f2 URP; Blender 5.2.3 LTS. Todos los modelos se construyen con scripts bpy mediante MCP. No se usan bibliotecas de modelos ni texturas descargadas.
+Unity 6000.3.27f2 URP; Blender 4.5.10 LTS (ver la sección de equipo actual). Los modelos se construyen con scripts bpy mediante MCP o se generan con IA de plan gratuito y se limpian en Blender. No se usan bibliotecas de modelos ni texturas descargadas.
 
 ## Estilo y revisión vigente
 

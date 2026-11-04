@@ -14,7 +14,7 @@ Actualización del 31 de octubre de 2026: Alain pide completar Task 01 y despué
 
 1. Task 00: entorno (completada).
 2. Task 01: arquitectura base (completada y validada por Alain).
-3. Task 03: conexión con Blender por MCP y exportación de prueba.
+3. Task 03: conexión con Blender por MCP y exportación de prueba (completada).
 4. Arte: Task 03.1 (estilo), 03.2 (cuerpos y preparación del rig), 03.3 (ropa y variantes), 03.5 (mapa modular), 03.6 (vehículos), 03.7 (accesorios e interiores) y 03.8 (armas y herramientas).
 5. Task 03.4: clips y preparación de animaciones una vez aprobados los diseños.
 6. Task 02: prototipo de red, antes de integrar dinámicas compartidas.
@@ -48,7 +48,7 @@ Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, 
 - **Alain hace:** escena `Boot` con NetworkManager y la UI; cápsula de prueba como prefab de jugador.
 - **Criterios:** con Multiplayer Play Mode, ambos jugadores se ven conectados.
 
-## [ ] Task 03 — Conexión Codex ↔ Blender (MCP)
+## [x] Task 03 — Conexión Codex ↔ Blender (MCP)
 - **Objetivo:** que el agente controle Blender para crear todos los modelos con IA.
 - **El agente hace:** guiar la instalación de un servidor MCP para Blender (por ejemplo, el proyecto de código abierto `blender-mcp`) y su registro en la configuración del agente (`~/.codex/config.toml` en Codex); verificar la conexión creando un cubo y tomando una captura del viewport; **desactivar** cualquier integración que descargue assets de internet (bibliotecas de modelos o texturas), porque está prohibido usar modelos ya hechos; crear `Party/Art/README.md` con el estilo visual, la escala (1 unidad = 1 metro) y las reglas de exportación (FBX, eje Y arriba, nombres en inglés).
 - **Alain hace:** instalar Blender, el add-on y el servidor MCP; arrancar el servidor desde Blender.
@@ -526,3 +526,15 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 - Verificación independiente: 0 piezas en la calzada, la vereda, la franja peatonal o dentro de fachadas; el detalle de calle sigue sin problemas.
 - Unity: `City25Kit.Manifest()` lee los tres manifiestos; colisión con la forma real en cercas, letreros, gasolinera, estacionamiento, grúa y chatarra.
 - Corrección pedida por Alain (capturas del escondite: «no está completo», no se podía entrar a la casa ni salir por la puerta, mejor cerrada y con animación): el muro suelto `Yard_Escondite` se reemplazó por un modelo propio `Local_Escondite` (`Art/BlenderScripts/build_hideout.py` → `Art/City/Shops/Local_Escondite.fbx`, `hideout_materials.json`, capturas `Art/Previews~/escondite_*.png`). Casa enterable con interior (mesa de planificación con el mapa, tablero «El golpe», casilleros, herramientas, dinero y caja fuerte, puesto del hacker, sala, cocina, disfraces) y patio con muro completo por los cuatro lados. La puerta de la casa y el portón peatonal están cerrados y se abren con E y el gesto de empujar (`ShopDoor`); el portón del auto se corre de lado con E (`ReviewSlidingDoor` ahora acepta un recorrido lateral). El juego empieza dentro del recibidor. Unity registra todas las puertas de los lugares; la prueba de aceptación mide la casa («Edificio») sin el patio. El muro anterior se movió a `Atraco3D_Retirado/2026-11-04/`.
+
+## Equipo nuevo, Blender MCP y arte con IA gratuita — 2026-11-03
+
+- Proyecto clonado desde GitHub en `C:\Users\Alain\ATRACO-3D`; el equipo anterior (`C:\Users\Alain\Atraco3D`) ya no está disponible. Los `.blend`, los FBX/PNG de carpetas `~` y `Generated/` no estaban en Git y se perdieron: la escena `Atraco.unity` tiene referencias rotas y «Crear y probar juego» no puede preparar R9. Alain decidió rehacer el arte antes de Task 02.
+- Blender 4.5.10 LTS y servidor `mcp-for-blender==2.2.6` registrados en `.mcp.json` (telemetría desactivada). Solo Hyper3D Rodin activo con la clave de prueba; el resto de integraciones apagadas. Detalle en `Assets/Party/Art/README.md`.
+- El ingeniero autorizó usar **planes gratuitos de IA generativa 3D** (Rodin, Meshy, Tripo) para crear los modelos. Esto amplía la regla de modelos hechos solo con Blender por MCP. Sigue prohibido descargar modelos o texturas ya hechos de bibliotecas. Cada modelo generado se limpia en Blender (low poly, colores planos, 1 unidad = 1 m) y se registra con su licencia en `docs/LICENSES.md`.
+- Task 03: puente comprobado con `Art/Validation/ConnectionCube_MCP.fbx` (1 × 1 × 1 m en Blender y en Unity) y captura `docs/Capturas/Task03_ConnectionCube_MCP.png`. Alain confirmó la prueba el 2026-11-03; Task 03 completada.
+
+## Dos copias del proyecto — 2026-11-04
+
+- El commit `task-03` (Blender por MCP, cubo de validación, `.mcp.json`) se hizo en una copia en `C:\Users\Alain\ATRACO-3D`. El trabajo de la ciudad siguió en `C:\Users\Alain\Atraco3D`, que sí conserva los `.blend`, el kit y la ciudad de 2 × 2 km (commits avance-r10 a avance-r12); ahí «Crear y probar juego» funciona y se usa Blender 5.2.
+- Las carpetas `~` y `Generated/` siguen fuera de Git: en otra copia faltan esos binarios hasta regenerarlos con los scripts de `Art/BlenderScripts`.

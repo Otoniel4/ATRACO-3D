@@ -268,3 +268,15 @@ Alain probó el mapa: pidió una ciudad de 2 × 2 km, techos estables, un HUD li
 - La prueba ya no copia vehículos ni armas a `Generated` (solo los usaba el catálogo).
 - Plano: `CITY_SIZE = 2000`. El trazado se escala desde el diseño de 2,5 km sin cambiar los anchos de calles y aceras: 240 cuadras, 287 cruces y 943 pasos de cebra. Prueba `playtest-r9-9`.
 Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir la ciudad en 3D. No se cambia ninguna casilla.
+
+## Equipo nuevo, Blender MCP y arte con IA gratuita — 2026-11-03
+
+- Proyecto clonado desde GitHub en `C:\Users\Alain\ATRACO-3D`; el equipo anterior (`C:\Users\Alain\Atraco3D`) ya no está disponible. Los `.blend`, los FBX/PNG de carpetas `~` y `Generated/` no estaban en Git y se perdieron: la escena `Atraco.unity` tiene referencias rotas y «Crear y probar juego» no puede preparar R9. Alain decidió rehacer el arte antes de Task 02.
+- Blender 4.5.10 LTS y servidor `mcp-for-blender==2.2.6` registrados en `.mcp.json` (telemetría desactivada). Solo Hyper3D Rodin activo con la clave de prueba; el resto de integraciones apagadas. Detalle en `Assets/Party/Art/README.md`.
+- El ingeniero autorizó usar **planes gratuitos de IA generativa 3D** (Rodin, Meshy, Tripo) para crear los modelos. Esto amplía la regla de modelos hechos solo con Blender por MCP. Sigue prohibido descargar modelos o texturas ya hechos de bibliotecas. Cada modelo generado se limpia en Blender (low poly, colores planos, 1 unidad = 1 m) y se registra con su licencia en `docs/LICENSES.md`.
+- Task 03: puente comprobado con `Art/Validation/ConnectionCube_MCP.fbx` (1 × 1 × 1 m en Blender y en Unity) y captura `docs/Capturas/Task03_ConnectionCube_MCP.png`. Alain confirmó la prueba el 2026-11-03; Task 03 completada.
+
+## Dos copias del proyecto — 2026-11-04
+
+- El commit `task-03` (Blender por MCP, cubo de validación, `.mcp.json`) se hizo en una copia en `C:\Users\Alain\ATRACO-3D`. El trabajo de la ciudad siguió en `C:\Users\Alain\Atraco3D`, que sí conserva los `.blend`, el kit y la ciudad de 2 × 2 km (commits avance-r10 a avance-r12); ahí «Crear y probar juego» funciona y se usa Blender 5.2.
+- Las carpetas `~` y `Generated/` siguen fuera de Git: en otra copia faltan esos binarios hasta regenerarlos con los scripts de `Art/BlenderScripts`.
