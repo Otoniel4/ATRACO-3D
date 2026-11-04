@@ -30,8 +30,11 @@ namespace Alarma.City.Editor
             // Cada local debe quedar donde dice el plano: confirma ejes, escala y giro del kit en Unity.
             foreach (var (data, instance) in world.Places)
             {
-                // Solo el modelo del edificio (primer hijo): guardias, cajero y compradores no cuentan.
-                var renderers = instance.transform.GetChild(0).GetComponentsInChildren<Renderer>(true);
+                // Solo el modelo del edificio (primer hijo): guardias, cajero y compradores no cuentan. Si el modelo trae
+                // patio propio (escondite), se mide la casa, marcada como «Edificio».
+                var model = instance.transform.GetChild(0);
+                var building = model.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Edificio") ?? model;
+                var renderers = building.GetComponentsInChildren<Renderer>(true);
                 var bounds = renderers[0].bounds; foreach (var r in renderers) bounds.Encapsulate(r.bounds);
                 if (Vector2.Distance(new Vector2(bounds.center.x, bounds.center.z), new Vector2(data.x, data.y)) > 1.5f)
                     throw new InvalidOperationException($"{data.place.name} quedó fuera de su lugar en el plano.");

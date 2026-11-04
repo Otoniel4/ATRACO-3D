@@ -16,7 +16,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-15";
+        private const string Version = "ciudad25-17";
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -55,7 +55,10 @@ namespace Alarma.City.Editor
                 streamer.Configure(rig.Player.transform, world.Sectors, ground.half, ActiveRadius);
                 var (shops, shopDoors) = City25Shops.Build(City25Paths.Output, world, City25Paths.Read<ShopLayouts>(City25Paths.Shops + "/shop_layouts.json"), shoppers);
                 var doors = new GameObject("Puertas").AddComponent<ReviewDoorInteraction>();
-                doors.Configure(rig.Input, rig.Player.transform, shopDoors, Array.Empty<ReviewSlidingDoor>());
+                // Todas las puertas de los lugares se abren con E: las de los locales y las del escondite (casa, portón y portón corredizo).
+                var hinged = world.Places.SelectMany(p => p.instance.GetComponentsInChildren<ShopDoor>()).Union(shopDoors).ToArray();
+                var sliding = world.Places.SelectMany(p => p.instance.GetComponentsInChildren<ReviewSlidingDoor>()).ToArray();
+                doors.Configure(rig.Input, rig.Player.transform, hinged, sliding);
                 Shoppers(shops, shoppers, rig.Player.transform);
                 int sentries = City25Security.Place(world, guard, police);
                 var life = City25Paths.Read<CityLife>(City25Paths.Plan + "/city_life.json");
@@ -131,7 +134,7 @@ namespace Alarma.City.Editor
         // Cambia cuando se regenera el plano, el kit, el suelo o el mapa: entonces hay que preparar de nuevo.
         private static string Stamp() => string.Join(",", new[]
         {
-            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
+            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
         }.Select(p => File.GetLastWriteTimeUtc(p).Ticks));
     }
 }

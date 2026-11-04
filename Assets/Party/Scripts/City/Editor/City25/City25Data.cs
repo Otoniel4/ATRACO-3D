@@ -20,7 +20,7 @@ namespace Alarma.City.Editor
         public const string Scene = Output + "/Scenes/Ciudad_2km.unity";
         public const string Report = Output + "/BuildReport.json";
         // Colores planos del kit y del elenco, y los del suelo nuevo.
-        public static readonly string[] ColorManifests = { "Assets/Party/Art/Materials/FlatColors.json", Ground + "/ground_materials.json", Vehicles + "/vehicle_materials.json", Shops + "/shop_materials.json", Kit + "/street_materials.json" };
+        public static readonly string[] ColorManifests = { "Assets/Party/Art/Materials/FlatColors.json", Ground + "/ground_materials.json", Vehicles + "/vehicle_materials.json", Shops + "/shop_materials.json", Kit + "/street_materials.json", Kit + "/district_materials.json", Shops + "/hideout_materials.json" };
 
         public static T Read<T>(string path) => JsonUtility.FromJson<T>(File.ReadAllText(path)) ?? throw new InvalidDataException("No se pudo leer " + path);
         // Plano: X este, Y norte. Unity: X este, Z norte.

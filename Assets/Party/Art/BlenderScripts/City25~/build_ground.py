@@ -459,15 +459,6 @@ def lots(sink):
                 for k in range(7):
                     a = -w / 2 + .7 + k * 4.6
                     sink.quad(point(a - .07, -d / 2 + .5), point(a + .07, -d / 2 + .5), point(a + .07, -1), point(a - .07, -1), Z['lot'] + .01, 'LineaBlanca')
-            else:
-                for a, b in ((-8, -4), (8, -4), (-8, 4), (8, 4)):
-                    p = point(a, b)
-                    sink.post(p[0], p[1], .3, Z['lot'], 4.6, 'Baranda')
-                corners = [point(-9.5, -5.5), point(9.5, -5.5), point(9.5, 5.5), point(-9.5, 5.5)]
-                sink.face([(x, y, 5.1) for x, y in corners], 'Marquesina')
-                sink.face([(x, y, 4.6) for x, y in reversed(corners)], 'Marquesina')
-                for m in range(4):
-                    sink.wall(corners[m], corners[(m + 1) % 4], 4.6, 5.1, 'Marquesina')
         elif o['kit'] == 'Sewer':
             sink.disc(o['x'], o['y'], 0, .45, Z['sidewalk'] + .006, 'Alcantarilla', 10)
 

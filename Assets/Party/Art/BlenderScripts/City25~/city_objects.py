@@ -32,6 +32,15 @@ CAR_SIZE = (2.0, 5.2)  # ancho de carrocería × largo, con margen para la furgo
 PARKED_SHARE = .15      # fracción de lugares de estacionamiento ocupados en las calles
 PARKING_ZONES = ('residencial', 'afueras', 'comercial', 'industrial', 'financiero')
 BILLBOARDS = ['Billboard_A', 'Billboard_B', 'Billboard_C']
+# Antejardines por zona: estilo de cerca con su probabilidad, y qué parte de las casas tiene uno.
+YARD_STYLES = {'residencial': (('Picket', .4), ('Bars', .35), ('Hedge', .25)), 'afueras': (('Hedge', .5), ('Picket', .3), ('Bars', .2))}
+YARD_SHARE = {'residencial': .85, 'afueras': .6}
+FENCE_FROM_SIDEWALK = .35  # la cerca va 0,35 m dentro del terreno, detrás de la vereda
+Z_LOT = .11  # alto del lote de gasolineras y estacionamientos (build_ground.py)
+# Escondite (build_hideout.py): muro a 3,65 m delante de la fachada, 1 m a los lados y 0,9 m detrás; recibidor a 2,4 m.
+HIDEOUT_YARD, HIDEOUT_SIDE, HIDEOUT_REAR, HIDEOUT_HALL = 3.65, 1.0, .9, 2.4
+TALLER_SIGNS = {'Taller de pintura': 'Sign_TallerPintura', 'Garaje Express': 'Sign_GarajeExpress'}
+CONTAINERS = ['Container_A', 'Container_B', 'Container_C']
 KIOSK_ZONES = ('comercial', 'financiero', 'parque')  # un kiosco no va en el antejardín de una casa
 DUMPSTER_SHARE = {'warehouse': .6, 'apartment': .5, 'tower': .6, 'shop': .15}  # edificios que sacan su basura a un contenedor
 SHOPFRONT = ('Bench', 'Bin', 'Planter', 'CafeSet')
@@ -76,7 +85,10 @@ class Placer:
         self.river_distance = river_distance
         self.objects = []
         self.kit_pieces = kit['pieces']
+        self.centers = {p['id']: p['center'] for p in kit['pieces'] if 'center' in p}
         self.rng = random.Random(25)
+        # Los detalles usan su propia secuencia: agregarlos no cambia la elección de edificios de la ciudad.
+        self.detail_rng = random.Random(77)
         self.roads = sorted((r for r in plan['roads'] if r['kind'] in ROAD_ORDER), key=lambda r: ROAD_ORDER.index(r['kind']))
         self.sides = {r['id']: samples(r['points']) for r in self.roads}
         # Rejilla de tramos de calzada para saber si un poste caería sobre el asfalto (curvas, diagonal, esquinas).
@@ -186,18 +198,21 @@ class Placer:
             front = heading(-n[0], -n[1])
             self.add('Lot', cx, cy, front, size=[w, d], spot=place['kind'], name=place['name'])
             place['position'] = [round(cx - n[0] * (d / 2 - 2), 1), round(cy - n[1] * (d / 2 - 2), 1)]
+            fx, fy = math.sin(math.radians(front)), math.cos(math.radians(front))
             if place['kind'] == 'gasolinera':
-                # Surtidores en una isla central y el kiosco al fondo.
-                for k in range(4):
-                    a = -6 + k * 4
-                    self.add('EVCharger', cx + u[0] * a, cy + u[1] * a, front)
-                self.add('FoodStand', cx + n[0] * (d / 2 - 3), cy + n[1] * (d / 2 - 3), front)
+                # Gasolinera completa (techo, islas, tienda, tótem) y dos autos cargando junto a los surtidores.
+                self.add('Lugar_Gasolinera', cx, cy, front, z=Z_LOT, name=place['name'])
+                slots = next(p['slots'] for p in self.kit_pieces if p['id'] == 'Lugar_Gasolinera')
+                for bx, by, turn in self.detail_rng.sample(slots, 2):
+                    self.add(self.detail_rng.choice(PARKED_CARS), cx - fy * bx - fx * by, cy + fx * bx - fy * by, (front + turn) % 360,
+                             z=Z_LOT, parked=True)
             else:
+                self.add('Lugar_Estacionamiento', cx, cy, front, z=Z_LOT, name=place['name'])
                 for k in range(6):
                     if self.rng.random() < .3:
                         continue
                     a = -w / 2 + 3 + k * 4.6
-                    self.add(self.rng.choice(CARS), cx + u[0] * a + n[0] * (d / 4), cy + u[1] * a + n[1] * (d / 4), front, parked=True)
+                    self.add(self.rng.choice(CARS), cx + u[0] * a + n[0] * (d / 4), cy + u[1] * a + n[1] * (d / 4), front, z=Z_LOT, parked=True)
 
     # --- edificios a lo largo de las vías ---
     def buildings(self):
@@ -251,6 +266,10 @@ class Placer:
             fx, fy = best['front']
             reach = best['size'][1] / 2 + 1.5
             place['position'] = [round(best['x'] + fx * reach, 1), round(best['y'] + fy * reach, 1)]
+            if place['kind'] == 'escondite':
+                # Al escondite se entra (Local_Escondite): el juego empieza adentro, en el recibidor.
+                inside = best['size'][1] / 2 - HIDEOUT_HALL
+                place['position'] = [round(best['x'] + fx * inside, 1), round(best['y'] + fy * inside, 1)]
             place['building'] = best['kit']
 
     def sewers(self):
@@ -412,27 +431,32 @@ class Placer:
                         return False
         return True
 
-    def put(self, kit, cx, cy, yaw, surface, z, gap=.3, **extra):
+    def put(self, kit, x, y, yaw, surface, z, gap=.3, doors=True, **extra):
         w, d = self.sizes[kit]
+        cx, cy = self.kit_center(kit, x, y, yaw)
         if not self.room(cx, cy, yaw, w, d, surface, gap):
             return None
-        if self.near_point(self.doors, cx, cy, 2.5):
+        if doors and self.near_point(self.doors, cx, cy, 2.5):
             return None  # la entrada de cada local y del escondite queda despejada
         gw, gd = GROUND.get(kit, (w, d))  # lo que toca el suelo: un poste, no la placa que va sobre las cabezas
         if self.crosses_walkway(cx, cy, yaw, gw, gd):
             return None
         self.mark_rect(cx, cy, yaw, w, d)
-        return self.add(kit, cx, cy, yaw, z=z, **extra)
+        return self.add(kit, x, y, yaw, z=z, **extra)
 
-    def in_block(self, cx, cy, yaw, w, d):
-        # Todo el rectángulo dentro de una misma cuadra: así no pisa vereda ni calzada.
+    def in_block(self, cx, cy, yaw, w, d, share=.7):
+        # Dentro de una sola cuadra. El raster tiene celdas de 2 m y su borde junto a la vereda es irregular: se aceptan
+        # celdas de vía en ese borde (room() ya prueba la vereda y la calzada con la geometría exacta), pero nunca otra cuadra.
         fx, fy = math.sin(math.radians(yaw)), math.cos(math.radians(yaw))
         rows, cols = self.rect(cx, cy, (fy, -fx), (fx, fy), w, d)
         size = self.labels.shape[0]
         if rows.min() < 0 or cols.min() < 0 or rows.max() >= size or cols.max() >= size:
             return False
         cells = self.labels[rows, cols]
-        return bool(cells[0] and (cells == cells[0]).all())
+        own = cells[cells > 0]
+        if own.size == 0 or (own != own[0]).any():
+            return False
+        return own.size >= share * cells.size
 
     def near_point(self, points, x, y, distance):
         return any(abs(px - x) < distance and abs(py - y) < distance and math.hypot(px - x, py - y) < distance for px, py in points)
@@ -692,6 +716,133 @@ class Placer:
         counts['fachadas corridas'], counts['fachadas quitadas'] = moved, dropped
         return counts
 
+    # --- barrios y lugares (ciudad 3.0, fase B1) ---
+    def kit_center(self, kit, x, y, yaw):
+        # Centro de la planta de una pieza cuyo origen no está al centro (cercas, lugares).
+        if kit not in self.centers:
+            return x, y
+        bx, by = self.centers[kit]
+        fx, fy = math.sin(math.radians(yaw)), math.cos(math.radians(yaw))
+        return x - fy * bx - fx * by, y + fx * bx - fy * by
+
+    def pick(self, weighted):
+        r = self.rng.random()
+        for value, share in weighted:
+            r -= share
+            if r <= 0:
+                return value
+        return weighted[-1][0]
+
+    def fence_line(self, b, road):
+        # Punto medio de la cerca: frente al edificio, a 0,35 m del borde de la vereda. Devuelve también el fondo libre.
+        k = self.kinds[road['kind']]
+        fx, fy = b['front']
+        front = (b['x'] + fx * b['size'][1] / 2, b['y'] + fy * b['size'][1] / 2)
+        x, y, _, _ = min(self.sides[road['id']], key=lambda q: math.hypot(q[0] - front[0], q[1] - front[1]))
+        room = math.hypot(front[0] - x, front[1] - y) - (k['width'] / 2 + k['sidewalk'] + FENCE_FROM_SIDEWALK)
+        return front[0] + fx * room, front[1] + fy * room, room
+
+    def put_inside(self, kit, x, y, yaw, gap=.2, doors=True, share=.7):
+        # Pieza dentro del terreno de una cuadra (nunca en la vereda); ocupa el raster para que no crezcan árboles encima.
+        # Las cercas van pegadas a la vereda, donde el borde del raster es irregular: piden share=0 (solo una cuadra).
+        w, d = self.sizes[kit]
+        cx, cy = self.kit_center(kit, x, y, yaw)
+        if not self.in_block(cx, cy, yaw, w, d, share):
+            return None
+        obj = self.put(kit, x, y, yaw, 'ground', 0.0, gap=gap, doors=doors)
+        if obj:
+            fx, fy = math.sin(math.radians(yaw)), math.cos(math.radians(yaw))
+            self.occupy(cx, cy, (fy, -fx), (fx, fy), w, d)
+        return obj
+
+    def district_details(self):
+        counts = {}
+
+        def count(obj):
+            if obj is not None:
+                counts[obj['kit']] = counts.get(obj['kit'], 0) + 1
+            return obj
+
+        roads_by_id = {r['id']: r for r in self.roads}
+        zone_of = {b['id']: b['zone'] for b in self.plan['blocks']}
+        for b in [o for o in self.objects if o.get('kind') in ('house', 'warehouse', 'shop') and o.get('road') in roads_by_id]:
+            road = roads_by_id[b['road']]
+            if not self.kinds[road['kind']]['sidewalk']:
+                continue
+            zone, place = zone_of.get(b['block']), b.get('place', {}).get('kind')
+            if b['kind'] == 'shop':
+                if not place and zone in ('comercial', 'financiero') and self.rng.random() < .45:
+                    count(self.sidewalk_sign(b, road))
+                continue
+            x, y, room = self.fence_line(b, road)
+            if b['kind'] == 'house':
+                if place == 'escondite':
+                    self.reserve_hideout(b, room)
+                    continue
+                if zone in YARD_SHARE and self.rng.random() < YARD_SHARE[zone]:
+                    kit = f"Yard_{self.pick(YARD_STYLES[zone])}_{round(b['size'][0])}"
+                else:
+                    continue
+                if self.sizes[kit][1] + .2 < room:  # el antejardín cabe entre la vereda y la casa
+                    count(self.put_inside(kit, x, y, b['yaw'], gap=.15, doors=False, share=0))
+            elif place != 'supermercado':  # al súper en galpón entran clientes por el frente: sin cerca
+                if (place or self.rng.random() < .7) and self.sizes['Yard_Chain_32'][1] + 1 < room:
+                    count(self.put_inside('Yard_Chain_32', x, y, b['yaw'], gap=.15, doors=False, share=0))
+                for kit, x, y, yaw in self.industrial_yard(b, place, room):
+                    count(self.put_inside(kit, x, y, yaw))
+        return counts
+
+    def reserve_hideout(self, b, room):
+        # El escondite trae su patio amurallado en el modelo (build_hideout.py): se reserva su terreno para que no se
+        # coloque ni crezca nada adentro. El muro delantero del modelo está a una distancia fija de la fachada.
+        if abs(room - HIDEOUT_YARD) > .3:
+            raise RuntimeError(f"El escondite tiene {room:.2f} m delante y su modelo espera {HIDEOUT_YARD} m: ajustar build_hideout.py")
+        fx, fy = b['front']
+        w, d = b['size'][0] + 2 * HIDEOUT_SIDE, b['size'][1] + room + HIDEOUT_REAR
+        shift = (room - HIDEOUT_REAR) / 2
+        cx, cy = b['x'] + fx * shift, b['y'] + fy * shift
+        self.occupy(cx, cy, (fy, -fx), (fx, fy), w, d)
+        self.mark_rect(cx, cy, b['yaw'], w, d)
+
+    def industrial_yard(self, b, place, room):
+        # Patio del galpón. «lat» va a lo ancho de la fachada con el mismo signo que el kit (los portones están entre
+        # -10,5 y 8, la puerta lateral en 11,3) y «ahead» va desde la fachada hacia la calle.
+        fx, fy = b['front']
+        w, d = b['size'][0], b['size'][1]
+
+        def at(kit, lat, ahead, turn=0.0):
+            return kit, b['x'] - fy * lat + fx * (d / 2 + ahead), b['y'] + fx * lat + fy * (d / 2 + ahead), (b['yaw'] + turn) % 360
+        sign = 'Sign_DonTrueque' if place == 'reducidor' else TALLER_SIGNS.get(b['place']['name']) if place == 'taller' else None
+        if sign:
+            yield at(sign, -14.3, room - 1.0)
+        if place == 'reducidor':
+            yield at('JunkPile', 14.8, 2.4)
+            yield at('JunkPile', -14.0, 1.6, 180)
+        elif place == 'taller':
+            yield at('TireStack', 14.5, 1.2)
+            yield at('TireStack', 15.5, 3.0, 35)
+        else:
+            if self.rng.random() < .7:
+                yield at('PalletStack', -14.0, 1.2)
+            if self.rng.random() < .6:
+                yield at('Barrels', 14.6, 1.2)
+            if self.rng.random() < .5:
+                yield at('Forklift', -1.5, 2.6, self.rng.uniform(60, 120))
+        for side in (-1, 1):
+            for back in (4.0, 11.0):
+                if self.rng.random() < .55:
+                    yield at(self.rng.choice(CONTAINERS), side * (w / 2 + 1.95), -back, 90)
+
+    def sidewalk_sign(self, b, road):
+        # Pizarra de oferta al fondo de la vereda, junto a la puerta del comercio.
+        k = self.kinds[road['kind']]
+        fx, fy = b['front']
+        front = (b['x'] + fx * b['size'][1] / 2, b['y'] + fy * b['size'][1] / 2)
+        x, y, _, _ = min(self.sides[road['id']], key=lambda q: math.hypot(q[0] - front[0], q[1] - front[1]))
+        c = k['width'] / 2 + k['sidewalk'] - .4
+        side = self.rng.choice((-1, 1)) * 2.6
+        return self.put('SidewalkSign', x - fx * c + fy * side, y - fy * c - fx * side, b['yaw'], 'sidewalk', STREET_Z)
+
     def traffic_lights(self, signals):
         # Un semáforo en la esquina derecha de cada acceso al cruce. El modelo lleva la cabeza 2 m por delante del poste
         # y las luces mirando al frente: el frente apunta a los autos que llegan para que vean el color.
@@ -835,6 +986,7 @@ def place_all(plan, labels, kit, half, cell, river_distance, signals, life):
     placer.traffic_lights(signals)  # primero los postes: los árboles los esquivan
     placer.street_furniture()
     print('detalle de calle', placer.street_details())
+    print('barrios y lugares', placer.district_details())
     placer.greenery()
     placer.clear_poles()
     return placer.objects, placer.occupied

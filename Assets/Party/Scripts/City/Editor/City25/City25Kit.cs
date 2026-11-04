@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Alarma.AI.CityLife;
 using Alarma.AI.CityLife.Editor;
+using Alarma.City.Playtest;
 using Alarma.Traffic;
 using Alarma.Vehicles;
 
@@ -23,13 +24,11 @@ namespace Alarma.City.Editor
         // Taxi y patrulla conservan sus colores: el resto recibe una pintura al azar.
         private static readonly string[] FixedLivery = { "Car_Taxi", "Car_Police" };
 
-        // Kit del mundo R9 (export_kit.py) y kit de calle (build_street_kit.py) en un solo catálogo.
+        // Kit del mundo R9 (export_kit.py), de calle (build_street_kit.py) y de barrios y lugares (build_district_kit.py) en un solo catálogo.
+        public static readonly string[] Manifests = { "/kit.json", "/street_kit.json", "/district_kit.json" };
+
         public static KitManifest Manifest()
-        {
-            var kit = City25Paths.Read<KitManifest>(City25Paths.Kit + "/kit.json");
-            var street = City25Paths.Read<KitManifest>(City25Paths.Kit + "/street_kit.json");
-            return new KitManifest { pieces = kit.pieces.Concat(street.pieces).ToArray() };
-        }
+            => new KitManifest { pieces = Manifests.SelectMany(m => City25Paths.Read<KitManifest>(City25Paths.Kit + m).pieces).ToArray() };
 
         public static Dictionary<string, GameObject> Prepare(KitManifest kit)
         {
@@ -72,17 +71,23 @@ namespace Alarma.City.Editor
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
                 model.transform.SetParent(root.transform, false);
                 Transform left = Part(root, "DoorLeaf_L"), right = Part(root, "DoorLeaf_R");
+                // Puertas extra de un lugar (portón peatonal y portón corredizo del escondite): opcionales.
+                Transform gate = Optional(root, "GateLeaf_L"), slide = Optional(root, "SlideGate");
+                var moving = new[] { left, right, gate, slide }.Where(t => t != null).ToArray();
                 foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))
                 {
                     string name = filter.name;
                     bool decoration = name.StartsWith("FloorTiles", StringComparison.Ordinal) || name.StartsWith("CeilingLight", StringComparison.Ordinal)
                         || name.StartsWith("Aisle", StringComparison.Ordinal) || name.StartsWith("Sign", StringComparison.Ordinal) || name.StartsWith("Awning", StringComparison.Ordinal);
-                    if (!decoration && !filter.transform.IsChildOf(left) && !filter.transform.IsChildOf(right)) filter.gameObject.AddComponent<MeshCollider>();
+                    if (!decoration && !moving.Any(leaf => filter.transform.IsChildOf(leaf))) filter.gameObject.AddComponent<MeshCollider>();
                 }
-                foreach (var leaf in new[] { left, right }) LeafCollider(leaf);
+                foreach (var leaf in moving) LeafCollider(leaf);
                 var gateway = new GameObject("Umbral").transform; gateway.SetParent(root.transform, false);
                 gateway.position = (left.position + right.position) / 2f;
                 root.AddComponent<ShopDoor>().Configure(left, right, gateway);
+                if (gate != null) root.AddComponent<ShopDoor>().Configure(gate, null, Part(root, "Umbral_Porton"));
+                if (slide != null)
+                    root.AddComponent<ReviewSlidingDoor>().Configure(slide, Part(root, "Umbral_Auto"), Part(root, "SlideGate_Abierto").localPosition - slide.localPosition);
                 FlatMaterialLibrary.EnsureFolder(City25Paths.Shops + "/Prefabs");
                 return PrefabUtility.SaveAsPrefabAsset(root, City25Paths.Shops + "/Prefabs/" + id + ".prefab");
             }
@@ -163,6 +168,9 @@ namespace Alarma.City.Editor
         public static Transform Part(GameObject root, string name)
             => root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name || t.name.StartsWith(name + ".", StringComparison.Ordinal))
                ?? throw new InvalidOperationException($"{root.name}: falta la pieza {name} en el modelo del auto.");
+
+        private static Transform Optional(GameObject root, string name)
+            => root.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name || t.name.StartsWith(name + ".", StringComparison.Ordinal));
 
         public static Renderer[] PaintRenderers(GameObject root, string id)
             => FixedLivery.Contains(id) ? Array.Empty<Renderer>() : WithMaterial(root.transform, "Alarma_Paint_");
@@ -272,7 +280,14 @@ namespace Alarma.City.Editor
                 case "busstop":
                 case "kiosk":
                 case "billboard":
-                    // Se puede entrar bajo el techo de la parada o pasar entre los pilares del cartel.
+                case "yard":
+                case "yardsign":
+                case "gasstation":
+                case "parking":
+                case "forklift":
+                case "junk":
+                    // Colisión con la forma real: se entra bajo el techo de la parada y de la gasolinera, por el portón
+                    // del antejardín, entre los pilares de un cartel o entre las islas de surtidores.
                     foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true)) filter.gameObject.AddComponent<MeshCollider>();
                     break;
                 case "stopsign":

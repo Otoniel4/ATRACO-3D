@@ -24,6 +24,7 @@ HERE = Path(__file__).resolve().parent
 UI = HERE.parent.parent / 'UI' / 'Map'
 KIT = HERE.parent.parent / 'City' / 'Kit25' / 'kit.json'
 STREET_KIT = KIT.with_name('street_kit.json')  # build_street_kit.py
+DISTRICT_KIT = KIT.with_name('district_kit.json')  # build_district_kit.py
 # Fuentes libres (OFL) que trae Blender; no se usan fuentes de Windows en recursos del juego.
 FONTS = Path('C:/Program Files/Blender Foundation/Blender 5.2/5.2/datafiles/fonts')
 CITY_SIZE = 2000         # lado de la ciudad en metros
@@ -596,6 +597,7 @@ def main():
     places = build_places(blocks)
     kit = json.loads(KIT.read_text(encoding='utf-8'))
     kit['pieces'] += json.loads(STREET_KIT.read_text(encoding='utf-8'))['pieces']
+    kit['pieces'] += json.loads(DISTRICT_KIT.read_text(encoding='utf-8'))['pieces']
     partial = dict(kinds=KINDS, roads=roads, intersections=intersections, blocks=blocks, places=places, park=[v * SCALE for v in PARK],
                    crosswalks=crosswalks)
     signals = build_signals(partial)

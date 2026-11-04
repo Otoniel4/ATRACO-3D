@@ -2,146 +2,32 @@
 bolardos, contenedores de basura y carteles publicitarios. Mismo estilo low-poly de colores planos del kit.
 
 Cada pieza se arma con primitivas, se une en una sola malla con el origen al centro de su planta y a ras del suelo,
-y mira hacia -Y (el frente queda hacia la calle, igual que el resto del kit).
+y mira hacia -Y (el frente queda hacia la calle, igual que el resto del kit). Las herramientas están en kit_parts.py.
 Uso: blender -b --factory-startup -P build_street_kit.py
 Salida: Art/City/Kit25/Street/<pieza>.fbx, Art/City/Kit25/street_kit.json, street_materials.json
         y renders/street_kit_*.png para revisión.
 """
-import json
 import math
 import sys
 from pathlib import Path
 
-import bmesh
 import bpy
-from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import alarmart as a  # noqa: E402
-from kit_fbx import export  # noqa: E402
+from kit_parts import FACE, Kit, review_stage  # noqa: E402
 
-KIT = a.ART / 'City' / 'Kit25'
-OUT = KIT / 'Street'
+KIT_DIR = a.ART / 'City' / 'Kit25'
 # Color hexadecimal, o (color, emisión, opacidad).
 COLORS = dict(Steel='8A9499', DarkSteel='454D53', Glass=('A9D3DB', 0, .35), Roof='ECEAE4', Teal='2F8C88', Wood='B07A4E',
               Poster=('F6F0DE', 1.0, 1), Concrete='B9B5AC', Red='D2372E', White='F4F4F0', Black='22262A', Yellow='F2C230',
               SignBlue='2C5BB8', Green='3E7D4A', DarkGreen='2B5A36', Rubber='23282C', Orange='EE7F2D', Navy='22385A',
               Gold='D6A93A', Cream='F2E3C0', Brown='6E4127', Lamp=('FFF4D6', 2.0, 1), KioskGreen='2E7D5B', Diamond='7CC8EE')
 BRIGHT = ['Red', 'Yellow', 'SignBlue', 'Orange', 'White', 'Teal']
-REGISTRY = {}
-PIECES = []
-
-
-def M(name):
-    full = 'Alarma_Street_' + name
-    m = bpy.data.materials.get(full)
-    if m:
-        return m
-    spec = COLORS[name]
-    hex_color, emission, alpha = spec if isinstance(spec, tuple) else (spec, 0.0, 1.0)
-    color = tuple(a.linear(int(hex_color[i:i + 2], 16) / 255) for i in (0, 2, 4))
-    m = bpy.data.materials.new(full)
-    m.diffuse_color = (*color, alpha)
-    m.use_nodes = True
-    bsdf = m.node_tree.nodes.get('Principled BSDF')
-    bsdf.inputs['Base Color'].default_value = (*color, 1)
-    bsdf.inputs['Roughness'].default_value = .7
-    if emission:
-        bsdf.inputs['Emission Color'].default_value = (*color, 1)
-        bsdf.inputs['Emission Strength'].default_value = emission
-    if alpha < 1:
-        bsdf.inputs['Alpha'].default_value = alpha
-        m.surface_render_method = 'BLENDED'
-    REGISTRY[full] = (hex_color, emission, alpha)
-    return m
-
-
-def use(obj, name):
-    obj.data.materials.clear()
-    obj.data.materials.append(M(name))
-    return obj
-
-
-def B(name, loc, size, m, bevel=.01, rot=None):
-    return use(a.box(name, loc, size, 'Cream', bevel=bevel, rotation=rot), m)
-
-
-def C(name, loc, r, depth, m, verts=12, rot=None):
-    return use(a.cyl(name, loc, r, depth, 'Metal', vertices=verts, rotation=rot), m)
-
-
-def S(name, loc, scale, m):
-    return use(a.sphere(name, loc, scale, 'Leaf', subdivisions=2), m)
-
-
-def T(name, body, loc, size, m):
-    # Texto convertido en malla con curvas de baja resolución: se lee igual y pesa una fracción.
-    curve = bpy.data.curves.new(name + '_Font', 'FONT')
-    curve.body, curve.size, curve.align_x, curve.align_y = body, size, 'CENTER', 'CENTER'
-    curve.extrude, curve.resolution_u = .002, 2
-    obj = bpy.data.objects.new(name, curve)
-    a.COLLECTION.objects.link(obj)
-    obj.parent, obj.location, obj.rotation_euler = a.ROOT, loc, (math.pi / 2, 0, 0)
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.convert(target='MESH')
-    return use(bpy.context.object, m)
-
-
-def plate(name, points, y, m):
-    # Polígono plano en el plano XZ con la cara hacia -Y (hacia quien lo mira desde la calle).
-    verts = [(x, y, z) for x, z in reversed(points)]
-    return use(a.mesh(name, verts, [tuple(range(len(verts)))]), m)
-
-
-FACE = (math.pi / 2, 0, 0)  # disco con su cara hacia -Y
-
-
-def begin(piece_id):
-    a.begin('SK_' + piece_id, 'City/Kit25/Street')
-
-
-def measure(obj):
-    pts = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
-    lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
-    hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
-    return lo, hi
-
-
-def finish(piece_id, kind):
-    root = a.ROOT
-    bpy.context.view_layer.update()
-    meshes = [o for o in a.descendants(root) if o.type == 'MESH']
-    for o in meshes:
-        world = o.matrix_world.copy()
-        o.parent = None
-        o.matrix_world = world
-    with bpy.context.temp_override(active_object=meshes[0], selected_editable_objects=meshes, selected_objects=meshes):
-        bpy.ops.object.join()
-    piece = meshes[0]
-    piece.name = piece.data.name = piece_id
-    with bpy.context.temp_override(active_object=piece, selected_editable_objects=[piece], object=piece):
-        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    bpy.data.objects.remove(root)
-    bpy.context.view_layer.update()
-    bm = bmesh.new()
-    bm.from_mesh(piece.data)
-    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=.0005)
-    bm.to_mesh(piece.data)
-    bm.free()
-    # Origen al centro de la planta y a ras del suelo, como el resto del kit.
-    lo, hi = measure(piece)
-    piece.data.transform(Matrix.Translation(-Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))))
-    piece.matrix_world = Matrix()
-    lo, hi = measure(piece)
-    info = dict(width=round(hi.x - lo.x, 2), depth=round(hi.y - lo.y, 2), height=round(hi.z - lo.z, 2),
-                triangles=sum(len(p.vertices) - 2 for p in piece.data.polygons))
-    export([piece], OUT / f'{piece_id}.fbx')
-    PIECES.append(dict(id=piece_id, group='street', kind=kind, parts=len(meshes), **info))
-    return piece
+kit = Kit(KIT_DIR / 'Street', 'Alarma_Street_', COLORS)
+B, C, S, T, plate, begin, finish = kit.B, kit.C, kit.S, kit.T, kit.plate, kit.begin, kit.finish
 
 
 # --- piezas ---
@@ -279,12 +165,7 @@ def dumpster():
     lo, hi = (.9, .52, .22), (1.0, .6, 1.28)  # se abre hacia arriba
     verts = [(-lo[0], -lo[1], lo[2]), (lo[0], -lo[1], lo[2]), (lo[0], lo[1], lo[2]), (-lo[0], lo[1], lo[2]),
              (-hi[0], -hi[1], hi[2]), (hi[0], -hi[1], hi[2]), (hi[0], hi[1], hi[2]), (-hi[0], hi[1], hi[2])]
-    body = use(a.mesh('Body', verts, [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]), 'Green')
-    bm = bmesh.new()
-    bm.from_mesh(body.data)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    bm.to_mesh(body.data)
-    bm.free()
+    kit.solid('Body', verts, 'Green')
     B('Rim', (0, 0, 1.29), (2.06, 1.24, .06), 'DarkSteel', 0)
     B('LidL', (-.5, 0, 1.345), (.98, 1.26, .05), 'DarkGreen', .01)
     B('LidR', (.5, 0, 1.36), (.98, 1.26, .05), 'DarkGreen', .01, rot=(math.radians(-6), 0, 0))
@@ -342,7 +223,6 @@ def diamond():
 
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-OUT.mkdir(parents=True, exist_ok=True)
 bus_stop()
 kiosk()
 hydrant()
@@ -356,51 +236,16 @@ dumpster()
 billboard('Billboard_A', 'Orange', 'Yellow', 'BURGER BANDIDO', 'SABOR QUE SE ESCAPA', 'White', 'Cream', burger)
 billboard('Billboard_B', 'Navy', 'Gold', 'BANCO SIN PRISA', 'TU DINERO, SIEMPRE SEGURO', 'White', 'Gold', coin)
 billboard('Billboard_C', 'Cream', 'SignBlue', 'DIAMANTE AZUL', 'JOYERIA FINA DESDE 1990', 'Navy', 'SignBlue', diamond)
+kit.write(KIT_DIR / 'street_kit.json', KIT_DIR / 'street_materials.json', 'build_street_kit.py')
 
-(KIT / 'street_kit.json').write_text(json.dumps(dict(source='build_street_kit.py', front='-Y local (hacia la calle)', pieces=PIECES),
-                                                indent=1, ensure_ascii=False), encoding='utf-8')
-entries = [dict(name=n, r=int(h[0:2], 16) / 255, g=int(h[2:4], 16) / 255, b=int(h[4:6], 16) / 255, a=al, metallic=0, roughness=.7,
-                emission=round(e * .5, 2)) for n, (h, e, al) in sorted(REGISTRY.items())]
-(KIT / 'street_materials.json').write_text(json.dumps(dict(materials=entries), indent=1), encoding='utf-8')
-print('KIT_CALLE', json.dumps([(p['id'], p['width'], p['depth'], p['height'], p['triangles']) for p in PIECES]))
-
-# --- revisión: escena de vereda con cada pieza donde irá en la ciudad, más dos autos del proyecto para la escala ---
-scene = bpy.context.scene
-work = bpy.data.collections.new('Revision')
-scene.collection.children.link(work)
-
-
-def slab(name, x0, y0, x1, y1, z, m):
-    data = bpy.data.meshes.new(name)
-    data.from_pydata([(x0, y0, z), (x1, y0, z), (x1, y1, z), (x0, y1, z)], [], [(0, 1, 2, 3)])
-    o = bpy.data.objects.new(name, data)
-    work.objects.link(o)
-    o.data.materials.append(M(m))
-    return o
-
-
-COLORS.update(Asfalto='414B52', Acera='C9C6BE', Pasto='6E9A5C', Linea='F4F4F0')
+# --- revisión: vereda con cada pieza donde irá en la ciudad, más dos autos del proyecto para la escala ---
+slab, shoot, load = review_stage(kit)
 slab('Pasto', -40, -12, 40, 30, -.01, 'Pasto')
 slab('Calzada', -40, -12, 40, 0, .045, 'Asfalto')
 slab('Vereda', -40, 0, 40, 5, .14, 'Acera')
 for i in range(8):
     slab('Linea', -38 + i * 10, -6.1, -33 + i * 10, -5.9, .05, 'Linea')
-cars = {}
-for car in ('Car_Sedan', 'Car_Van'):
-    before = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=str(a.ART / 'Vehicles' / f'{car}.fbx'))
-    new = [o for o in bpy.data.objects if o not in before]
-    holder = bpy.data.objects.new(car + '_Holder', None)
-    work.objects.link(holder)
-    for o in new:
-        if o.parent is None:
-            o.parent = holder
-    bpy.context.view_layer.update()
-    meshes = [o for o in new if o.type == 'MESH']
-    pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
-    size = [round(max(p[i] for p in pts) - min(p[i] for p in pts), 2) for i in range(3)]
-    cars[car] = holder
-    print('AUTO', car, 'medidas', size, 'mallas', len(meshes))
+cars = {car: load(a.ART / 'Vehicles' / f'{car}.fbx', car + '_Holder') for car in ('Car_Sedan', 'Car_Van')}
 
 
 def put(name, x, y, z, yaw):
@@ -410,43 +255,15 @@ def put(name, x, y, z, yaw):
 
 
 # Frente del kit = -Y = hacia la calle. Rotar 180° deja el frente hacia la vereda (buzón).
-put('Billboard_B', -14, 12, 0, 0)
-put('Billboard_A', 2, 14, 0, 0)
-put('Kiosk', -12, 3.7, .14, 0)
-put('BusStop', 0, 3.9, .14, 0)
-put('BollardRow', -19, .5, .14, 0)
-put('Mailbox', -6, .5, .14, 180)
-put('Hydrant', 5, .45, .14, 0)
-put('SpeedSign_60', 9, .45, .14, 90)
-put('StopSign', -25, .5, .14, 90)
-put('YieldSign', -28, .5, .14, 90)
-put('SpeedSign_40', 12, .45, .14, 90)
-put('Dumpster', 17, -.75, .045, 0)
-put('Car_Sedan', 23, -1.05, .045, 90)
-put('Car_Van', 30, -1.1, .045, 90)
-put('Billboard_C', 22, 13, 0, 0)
-
-scene.render.engine = 'BLENDER_WORKBENCH'
-sky = bpy.data.worlds.new('Cielo')
-sky.color = (.62, .74, .9)
-scene.world = sky
-scene.view_settings.view_transform = 'Standard'
-scene.display.shading.light = 'STUDIO'
-scene.display.shading.color_type = 'MATERIAL'
-scene.display.shading.show_shadows = True
-scene.display.shading.show_cavity = True
-scene.render.resolution_x, scene.render.resolution_y = 1800, 1000
-cam = bpy.data.objects.new('Camara', bpy.data.cameras.new('Camara'))
-work.objects.link(cam)
-scene.camera = cam
+for name, x, y, z, yaw in (('Billboard_B', -14, 12, 0, 0), ('Billboard_A', 2, 14, 0, 0), ('Kiosk', -12, 3.7, .14, 0), ('BusStop', 0, 3.9, .14, 0),
+                           ('BollardRow', -19, .5, .14, 0), ('Mailbox', -6, .5, .14, 180), ('Hydrant', 5, .45, .14, 0), ('SpeedSign_60', 9, .45, .14, 90),
+                           ('StopSign', -25, .5, .14, 90), ('YieldSign', -28, .5, .14, 90), ('SpeedSign_40', 12, .45, .14, 90), ('Dumpster', 17, -.75, .045, 0),
+                           ('Car_Sedan', 23, -1.05, .045, 90), ('Car_Van', 30, -1.1, .045, 90), ('Billboard_C', 22, 13, 0, 0)):
+    put(name, x, y, z, yaw)
 renders = HERE / 'renders'
 renders.mkdir(exist_ok=True)
 for label, eye, target, lens in (('calle', (-4, -26, 9), (2, 5, 2.5), 26), ('cerca', (-8, -7, 2.2), (-3, 3, 1.2), 24),
                                  ('senales', (-14, -6, 2.4), (-24, .5, 1.8), 30), ('carteles', (4, -10, 4), (6, 12, 6), 26),
                                  ('contenedor', (12, -9, 2.2), (20, -1, .8), 28)):
-    cam.location = eye
-    cam.data.lens = lens
-    cam.rotation_euler = (Vector(target) - Vector(eye)).to_track_quat('-Z', 'Y').to_euler()
-    scene.render.filepath = str(renders / f'street_kit_{label}.png')
-    bpy.ops.render.render(write_still=True)
+    shoot(renders / f'street_kit_{label}.png', eye, target, lens)
 bpy.ops.wm.save_as_mainfile(filepath=str(a.ART / 'BlenderSources~' / 'Alarma_StreetKit.blend'))
