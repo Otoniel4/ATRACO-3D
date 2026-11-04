@@ -37,8 +37,9 @@ namespace Alarma.AI.CityLife
             visibleState=routine.State;walletCents=routine.Session?.WalletCents??0;
             if(routine.Interaction || routine.State==PedestrianState.Browsing && movement.HasArrived)
                 movement.Face(routine.State==PedestrianState.PickingUp || routine.State==PedestrianState.Browsing?shop.ProductPoint(routine.Session.Station).position:shop.Counter.position);
-            presentation.Refresh(routine, movement.Speed);shopping.Refresh(routine);shop.RequestPassage(transform.position);
-            if(routine.State==PedestrianState.Entering || routine.State==PedestrianState.Leaving)shop.ReservePassage();
+            presentation.Refresh(routine, movement.Speed);shopping.Refresh(routine);
+            // Al entrar o salir empuja la puerta con la mano; en la calle o dentro del local no la toca.
+            if((routine.State==PedestrianState.Entering || routine.State==PedestrianState.Leaving) && shop.PushDoor(transform.position) && shop.DoorHandle!=null)reach.Reach(shop.DoorHandle,.6f);
             if(routine.Interaction)reach.Reach(routine.State==PedestrianState.PickingUp?shop.ProductPoint(routine.Session.Station):shop.Counter);
         }
         public void Suspend()

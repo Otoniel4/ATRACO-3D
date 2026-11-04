@@ -1,0 +1,42 @@
+using UnityEngine;
+using UnityEngine.Rendering;
+using Alarma.Core.Contracts;
+using Alarma.Core.Settings;
+using Alarma.UI.Map;
+using Alarma.UI.Pause;
+namespace Alarma.City.Playtest.Editor
+{
+    // Arma el jugador de prueba sobre cualquier ciudad que cumpla IPlayableWorld: controles, cuerpo, cámara, roles, mapa, menú e interfaz.
+    public static class ReviewPlayerRig
+    {
+        public sealed class Parts{public ReviewInput Input;public ReviewPlayerMotor Player;public ReviewCamera Camera;public ReviewCharacterView Character;}
+        public static Parts Create(IPlayableWorld world,Vector3 spawn,GameObject[] roles,float farClip,GameSettings settings)
+        {
+            var input=new GameObject("Controles de la prueba").AddComponent<ReviewInput>();
+            var playerObject=new GameObject("Jugador de revisión");playerObject.layer=30;
+            var controller=playerObject.AddComponent<CharacterController>();controller.height=1.75f;controller.center=new Vector3(0,.875f,0);controller.radius=.24f;controller.skinWidth=.025f;controller.stepOffset=.28f;controller.slopeLimit=50;controller.minMoveDistance=0;
+            var player=playerObject.AddComponent<ReviewPlayerMotor>();var character=playerObject.AddComponent<ReviewCharacterView>();
+            var cameraObject=new GameObject("Main Camera");cameraObject.tag="MainCamera";var camera=cameraObject.AddComponent<Camera>();cameraObject.AddComponent<AudioListener>();camera.cullingMask=~(1<<31);camera.farClipPlane=farClip;camera.nearClipPlane=.08f;camera.backgroundColor=new Color(.64f,.78f,.88f);
+            var cameraRig=cameraObject.AddComponent<ReviewCamera>();
+            player.Configure(input,cameraRig,world,spawn);cameraRig.Configure(input,player.transform,settings);character.Configure(input,player,roles);
+            return new Parts{Input=input,Player=player,Camera=cameraRig,Character=character};
+        }
+        public static ReviewInterface CreateInterface(Parts rig,IPlayableWorld world,ReviewDoorInteraction doors,CityMapDefinition map,GameSettings settings)
+        {
+            new GameObject("Ajustes del juego").AddComponent<GameSettingsApplier>().Configure(settings);
+            var pause=new GameObject("Menú de pausa").AddComponent<PauseMenuScreen>();pause.Configure(settings);
+            var mapObject=new GameObject("Mapa y minimapa");
+            var screen=mapObject.AddComponent<CityMapScreen>();screen.Configure(map,rig.Player.transform);
+            var minimap=mapObject.AddComponent<CityMinimap>();minimap.Configure(map,rig.Player.transform);
+            var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause);
+            return ui;
+        }
+        // Sol, luz ambiente y niebla; la niebla oculta el borde de lo que la cámara dibuja.
+        public static Light Lighting(float fogStart,float fogEnd)
+        {
+            var sun=new GameObject("Sol").AddComponent<Light>();sun.type=LightType.Directional;sun.intensity=1.25f;sun.shadows=LightShadows.Soft;sun.cullingMask=~(1<<31);sun.transform.rotation=Quaternion.Euler(48,-30,0);
+            RenderSettings.ambientMode=AmbientMode.Flat;RenderSettings.ambientLight=new Color(.58f,.64f,.69f);RenderSettings.sun=sun;RenderSettings.fog=true;RenderSettings.fogMode=FogMode.Linear;RenderSettings.fogColor=new Color(.65f,.76f,.83f);RenderSettings.fogStartDistance=fogStart;RenderSettings.fogEndDistance=fogEnd;
+            return sun;
+        }
+    }
+}

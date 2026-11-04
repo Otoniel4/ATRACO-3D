@@ -50,7 +50,7 @@ El usuario (Alain) es estudiante y **está aprendiendo**. Tu trabajo es construi
 - Nada de código muerto ni de "TODO" sin explicar.
 
 ## Arte, modelos y animaciones
-- **Prohibido usar modelos o texturas ya hechos descargados de internet.** Todos los modelos se crean con IA controlando Blender por MCP (aceptado por el ingeniero).
+- **Prohibido usar modelos o texturas ya hechos descargados de internet.** Todos los modelos se crean con IA controlando Blender por MCP (aceptado por el ingeniero). Excepción para personajes desde 2026-11-03: ver «Personajes de páginas gratuitas».
 - **Permitido:** Mixamo para el auto-rig de los modelos propios y para las animaciones; sonidos descargados de sitios con licencia clara. Todo se registra en `docs/LICENSES.md`.
 - Mixamo no tiene API: la subida y descarga las hace Alain en el navegador. Tú preparas los FBX para subir y la lista exacta de animaciones a descargar.
 - Si el servidor MCP de Blender tiene integraciones que descargan assets (bibliotecas de modelos o texturas), no las uses.
@@ -111,3 +111,11 @@ Alain volvió a señalar anatomía deforme y adjuntó la referencia 02 (mujer co
 ## Ajuste de ambas bases autorizado — 2026-10-31
 
 Alain confirmó que la estructura continua femenina va bien y autorizó ajustar cintura y demás proporciones, y crear después una base masculina esbelta. Se conservaron dos copias nuevas en `BodyBases_Refined.blend`, con rigs diagnósticos independientes y pruebas de flexión. La aprobación anterior corresponde a la dirección de la estructura, no al personaje terminado ni a Humanoid. La V2 sigue rechazada; ropa y rig final pendientes.
+
+## Personajes de páginas gratuitas — 2026-11-03
+
+Alain informa que el ingeniero autorizó usar páginas gratuitas para los personajes en vez de modelarlos desde cero en Blender, buscando diseños más adecuados y ligeros.
+- Solo con licencia clara que permita usarlos en un juego publicado: preferir CC0; CC BY solo con crédito en `Assets/Party/docs/LICENSES.md` y en los créditos del juego. Nada con licencia no comercial, sin licencia o extraído de otros juegos.
+- El repo de GitHub es público: no subir FBX crudos de Mixamo (sus términos prohíben redistribuirlos sueltos).
+- Cada modelo se registra en `LICENSES.md` (página, autor, licencia, fecha) antes de usarlo. Las descargas las hace Alain o se piden antes.
+- Siguen vigentes: low-poly con colores planos, 1 unidad = 1 metro, importación Humanoid y animaciones compartidas por retargeting. Vehículos, armas, mapa y locales siguen hechos en Blender.

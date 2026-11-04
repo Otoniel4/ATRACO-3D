@@ -1,0 +1,219 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &499153798683132848
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6182839119491437971}
+  - component: {fileID: 2369338722418250924}
+  - component: {fileID: 3127805480393619970}
+  m_Layer: 0
+  m_Name: Car_Hatchback
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6182839119491437971
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499153798683132848}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 271208660627577411}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &2369338722418250924
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499153798683132848}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.04, y: 1.5581384, z: 4.174999}
+  m_Center: {x: 0, y: 0.78393054, z: -0.022500038}
+--- !u!114 &3127805480393619970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 499153798683132848}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91e5a42115ae60b48b9517ce81fd3d40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Alarma.Vehicles::Alarma.Vehicles.CarAppearance
+  palette: {fileID: 11400000, guid: b584528d1763ff5418647c4f898c1f5c, type: 2}
+  varyOnEveryEnable: 0
+  paint:
+  - {fileID: 4230510948281708130}
+  - {fileID: 461063745305195782}
+  - {fileID: 509048445930033703}
+  - {fileID: 3310418706745625752}
+  - {fileID: 1992053868029328875}
+  - {fileID: 307598670394152449}
+  - {fileID: 7605110842897657831}
+  - {fileID: 1744428447577901390}
+  - {fileID: 1971025438278904730}
+  - {fileID: 4009552244330727411}
+  - {fileID: 3297893722467438254}
+  - {fileID: 1053524841003976848}
+  - {fileID: 2973484491812542831}
+  - {fileID: 2066315460545731388}
+  passenger: {fileID: 0}
+--- !u!1001 &308848050876071336
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6182839119491437971}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071067
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+      propertyPath: m_Name
+      value: Car_Hatchback
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+--- !u!4 &271208660627577411 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &307598670394152449 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -9219447922533078103, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &461063745305195782 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -9065965252416370514, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &509048445930033703 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8981937463268872305, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1053524841003976848 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8442031686558042824, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1744428447577901390 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7170773200488516378, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1971025438278904730 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6984165363469167054, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1992053868029328875 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6923143296359432125, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2066315460545731388 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1793621622418302612, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2973484491812542831 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5977737070006459193, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3297893722467438254 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2994127892434367238, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3310418706745625752 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3006654043669639472, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4009552244330727411 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3741916450676161115, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4230510948281708130 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -4684600263410887734, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7605110842897657831 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1313934335700053425, guid: bdb094e32fd49ab4a9b1a71afcc86ce3, type: 3}
+  m_PrefabInstance: {fileID: 308848050876071336}
+  m_PrefabAsset: {fileID: 0}

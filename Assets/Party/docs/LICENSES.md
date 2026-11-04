@@ -66,3 +66,23 @@ Clips de carrera, puertas, correas de bolsa, plano de ciudad y código propios; 
 ## Ciudad y correcciones R9 — 2026-11-02
 
 Geometría de barrio comercial/escondite, productos, puertas, plano, clips de carrera y código generados para Alarma con bpy y C# propios. Conserva y recorta ciudad, personajes y vegetación propios de revisiones anteriores. Sin modelos, texturas ni animaciones descargados. Blender 4.5.15 portable para construir, exportar, reimportar y renderizar; renders no proceden de Unity. Recetas y evidencia en Art/BlenderScripts/PlaytestR9~. Las DLL instaladas de Unity se utilizan para compilación local y no se redistribuyen.
+
+## Seguridad y policía sobre Quaternius UBC — 2026-11-03
+
+Cuerpos base, ojos, cejas y peinados: [Universal Base Characters (Standard)](https://quaternius.com/packs/universalbasecharacters.html) de Quaternius, CC0 1.0 (dominio público), según `License_Standard.txt` del paquete. Descargado por Alain el 2026-11-03 en `Art/ThirdParty~/Quaternius_UBC/`; el crédito no es obligatorio. Se usan el cuerpo Superhero hombre y el peinado Buzzed (seguridad y policía son solo hombres); no se usan sus texturas.
+
+Uniformes, botas, cinturón, gorra, radio, porra, funda y rótulos: bpy propio (`Art/BlenderScripts/SecurityUBC~/build_security.py`), guiados por las láminas 11 a 14 aportadas por Alain. Colores planos. Sin Mixamo. Los rótulos usan la fuente incluida en Blender.
+
+## Elenco low-poly modular — 2026-11-03
+
+Cuerpos, ropa base, peinados y animaciones: [Ultimate Modular Men](https://quaternius.com/packs/ultimatemodularcharacters.html) y [Ultimate Modular Women](https://quaternius.com/packs/ultimatemodularwomen.html) de Quaternius, CC0 1.0 según el `License.txt` de cada paquete. Descargados por Alain el 2026-11-03 en `Art/ThirdParty~/Quaternius_Modular/`; el crédito no es obligatorio. Se combinan piezas (cabeza, torso, piernas y pies) y se recolorean con colores planos.
+
+Accesorios propios con bpy (`Art/BlenderScripts/ModularCast~/build_cast.py`): cinturón, radio, porra, funda con empuñadura, gorra, charreteras y rótulos (fuente incluida en Blender). Sin Mixamo. Sustituye a la versión sobre Universal Base Characters para que todo el elenco comparta un estilo.
+
+## Retirada de Universal Base Characters — 2026-11-03
+
+El pack Universal Base Characters y los personajes construidos sobre él ya no se usan: todo el elenco sale de los packs modulares. Se movieron fuera del proyecto, a `C:\Users\Alain\Atraco3D_Retirado\2026-11-03\`. Del pack modular solo se conservan los `.blend` maestros, el `License.txt` y la vista previa; el resto de formatos se puede volver a descargar.
+
+## Mapa de la ciudad e iconos — 2026-11-03
+
+`Art/UI/Map/mapa_base.png`, los iconos de `Art/UI/Map/Icons/` y `plano_ciudad.png` se dibujan con `City25~/city_plan.py`. Los glifos de los iconos salen de Noto Emoji y los textos de Inter, ambas fuentes con licencia SIL Open Font License 1.1, tomadas de la instalación de Blender. No se usan fuentes de Windows en recursos del juego. Dentro del juego, los textos del mapa usan la fuente integrada de Unity.

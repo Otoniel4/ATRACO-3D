@@ -6,9 +6,11 @@ namespace Alarma.AI.CityLife
     {
         [SerializeField] private ShopActivity shop;
         [SerializeField] private Animator animator;
+        // Se configura en el editor; sin serializar llegaba vacío a Play y cortaba la compra con NullReference.
+        [SerializeField] private PedestrianReach reach;
         private float until;
-        private PedestrianReach reach;
         private static readonly int Pay = Animator.StringToHash("Pay");
+        private void Awake() { if (reach == null) reach = GetComponent<PedestrianReach>(); }
         public void Configure(ShopActivity target, Animator model) { Unsubscribe(); shop = target; animator = model;reach=GetComponent<PedestrianReach>();if(reach==null)reach=gameObject.AddComponent<PedestrianReach>();reach.Configure(shop.CashierGrip); if (isActiveAndEnabled) Subscribe(); }
         private void Subscribe() { if (shop != null) shop.Transaction += OnTransaction; }
         private void Unsubscribe() { if (shop != null) shop.Transaction -= OnTransaction; }

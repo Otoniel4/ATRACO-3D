@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Alarma.Core.Contracts;
 namespace Alarma.City.Playtest
 {
     [RequireComponent(typeof(CharacterController))]
@@ -9,16 +10,17 @@ namespace Alarma.City.Playtest
         private const float WalkSpeed=1.6f,RunSpeed=3.6f,Acceleration=9f,Deceleration=12f,TurnSpeed=720f,Gravity=20f;
         [SerializeField] private ReviewInput input;
         [SerializeField] private ReviewCamera view;
-        [SerializeField] private WorldReviewStream world;
+        [SerializeField] private MonoBehaviour worldSource; // implementa IPlayableWorld
+        private IPlayableWorld world;
         private CharacterController controller;
         private Vector3 spawn,planar;
         private float vertical;
         private bool needsGround=true;
         public float Speed{get;private set;}
         public event Action<float> SpeedChanged;
-        public void Configure(ReviewInput controls,ReviewCamera camera,WorldReviewStream stream,Vector3 position)
-        {input=controls;view=camera;world=stream;spawn=position;transform.position=position;}
-        private void Awake(){controller=GetComponent<CharacterController>();}
+        public void Configure(ReviewInput controls,ReviewCamera camera,IPlayableWorld playable,Vector3 position)
+        {input=controls;view=camera;world=playable;worldSource=playable as MonoBehaviour;spawn=position;transform.position=position;}
+        private void Awake(){controller=GetComponent<CharacterController>();world??=worldSource as IPlayableWorld;}
         public void Teleport(Vector3 position)
         {
             if(controller==null)controller=GetComponent<CharacterController>();controller.enabled=false;transform.position=position;controller.enabled=true;spawn=position;planar=Vector3.zero;vertical=0;needsGround=true;
@@ -26,7 +28,7 @@ namespace Alarma.City.Playtest
         private void Update()
         {
             if(input==null || view==null || world==null)return;
-            if(!world.ReadyAt(transform.position) || view.Flying){planar=Vector3.zero;Publish(0);return;}
+            if(!world.ReadyAt(transform.position)){planar=Vector3.zero;Publish(0);return;}
             if(needsGround)
             {
                 Physics.SyncTransforms();if(Physics.Raycast(transform.position+Vector3.up*3,Vector3.down,out var hit,10,~((1<<29)|(1<<30)|(1<<31)),QueryTriggerInteraction.Ignore))
@@ -41,7 +43,7 @@ namespace Alarma.City.Playtest
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
             if(controller.isGrounded && vertical<0)vertical=-2;else vertical-=Gravity*Time.deltaTime;
             Physics.SyncTransforms();controller.Move((planar+Vector3.up*vertical)*Time.deltaTime);
-            Vector3 p=transform.position;p.x=Mathf.Clamp(p.x,-1497,1497);p.z=Mathf.Clamp(p.z,-1497,1497);
+            Vector3 p=transform.position;float limit=world.HalfSize;p.x=Mathf.Clamp(p.x,-limit,limit);p.z=Mathf.Clamp(p.z,-limit,limit);
             if((p-transform.position).sqrMagnitude>0)controller.Move(p-transform.position);
             if(transform.position.y<-8){Teleport(spawn);return;}
             // Contra una pared la velocidad real baja y la animación también, sin correr en el sitio.

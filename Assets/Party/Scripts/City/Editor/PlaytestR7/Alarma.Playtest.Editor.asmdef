@@ -1,7 +1,13 @@
 {
   "name": "Alarma.Playtest.Editor",
   "rootNamespace": "Alarma.City.Playtest.Editor",
-  "references": ["Alarma.Playtest", "Alarma.CityLife", "Alarma.CityLife.Editor"],
-  "includePlatforms": ["Editor"],
+  "references": [
+    "Alarma.Core",
+    "Alarma.Playtest",
+    "Alarma.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
   "autoReferenced": true
 }

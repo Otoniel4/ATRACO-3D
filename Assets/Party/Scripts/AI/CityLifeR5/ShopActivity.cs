@@ -6,7 +6,7 @@ namespace Alarma.AI.CityLife
     {
         [SerializeField] private Transform[] walkRoute=Array.Empty<Transform>(),entryRoute=Array.Empty<Transform>(),browsePoints=Array.Empty<Transform>(),queuePoints=Array.Empty<Transform>(),exitRoute=Array.Empty<Transform>(),productPoints=Array.Empty<Transform>();
         [SerializeField] private int reservedVariant=9;
-        [SerializeField] private AutomaticShopDoor door;
+        [SerializeField] private ShopDoor door;
         [SerializeField] private ShopTaskSettings tasks;
         [SerializeField] private Transform counterPoint,scanPoint,cashierGrip,receiptPoint,tillPoint;
         private ShopQueue queue;private ShopService service;private GameObject money,receipt;private float moneyUntil,receiptUntil;
@@ -38,9 +38,10 @@ namespace Alarma.AI.CityLife
         public event Action<ShoppingSession,ShopAction> Transaction;
         public void Configure(Transform[] walk,Transform[] entry,Transform[] browse,Transform[] positions,Transform[] exit,Transform[] products,Transform counter,Transform scan,Transform receiptAnchor,Transform till,ShopTaskSettings settings)
         {walkRoute=walk;entryRoute=entry;browsePoints=browse;queuePoints=positions;exitRoute=exit;productPoints=products;counterPoint=counter;scanPoint=scan;receiptPoint=receiptAnchor;tillPoint=till;tasks=settings;}
-        public void ConfigureStaff(int variant,AutomaticShopDoor entrance,Transform grip){reservedVariant=variant;door=entrance;cashierGrip=grip;}
-        public void RequestPassage(Vector3 p){if(door!=null)door.RequestNear(p);}
-        public void ReservePassage(){if(door!=null)door.RequestPassage();}
+        public void ConfigureStaff(int variant,ShopDoor entrance,Transform grip){reservedVariant=variant;door=entrance;cashierGrip=grip;}
+        // Quien llega a la puerta la empuja; devuelve true si estaba cerrada (el NPC hace el gesto de abrir).
+        public bool PushDoor(Vector3 p){if(door==null || !door.InReach(p))return false;bool closed=!door.IsOpen;door.Push();return closed;}
+        public Transform DoorHandle=>door!=null?door.Handle:null;
         public Transform ProductPoint(int station)=>productPoints[station];
         public Transform BrowsePoint(int station)=>browsePoints[station];
         public PedestrianPlan CreatePlan(PedestrianSettings settings,bool visits,int start)

@@ -51,7 +51,7 @@ El usuario (Alain) es estudiante y **está aprendiendo**. Tu trabajo es construi
 - Nada de código muerto ni de "TODO" sin explicar.
 
 ## Arte, modelos y animaciones
-- **Prohibido usar modelos o texturas ya hechos descargados de internet.** Todos los modelos se crean con IA controlando Blender por MCP (aceptado por el ingeniero).
+- **Prohibido usar modelos o texturas ya hechos descargados de internet.** Todos los modelos se crean con IA controlando Blender por MCP (aceptado por el ingeniero). Excepción para personajes desde 2026-11-03: ver «Personajes de páginas gratuitas».
 - **Permitido:** Mixamo para el auto-rig de los modelos propios y para las animaciones; sonidos descargados de sitios con licencia clara. Todo se registra en `docs/LICENSES.md`.
 - Mixamo no tiene API: la subida y descarga las hace Alain en el navegador. Tú preparas los FBX para subir y la lista exacta de animaciones a descargar.
 - Si el servidor MCP de Blender tiene integraciones que descargan assets (bibliotecas de modelos o texturas), no las uses.
@@ -210,3 +210,61 @@ Alain autorizó aligerar la vegetación para bajar el peso del proyecto. Se mant
 - `export_world.py` acepta `ALARMA_R9_WORLD`; Unity: build `playtest-r9-3`, tangentes desactivadas en la ciudad (colores planos).
 - Alain aprobó la vegetación en Unity el 2026-11-03; el respaldo `export/World_R9_Original` se borró. La exportación anterior se regenera desde `Villa_Alarma_3000_R9.blend`.
 Capturas Blender antes/después entregadas. Prueba en Unity, medición final de disco y aprobación visual de Alain pendientes; no se cambia ninguna casilla.
+
+## Personajes de páginas gratuitas — 2026-11-03
+
+Alain informa que el ingeniero autorizó usar páginas gratuitas para los personajes en vez de modelarlos desde cero en Blender, buscando diseños más adecuados y ligeros.
+- Solo con licencia clara que permita usarlos en un juego publicado: preferir CC0; CC BY solo con crédito en `Assets/Party/docs/LICENSES.md` y en los créditos del juego. Nada con licencia no comercial, sin licencia o extraído de otros juegos.
+- El repo de GitHub es público: no subir FBX crudos de Mixamo (sus términos prohíben redistribuirlos sueltos).
+- Cada modelo se registra en `LICENSES.md` (página, autor, licencia, fecha) antes de usarlo. Las descargas las hace Alain o se piden antes.
+- Siguen vigentes: low-poly con colores planos, 1 unidad = 1 metro, importación Humanoid y animaciones compartidas por retargeting. Vehículos, armas, mapa y locales siguen hechos en Blender.
+
+### Seguridad y policía sobre Quaternius UBC — 2026-11-03
+
+El ingeniero autorizó personajes de páginas gratuitas. Alain eligió Quaternius Universal Base Characters (CC0) para seguridad y policía, solo hombres; los civiles saldrán de otra página con proporción normal.
+- `SecurityUBC~/build_security.py`: ropa como cáscara del propio cuerpo (mismos pesos), piel tapada eliminada, botas cerradas, cinturón, radio, porra (seguridad) y funda con pistola (policía). La ropa no añade masa: +0,2 cm de ancho en el pecho y +2–3 cm en caderas y piernas.
+- Salida: `Art/Characters/Humanoid/Security_Male.fbx` y `Police_Male.fbx` (65 huesos, 15,6–17,6 k triángulos). `HumanoidCharacterImport` importa como Humanoid todo FBX de esa carpeta, sin clips propios.
+- `PedestrianReach` usa los huesos del avatar Humanoid cuando existe; los rigs Generic anteriores siguen buscándolos por nombre.
+- Clips propios en el esqueleto UBC (`ubc_animation.py`, portado de R6/R9): Idle, Walk, Run, Browse, Pay y CarryWalk, más agarre y bolsa en la mano derecha. La copia para la prueba sustituye a NPC11_SecurityMale y NPC13_PoliceMale; NPC12 y NPC14 (mujeres) salen de `characters.json`.
+- Prueba `playtest-r9-4`: guardia junto a la puerta de cada comercio y policías frente a la joyería y la comisaría (`ReviewSecurityBuilder`), con su clip de reposo. `RigBones` encuentra pie, brazo y columna en los dos esqueletos.
+Alain aprobó la vista en Blender. Pendiente su prueba en Unity; patrullas, detección y arrestos llegan con las tareas de policía. No se cambia ninguna casilla.
+
+### Elenco low-poly modular — 2026-11-03
+
+Alain pidió un único estilo para todo el elenco: low-poly de los packs CC0 Ultimate Modular Men y Women de Quaternius (proporción normal, colores planos, mismo esqueleto de 62 huesos y 24 animaciones).
+- `ModularCast~/build_cast.py` combina piezas del pack, las recolorea y añade cinturón, radio, porra o funda, gorra, charreteras y rótulos. Exporta a `Art/Characters/Cast/` y copia al elenco de la prueba con su id.
+- Seguridad (`Casual2_Head`, `Worker_Body`, `Swat_Legs`, `Swat_Feet`) y policía (`Suit_Head`, `Casual2_Body`, `Suit_Legs`, `Suit_Feet`): 8,6 k y 7,3 k triángulos, sin vértices sin peso. Clips del pack con alias Browse/Pay = Interact y CarryWalk = Walk, más extras (pistola, saludo, golpes, impacto, muerte).
+- Diez civiles según las láminas 01-10 (cinco hombres y cinco mujeres, 5,1-7,1 k triángulos) y los cuatro protagonistas: Don Sigilo (gorro, antifaz y saco), Primo WiFi (gorra con antenas, gafas y mochila), Abuelita Falsa (pelo gris, gafas y bigote) y Toñito (brazos y pecho ensanchados sin tocar el esqueleto, gorrito). Reposo con `Idle_Neutral` (el `Idle` del pack gira el cuerpo).
+- Los 16 personajes de la prueba salen de este script; los civiles llevan 6 clips (2,2 MB) y el resto añade los extras de su papel (≈4,4 MB).
+- Sustituye a la versión sobre Universal Base Characters (`SecurityUBC~`, `Art/Characters/Humanoid`) y al elenco anterior de Blender, pendientes de borrar con permiso de Alain. `RigBones` usa los nombres del pack. Prueba `playtest-r9-6`.
+- Alain aprobó el elenco en Play. Corrección: NPC doblados al caminar. `PedestrianReach` inclinaba la columna cada fotograma y el `Abdomen` del pack no tiene animación que lo reinicie; ahora devuelve columna y brazo a su pose antes del siguiente fotograma. Guardias fuera de los comercios, junto a la entrada. Prueba `playtest-r9-7`.
+Pendiente: prueba de Alain de la corrección. No se cambia ninguna casilla.
+
+### Limpieza y ciudad 2,5 × 2,5 km — 2026-11-03
+
+Alain autorizó eliminar lo que ya no sirve, optimizar espacio y rendimiento y empezar la ciudad nueva de 2,5 × 2,5 km.
+- Retirado (2,44 GB, 183 elementos) a `C:\Users\Alain\Atraco3D_Retirado\2026-11-03\`, sin borrado definitivo. Incluye: personajes antiguos (`Characters/*.fbx` salvo disfraces, sus prefabs, `ReferenceV2` y `Humanoid`); la regla `HumanoidCharacterImport`; las fuentes de personajes (`CastLegsR3~`, `LowPolyCast~`, `RigLegsR2~`, `TonitoGymR1~`, `Character*~`, `SecurityUBC~` y los scripts sueltos); los mapas anteriores (`Map4Km~`, `Map4KmModernR2~`, `TreesWindR3~`, `PlantersGrassR4~`, `CityLifeR5~`); el pack UBC y los formatos sin usar del pack modular. Catálogo y sumas actualizados.
+- Se conservan, porque los usa la prueba actual: `CityLifeR6~`, `PlaytestR7~`, `PlaytestR8~` y `PlaytestR9~`. Se retirarán cuando la ciudad nueva sustituya a la R9. Los disfraces antiguos siguen pendientes de rehacerse en el estilo modular.
+- `Assets`: de 7,9 GB a 3,1 GB. `Library` baja al reiniciar Unity.
+- Espacio y rendimiento de la ciudad nueva: kit modular instanciado (prefabs reutilizados en vez de 153 celdas FBX con la geometría horneada), colisiones con cajas y planos en vez de mallas, generador que referencia el kit sin copiarlo a `Generated`, materiales compartidos (SRP Batcher e instanciado), LOD de edificios, carga por sectores, y NPC y autos con pool solo cerca de los jugadores.
+- `City25~/city_plan.py` genera `city_plan.json` (fuente única de calles, cuadras, zonas, cruces, semáforos, pasos de cebra y locales) y `plano_ciudad.png`. Primera propuesta: 324 cuadras, 361 cruces (217 con semáforo), 1292 pasos de cebra y 27 locales y puntos clave (3 bancos, 3 joyerías, 4 supermercados, 3 minimarkets, escapes, 2 comisarías, taller, reducidor, gasolineras y alcantarilla).
+Pendiente: aprobación del plano por Alain antes de modelar el kit. No se cambia ninguna casilla.
+
+### Plano v2 y mapa del juego — 2026-11-03
+
+Alain pidió un trazado menos cuadriculado y un mapa claro, de estilo videojuego: lugares a la vista (robos, tiendas, comida para distraer a la policía, garajes) y su flecha en tiempo real.
+- `City25~/city_plan.py` v2: bulevar diagonal hasta la plaza con rotonda, río con 8 puentes y paseo en la ribera, avenidas con curvas, calles curvas en Las Lomas y Villa Sur, parque sin calles internas y naves industriales grandes. Resultado: 245 cuadras; 288 cruces (196 con semáforo, 86 con stop y 6 en la rotonda); 946 pasos de cebra; 35 lugares, entre ellos 6 de comida y 2 talleres.
+- Mapa de estilo videojuego (`plano_ciudad.png`): fondo oscuro, zonas, nombres de barrios y avenidas, marcas circulares por categoría y leyenda agrupada (Robos, Servicios, Refugio, Policía). Para el juego genera `Art/UI/Map/mapa_base.png`, los iconos y `map_places.json`.
+- `Alarma.UI.Map`: `CityMapDefinition` (datos), `CityMapScreen` (mapa a pantalla completa con zoom, arrastre, leyenda, nombre al pasar el ratón y clic para viajar), `CityMinimap` (esquina con el norte arriba) y `MapUi` (piezas creadas por código). La flecha del jugador gira hacia donde camina.
+- En la prueba actual (3 × 3 km), `ReviewMapBuilder` usa el plano R9 con las categorías e iconos nuevos; se retiró el mapa IMGUI. Prueba `playtest-r9-8`.
+Pendiente: aprobación del plano v2 y prueba del mapa en Play. No se cambia ninguna casilla.
+
+### Correcciones de prueba y plano 2 × 2 km — 2026-11-03
+
+Alain probó el mapa: pidió una ciudad de 2 × 2 km, techos estables, un HUD limpio y puertas que se abran al querer entrar.
+- Techos: se retiró `ReviewRoof`, que ocultaba el techo cuando la cámara entraba en un local y lo mostraba al salir (parpadeo al mover el ratón). Los techos ya no desaparecen; la cámara choca con paredes y techo.
+- HUD: se retiraron la cámara libre (V), el catálogo F6 (`ReviewCatalog` y `ReviewModelPreview`), el clic derecho, la lista de controles, los contadores y las cajas de depuración. F1–F4 siguen funcionando sin mostrarse. Esc libera el ratón y un clic lo recupera. Solo quedan el minimapa, el mapa (M), el aviso de carga y «E · Abrir puerta».
+- Puertas: `AutomaticShopDoor` pasa a `ShopDoor`, que solo se abre al empujarla y se cierra sola. El jugador abre puertas y persianas con E (`ReviewDoorInteraction`). Los NPC empujan la puerta con la mano al entrar o salir (`ShopActivity.PushDoor` y `PedestrianReach`). La puerta se mantiene abierta mientras alguien sigue en el umbral.
+- La prueba ya no copia vehículos ni armas a `Generated` (solo los usaba el catálogo).
+- Plano: `CITY_SIZE = 2000`. El trazado se escala desde el diseño de 2,5 km sin cambiar los anchos de calles y aceras: 240 cuadras, 287 cruces y 943 pasos de cebra. Prueba `playtest-r9-9`.
+Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir la ciudad en 3D. No se cambia ninguna casilla.
