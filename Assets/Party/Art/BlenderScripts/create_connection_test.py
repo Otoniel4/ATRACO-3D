@@ -4,9 +4,8 @@ import math
 from mathutils import Vector
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\Alain\Atraco3D\Assets\Party\Art")
-OUTPUTS = Path(r"C:\Users\Alain\Documents\Codex\2026-10-31\pued\outputs")
-for directory in (ROOT / "BlenderSources", ROOT / "Validation", ROOT / "BlenderScripts"):
+ROOT = Path(__file__).resolve().parent.parent
+for directory in (ROOT / "BlenderSources~", ROOT / "Validation", ROOT / "BlenderScripts"):
     directory.mkdir(exist_ok=True)
 scene = bpy.context.scene
 if not scene.name.startswith("Alarma_"):
@@ -90,5 +89,5 @@ for screen in bpy.data.screens:
 bpy.ops.object.select_all(action="DESELECT")
 cube.select_set(True)
 bpy.context.view_layer.objects.active = cube
-bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / "BlenderSources/ConnectionTest.blend"))
+bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / "BlenderSources~/ConnectionTest.blend"))
 print("CONNECTION_TEST_CREATED", cube.name, "dimensions_m", tuple(cube.dimensions), "fbx", str(ROOT / "Validation/ConnectionCube_1m.fbx"))

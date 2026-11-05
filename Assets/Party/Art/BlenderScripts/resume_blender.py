@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-ART=Path(r"C:\Users\Alain\Atraco3D\Assets\Party\Art")
+ART=Path(__file__).resolve().parent.parent
 bpy.ops.wm.open_mainfile(filepath=str(ART/"BlenderSources~/Alarma_ArtLibrary.blend"))
 script_folder=str(ART/"BlenderScripts")
 if script_folder not in sys.path:sys.path.insert(0,script_folder)

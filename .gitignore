@@ -41,9 +41,10 @@ crashlytics-build.properties
 /Assets/Party/Art/BlenderScripts/__pycache__.meta
 /Assets/Party/Art/BlenderSources~/*.blend1
 
-# Salidas regenerables del botón «Crear y probar juego» y respaldos automáticos de escenas.
-/Assets/Party/Generated/
-/Assets/Party/Generated.meta
+# La ciudad vigente y sus GUID se respaldan completos. Otros intentos siguen siendo temporales.
+/Assets/Party/Generated/*
+!/Assets/Party/Generated/Ciudad2km/
+!/Assets/Party/Generated/Ciudad2km.meta
 /Assets/Party/Scenes/Backups/
 /Assets/Party/Scenes/Backups.meta
 
@@ -55,11 +56,8 @@ __pycache__/
 /Assets/Party/Art/BlenderScripts/**/obj/
 /Assets/Party/Art/BlenderScripts/**/*.log
 
-# Binarios de trabajo de Blender en carpetas «~» (Unity las ignora): quedan en el disco local, fuera de git, por el cupo LFS de GitHub.
-**/*~/**/*.blend
-**/*~/**/*.fbx
-**/*~/**/*.png
-**/*~/**/*.jpg
-**/*~/**/*.jpeg
-**/*~/**/*.gif
-**/*~/**/*.mp4
+# Esta fuente supera 100 MiB. Su ZIP íntegro se versiona junto con el manifiesto SHA-256.
+# Restore-Project.ps1 la recupera sin modificar una copia local existente.
+/Assets/Party/Art/BlenderSources~/Villa_Alarma_R9_Ligera.blend
+/Assets/Party/Art/BlenderSources~/Villa_Alarma_R9_Ligera.blend.zip
+/Assets/Party/Art/BlenderSources~/*.tmp

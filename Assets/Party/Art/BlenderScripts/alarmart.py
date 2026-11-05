@@ -5,8 +5,8 @@ import json
 from mathutils import Vector
 from pathlib import Path
 
-ART = Path(r"C:\Users\Alain\Atraco3D\Assets\Party\Art")
-OUTPUTS = Path(r"C:\Users\Alain\Documents\Codex\2026-10-31\pued\outputs")
+ART = Path(__file__).resolve().parent.parent
+OUTPUTS = ART / "Previews~" / "Catalog"
 PALETTE = {
     "Apricot": "EF9B59", "Terracotta": "C9684F", "Coral": "DF7966",
     "Cream": "F4E4C1", "Mustard": "E6BB55", "Teal": "397C78",
@@ -289,6 +289,7 @@ def studio_floor(center, size):
     light.rotation_euler = (Vector((x, y, 0)) - light.location).to_track_quat("-Z", "Y").to_euler()
 
 def save_library():
+    OUTPUTS.mkdir(parents=True, exist_ok=True)
     source = ART / "BlenderSources~/Alarma_ArtLibrary.blend"
     source.parent.mkdir(exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(source))

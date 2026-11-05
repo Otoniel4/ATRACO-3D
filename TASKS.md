@@ -538,3 +538,11 @@ Pendiente: prueba de Alain y aprobación del plano de 2 × 2 km para construir l
 
 - El commit `task-03` (Blender por MCP, cubo de validación, `.mcp.json`) se hizo en una copia en `C:\Users\Alain\ATRACO-3D`. El trabajo de la ciudad siguió en `C:\Users\Alain\Atraco3D`, que sí conserva los `.blend`, el kit y la ciudad de 2 × 2 km (commits avance-r10 a avance-r12); ahí «Crear y probar juego» funciona y se usa Blender 5.2.
 - Las carpetas `~` y `Generated/` siguen fuera de Git: en otra copia faltan esos binarios hasta regenerarlos con los scripts de `Art/BlenderScripts`.
+
+
+## Respaldo completo y limpieza autorizada — 2026-11-04
+
+Alain pidió respaldar en GitHub el proyecto guardado, incluidos `.blend` y escena vigente, y retirar obsoletos. Confirmó guardado/cierre de Unity y autorizó expresamente los 301 archivos de `Assets/Party/Tools~/cleanup-manifest.json`. Se retiraron tras verificar copia recuperable local; ninguna de las 891 dependencias transitivas de la escena actual se elimina. Se conservan fuentes R9 usadas para regenerar Kit25, los 16 personajes actuales, armas, herramientas y diseños únicos útiles.
+- Respaldo vigente: `Generated/Ciudad2km`, fuentes Blender, modelos, `.meta`, capturas, datos y configuración. Solo el `.blend` R9 de más de 100 MiB se restaura desde su ZIP íntegro fragmentado en partes de 48 MiB; el resto se guarda directamente. Herramientas en `Assets/Party/Tools~`, instrucciones en README y `docs/RESPALDO-Y-LIMPIEZA.md`.
+- `City25Builder` compara contenido SHA-256 en lugar de fechas para que el clon reutilice la escena guardada; BuildReport migrado sin editar la escena. Build Settings apunta a Ciudad_2km. Recetas comunes con rutas relativas al proyecto.
+- Esta solicitud autoriza el commit y la publicación del mantenimiento de respaldo; no aprueba B1 ni cierra tareas de juego. Mantener Unity 6000.3.27f2 y ciudad de 2 × 2 km. Play sigue reservado a Alain.

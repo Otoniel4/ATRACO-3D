@@ -3,14 +3,14 @@ sys.dont_write_bytecode = True
 import sys
 import traceback
 from pathlib import Path
-LOG=Path(r"C:\Users\Alain\Documents\Codex\2026-10-31\pued\work\blender-resume.log").open("w",encoding="utf-8",buffering=1)
+ART=Path(__file__).resolve().parent.parent
+LOG=(ART/"BlenderScripts/blender-resume.log").open("w",encoding="utf-8",buffering=1)
 sys.stdout=LOG
 sys.stderr=LOG
 try:
     import bpy
     import addon_utils
     import json
-    ART=Path(r"C:\Users\Alain\Atraco3D\Assets\Party\Art")
     addon_utils.modules_refresh()
     module=addon_utils.enable("blender_mcp",default_set=True,persistent=True)
     if module is None:raise RuntimeError("Addon could not be enabled")

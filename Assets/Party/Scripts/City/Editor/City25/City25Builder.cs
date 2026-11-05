@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -135,6 +137,14 @@ namespace Alarma.City.Editor
         private static string Stamp() => string.Join(",", new[]
         {
             City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
-        }.Select(p => File.GetLastWriteTimeUtc(p).Ticks));
+        }.Select(ContentHash));
+
+        // Las fechas cambian al clonar Git; el contenido permite reutilizar la escena respaldada en otro equipo.
+        private static string ContentHash(string path)
+        {
+            using (var algorithm = SHA256.Create())
+                return BitConverter.ToString(algorithm.ComputeHash(Encoding.UTF8.GetBytes(
+                    File.ReadAllText(path).Replace("\r\n", "\n")))).Replace("-", string.Empty);
+        }
     }
 }

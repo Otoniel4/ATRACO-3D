@@ -27,5 +27,5 @@ for item in bpy.data.scenes:
 bpy.ops.wm.save_userpref()
 bpy.ops.blendermcp.start_server()
 status = {"blender": bpy.app.version_string, "scene": scene.name, "server_running": scene.blendermcp_server_running, "download_integrations_disabled": sorted(set(disabled))}
-Path(r"C:\Users\Alain\Documents\Codex\2026-10-31\pued\work\blender-bootstrap-status.json").write_text(json.dumps(status, indent=2), encoding="utf-8")
+(Path(__file__).resolve().parent / "blender-bootstrap-status.json").write_text(json.dumps(status, indent=2), encoding="utf-8")
 print("ALARMA_MCP_READY", json.dumps(status))
