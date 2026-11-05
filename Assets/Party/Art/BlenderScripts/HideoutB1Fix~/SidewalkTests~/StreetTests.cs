@@ -140,6 +140,9 @@ internal static class StreetTests
         Check(SidewalkClearance.CrossingClear(At(0,0),At(0,15)),"un auto al costado de la esquina no bloquea todo el paso");
         Physics.Bodies.Clear();
         VisitTests.Run(Check, Tick);
+        Physics.Bodies.Clear();
+        PopulationTests.Run(Check, Tick);
+        CounterTests.Run(Check);
         Console.WriteLine("STREET_TESTS_PASSED " + passed);
     }
 }

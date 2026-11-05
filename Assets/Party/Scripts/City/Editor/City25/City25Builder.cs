@@ -18,7 +18,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-22";
+        private const string Version = "ciudad25-29";
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -125,7 +125,7 @@ namespace Alarma.City.Editor
             if (settings == null)
             {
                 settings = ScriptableObject.CreateInstance<PedestrianSettings>();
-                settings.PerDistrict = 4; settings.ShopperFraction = 1; settings.PopulationBudget = 16; settings.BrowseSeconds = 2.5f; settings.PaySeconds = 1.2f;
+                settings.PerDistrict = 4; settings.ShopperFraction = 1; settings.PopulationBudget = 16; settings.BrowseSeconds = 2.5f;
                 settings.ActivationRadius = 90; settings.DeactivationRadius = 140;
                 AssetDatabase.CreateAsset(settings, path);
             }

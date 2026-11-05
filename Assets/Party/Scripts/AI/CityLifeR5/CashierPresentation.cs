@@ -2,21 +2,35 @@ using UnityEngine;
 
 namespace Alarma.AI.CityLife
 {
+    // Cajero del local: lo mueve el guion del mostrador mientras atiende y, entre clientes, sigue con su trabajo.
     public sealed class CashierPresentation : MonoBehaviour
     {
+        private static readonly int Pay = Animator.StringToHash("Pay");
         [SerializeField] private ShopActivity shop;
         [SerializeField] private Animator animator;
         // Se configura en el editor; sin serializar llegaba vacío a Play y cortaba la compra con NullReference.
         [SerializeField] private PedestrianReach reach;
-        private float until;
-        private static readonly int Pay = Animator.StringToHash("Pay");
-        private void Awake() { if (reach == null) reach = GetComponent<PedestrianReach>(); }
-        public void Configure(ShopActivity target, Animator model) { Unsubscribe(); shop = target; animator = model;reach=GetComponent<PedestrianReach>();if(reach==null)reach=gameObject.AddComponent<PedestrianReach>();reach.Configure(shop.CashierGrip); if (isActiveAndEnabled) Subscribe(); }
-        private void Subscribe() { if (shop != null) shop.Transaction += OnTransaction; }
-        private void Unsubscribe() { if (shop != null) shop.Transaction -= OnTransaction; }
-        private void OnEnable() => Subscribe();
-        private void OnDisable() => Unsubscribe();
-        private void OnTransaction(ShoppingSession session,ShopAction action) {if(action==ShopAction.Placed || action==ShopAction.Scanned || action==ShopAction.Paid || action==ShopAction.Receipt){until=Time.time+1.4f;reach.Reach(shop.Scan,1.4f);}}
-        private void Update() { if (animator != null) animator.SetBool(Pay, Time.time < until); }
+        [SerializeField] private StaffWork work;
+
+        public void Configure(ShopActivity target, Animator model, StaffWork routine = null)
+        {
+            shop = target; animator = model; work = routine;
+            reach = GetComponent<PedestrianReach>();
+            if (reach == null) reach = gameObject.AddComponent<PedestrianReach>();
+            reach.Configure(shop.CashierGrip);
+        }
+
+        private void Start()
+        {
+            if (reach == null) reach = GetComponent<PedestrianReach>();
+            if (shop != null) shop.Exchange.BindCashier(transform, reach);
+        }
+
+        private void Update()
+        {
+            bool busy = shop != null && shop.Exchange.CashierBusy;
+            if (work != null) work.Paused = busy;
+            if (animator != null) animator.SetBool(Pay, busy);
+        }
     }
 }

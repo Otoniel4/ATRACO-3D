@@ -9,7 +9,7 @@ using Alarma.AI.Street;
 namespace Alarma.City.Editor
 {
     // Locales con interior: a cada local con modelo propio le arma la rutina de compra con el sistema de CityLifeR5
-    // (puntos, cuadrícula interior, ajustes de tienda y cajero). Los compradores los pone CityPopulationDirector.
+    // (puntos, cuadrícula interior, ajustes de tienda y cajero). El resto del personal lo pone City25Staff; los clientes, SidewalkPopulation.
     internal static class City25Shops
     {
         private const float Step = .5f, Clearance = .3f;
@@ -18,19 +18,23 @@ namespace Alarma.City.Editor
         {
             var shops = new List<ShopActivity>(); var doors = new List<ShopDoor>();
             Physics.SyncTransforms();
-            int index = 0;
+            var staff = City25Staff.Load(layouts.shops);
+            int index = 0, employees = 0;
             foreach (var (data, instance) in world.Places)
             {
                 var layout = layouts.shops.FirstOrDefault(l => l.kind == data.place.kind);
                 var door = instance.GetComponent<ShopDoor>();
                 if (layout == null || door == null) continue;
-                shops.Add(Activity(folder, data, instance.transform, layout, door, civilians, index++));
+                var activity = Activity(folder, data, instance.transform, layout, door, civilians, index, staff);
+                employees += staff.Place(instance.transform, activity.transform, layout, civilians, index++);
+                shops.Add(activity);
                 doors.Add(door);
             }
+            Debug.Log($"Personal de locales: {shops.Count} cajeros y {employees} empleados más en sus puestos.");
             return (shops.ToArray(), doors.ToArray());
         }
 
-        private static ShopActivity Activity(string folder, CityObject data, Transform shop, ShopLayout layout, ShopDoor door, PedestrianActor[] civilians, int index)
+        private static ShopActivity Activity(string folder, CityObject data, Transform shop, ShopLayout layout, ShopDoor door, PedestrianActor[] civilians, int index, City25Staff team)
         {
             string id = data.place.name;
             var root = new GameObject("Rutina de compra").transform; root.SetParent(shop, false);
@@ -52,7 +56,7 @@ namespace Alarma.City.Editor
             AssetDatabase.CreateAsset(tasks, folder + "/Data/Shop_" + index + ".asset");
             activity.Configure(walk, entry, browse, queue, exit, products, Snap("Counter", layout.counter)[0], Free("Scan", layout.scan, 3), Free("Receipt", layout.receipt, 3), Free("Till", layout.till, 3), tasks);
             if (!tasks.IsWithdrawal) root.gameObject.AddComponent<ShopStockDisplay>();
-            // Cajero: un civil del elenco detrás del mostrador mirando hacia la caja; no sale a comprar.
+            // Cajero: un civil del elenco detrás del mostrador mirando hacia la caja, con uniforme si el local lo define.
             int variant = (index * 3 + 4) % civilians.Length;
             var staff = UnityEngine.Object.Instantiate(civilians[variant], root);
             staff.name = "Cajero_" + civilians[variant].name; staff.enabled = false;
@@ -61,7 +65,10 @@ namespace Alarma.City.Editor
             staff.transform.SetPositionAndRotation(spot, Quaternion.LookRotation(Vector3.ProjectOnPlane(till - spot, Vector3.up)));
             var grip = staff.GetComponentsInChildren<Transform>(true).First(t => t.name.StartsWith("Grip_R6_", StringComparison.Ordinal));
             activity.ConfigureStaff(variant, door, grip);
-            staff.gameObject.AddComponent<CashierPresentation>().Configure(activity, staff.GetComponentInChildren<Animator>());
+            // Entre clientes teclea en la caja; mientras atiende manda el guion del mostrador.
+            var work = City25Staff.AddWork(staff.gameObject, City25Staff.CashierRole, spot, staff.transform.rotation, false);
+            staff.gameObject.AddComponent<CashierPresentation>().Configure(activity, staff.GetComponentInChildren<Animator>(), work);
+            team.DressCashier(staff.gameObject, civilians[variant].name, layout);
             return activity;
         }
 

@@ -1,37 +1,89 @@
 using UnityEngine;
 namespace Alarma.AI.CityLife
 {
-    // Un objeto visible recorre estante, mano, mostrador y bolsa; no crea una compra al aparecer la bolsa.
+    // Objetos que el cliente maneja en su visita: el producto del estante, los billetes, el vuelto y el número del banco.
+    // Cada uno va donde dice el guion del mostrador: estante, mano del cliente, mostrador o mano del cajero.
     public sealed class ShoppingPresentation : MonoBehaviour
     {
-        private GameObject product,money;private ShoppingSession current;private Transform grip;private ShopActivity shop;
-        public void Configure(ShopActivity target,Transform hand){ResetView();shop=target;grip=hand;}
-        public void Refresh(PedestrianRoutine routine)
+        private const float MoneyScale = .6f, ChangeScale = .4f;
+        private GameObject product, money, change, ticket;
+        private ShoppingSession current;
+        private int station = -1;
+        private Transform grip;
+        private ShopActivity shop;
+
+        public void Configure(ShopActivity target, Transform hand) { ResetView(); shop = target; grip = hand; }
+
+        public void Refresh(PedestrianRoutine routine, ExchangeFrame frame)
         {
-            var session=routine.Session;
-            if(current!=session)
+            var session = routine.Session;
+            if (current != session)
             {
-                if(product!=null)Destroy(product);current=session;
-                if(current!=null && !shop.Tasks.IsWithdrawal && shop.Tasks.ProductPrefab!=null)product=shop.ClaimProduct(current);
+                ReleaseProduct();
+                current = session;
+                station = session?.Station ?? -1;
+                if (current != null && !shop.Tasks.IsWithdrawal && shop.Tasks.ProductPrefab != null) product = shop.ClaimProduct(current);
             }
-            if(current==null)return;
-            if(product!=null)
-            {
-                product.SetActive(current.Stage<ShoppingStage.Collected);
-                Transform parent=current.Stage==ShoppingStage.Reserved?shop.ProductPoint(current.Station):current.Stage==ShoppingStage.InHand?grip:current.Stage==ShoppingStage.Scanned?shop.CashierGrip:shop.Counter;
-                if(product.transform.parent!=parent){product.transform.SetParent(parent,false);product.transform.localPosition=Vector3.zero;product.transform.localRotation=Quaternion.identity;}
-                if(current.Stage==ShoppingStage.OnCounter && routine.State==PedestrianState.Scanning)
-                    product.transform.position=Vector3.Lerp(shop.Counter.position,shop.Scan.position,Mathf.Clamp01(routine.StateSeconds/1.2f));
-                if(current.Stage==ShoppingStage.Paid && routine.State==PedestrianState.ReceivingReceipt)
-                    product.transform.position=Vector3.Lerp(shop.Scan.position,shop.Counter.position,Mathf.Clamp01(routine.StateSeconds/.8f));
-            }
-            bool offering = shop.Tasks.IsWithdrawal
-                ? current.Stage == ShoppingStage.Paid && routine.State == PedestrianState.Collecting || current.Stage == ShoppingStage.Collected
-                : routine.State == PedestrianState.Paying;
-            if(offering && money==null && shop.Tasks.MoneyPrefab!=null)money=Instantiate(shop.Tasks.MoneyPrefab,grip);
-            if(money!=null)money.SetActive(offering);
+            if (current == null) { HideItems(); return; }
+            Place(product, frame.Product);
+            Place(Item(ref money, shop.Tasks.MoneyPrefab, MoneyScale), frame.Money);
+            Place(Item(ref change, shop.Tasks.MoneyPrefab, ChangeScale), frame.Change);
+            Place(Item(ref ticket, shop.Tasks.ReceiptPrefab, 1f), frame.Ticket);
         }
-        public void ResetView(){if(product!=null)Destroy(product);if(money!=null)Destroy(money);current=null;}
-        private void OnDisable()=>ResetView();
+
+        private void Place(GameObject item, ItemPlace place)
+        {
+            if (item == null) return;
+            Transform parent = Parent(place);
+            item.SetActive(parent != null);
+            if (parent == null || item.transform.parent == parent) return;
+            item.transform.SetParent(parent, false);
+            item.transform.localPosition = Vector3.zero;
+            item.transform.localRotation = Quaternion.identity;
+        }
+
+        private Transform Parent(ItemPlace place)
+        {
+            switch (place)
+            {
+                case ItemPlace.Shelf: return station >= 0 ? shop.ProductPoint(station) : null;
+                case ItemPlace.CustomerHand: return grip;
+                case ItemPlace.Hidden: return null;
+                default: return shop.Exchange.Anchor(place);
+            }
+        }
+
+        // Los billetes, el vuelto y el número se crean al necesitarlos y se reutilizan en la visita.
+        private GameObject Item(ref GameObject item, GameObject prefab, float scale)
+        {
+            if (item != null || prefab == null) return item;
+            item = Instantiate(prefab, transform);
+            item.transform.localScale *= scale;
+            item.SetActive(false);
+            return item;
+        }
+
+        // Si el cliente se va sin comprar, el producto queda en su estante; si lo compró, se lo llevó.
+        private void ReleaseProduct()
+        {
+            if (product != null && (station < 0 || product.transform.parent != shop.ProductPoint(station))) Destroy(product);
+            product = null;
+        }
+
+        private void HideItems()
+        {
+            foreach (var item in new[] { money, change, ticket }) if (item != null) item.SetActive(false);
+        }
+
+        public void ResetView()
+        {
+            if (shop != null) ReleaseProduct();
+            foreach (var item in new[] { money, change, ticket }) if (item != null) Destroy(item);
+            money = change = ticket = null;
+            current = null;
+            station = -1;
+        }
+
+        private void OnDisable() => ResetView();
     }
 }

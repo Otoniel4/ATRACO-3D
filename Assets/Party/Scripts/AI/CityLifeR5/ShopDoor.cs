@@ -11,7 +11,9 @@ namespace Alarma.AI.CityLife
         private const float HoldSeconds = 1.1f;
         private const float ReachDistance = 1.6f;
         private const int ActorMask = (1 << 29) | (1 << 30);
-        private const int SolidMask = ~(1 << 31);
+        // La hoja solo se detiene ante estructura y muebles. Las personas no la frenan: con gente esperando a ambos
+        // lados nadie podía abrir y se trababan entre sí.
+        private const int SweepMask = ~((1 << 28) | (1 << 29) | (1 << 30) | (1 << 31));
         [SerializeField] private Transform left, right, threshold, handle;
         private Quaternion leftClosed, rightClosed;
         private BoxCollider leftBox, rightBox;
@@ -191,7 +193,7 @@ namespace Alarma.AI.CityLife
             Vector3 center = leaf.position + world * Vector3.Scale(box.center, scale);
             Vector3 half = Vector3.Scale(box.size, new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z))) * .5f;
             half = new Vector3(Mathf.Max(.008f, half.x - .012f), Mathf.Max(.008f, half.y - .012f), Mathf.Max(.008f, half.z - .012f));
-            int count = Physics.OverlapBoxNonAlloc(center, half, overlaps, world, SolidMask, QueryTriggerInteraction.Ignore);
+            int count = Physics.OverlapBoxNonAlloc(center, half, overlaps, world, SweepMask, QueryTriggerInteraction.Ignore);
             bool clear = count < overlaps.Length;
             for (int i = 0; i < count; i++)
             {

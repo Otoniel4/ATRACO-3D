@@ -8,9 +8,28 @@ namespace UnityEngine
     public class MonoBehaviour
     {
         public readonly Transform transform = new Transform();
+        public readonly GameObject gameObject = new GameObject();
         public bool isActiveAndEnabled = true;
         public object Component;
         public T GetComponent<T>() where T : class => Component as T;
+        // Las pruebas de población deciden cómo se copia un prefab.
+        public static Func<MonoBehaviour, MonoBehaviour> Factory;
+        public static T Instantiate<T>(T original, Transform parent) where T : MonoBehaviour => (T)Factory(original);
+        public static void Destroy(GameObject target) { }
+    }
+    public sealed class GameObject
+    {
+        public bool activeSelf = true;
+        public void SetActive(bool value) => activeSelf = value;
+    }
+    public sealed class MinAttribute : Attribute { public MinAttribute(float min) { } }
+    public sealed class HeaderAttribute : Attribute { public HeaderAttribute(string text) { } }
+    public sealed class TooltipAttribute : Attribute { public TooltipAttribute(string text) { } }
+    public sealed class Camera
+    {
+        public static Camera main;
+        public Func<Vector3, Vector3> Viewport = p => new Vector3(.5f, .5f, 1f);
+        public Vector3 WorldToViewportPoint(Vector3 position) => Viewport(position);
     }
     public class Transform
     {

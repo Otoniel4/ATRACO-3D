@@ -59,6 +59,8 @@ namespace Alarma.City.Editor
             return prefabs;
         }
 
+        private static readonly string[] Rugs = { "Runner", "LoungeRug", "CubicleRug", "Rug", "VipCarpet", "BankStripe" };
+
         // Local con interior: colisión de malla en la estructura y los muebles, y la puerta de dos hojas lista para abrirse.
         private static GameObject MakeShop(string path, string output)
         {
@@ -77,7 +79,9 @@ namespace Alarma.City.Editor
                 {
                     string name = filter.name;
                     bool decoration = name.StartsWith("Detail_", StringComparison.Ordinal) || name.StartsWith("FloorTiles", StringComparison.Ordinal) || name.StartsWith("CeilingLight", StringComparison.Ordinal)
-                        || name.StartsWith("Aisle", StringComparison.Ordinal) || name.StartsWith("Sign", StringComparison.Ordinal) || name.StartsWith("Awning", StringComparison.Ordinal);
+                        || name.StartsWith("Aisle", StringComparison.Ordinal) || name.StartsWith("Sign", StringComparison.Ordinal) || name.StartsWith("Awning", StringComparison.Ordinal)
+                        // Alfombras a ras del piso: sin colisión para no frenar la puerta ni los pies.
+                        || Rugs.Any(prefix => name.StartsWith(prefix, StringComparison.Ordinal));
                     if (!decoration && !moving.Any(leaf => filter.transform.IsChildOf(leaf))) filter.gameObject.AddComponent<MeshCollider>();
                 }
                 foreach (var leaf in moving) LeafCollider(leaf);

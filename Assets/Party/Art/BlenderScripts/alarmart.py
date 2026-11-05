@@ -55,7 +55,9 @@ def new_scene(name):
     bpy.context.window.scene = scene
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
-    scene.render.engine = "BLENDER_EEVEE"
+    # Blender 5 llama BLENDER_EEVEE al motor que en 4.2–4.5 era BLENDER_EEVEE_NEXT.
+    engines = [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items]
+    scene.render.engine = "BLENDER_EEVEE" if "BLENDER_EEVEE" in engines else "BLENDER_EEVEE_NEXT"
     scene.render.resolution_x, scene.render.resolution_y = 1600, 1100
     scene.render.resolution_percentage = 100
     scene.view_settings.view_transform = "Standard"

@@ -30,8 +30,35 @@ PASS omite una compra fuera del presupuesto
 PASS el peatón llega andando y activa la visita en el mismo cuerpo
 PASS un local ocupado no acumula otra visita
 PASS el mismo actor vuelve a la acera después de la visita
+PASS no envía un cliente que tendría que cruzar la calzada
+PASS un local admite varios clientes a la vez
+PASS separa la siguiente llegada a la puerta
+PASS admite otro cliente tras la pausa y bajo la capacidad
+PASS el cliente enviado camina por su acera y entra al local
+PASS al llegar el jugador un cliente ya está entrando por la puerta
+PASS respeta la capacidad del local
+PASS nunca admite más clientes que puestos tiene el local
+PASS al terminar cada cliente libera su lugar
 PASS elige, paga y completa la compra una vez
 PASS libera caja y sesión al salir de tienda
 PASS retira efectivo del banco y completa la visita una vez
 PASS libera caja y sesión al salir del banco
-STREET_TESTS_PASSED 36
+PASS al empezar llena la zona del jugador sin enviar clientes a locales lejanos
+PASS al viajar con M repuebla la zona de llegada en el acto
+PASS al llegar ya hay un cliente comprando dentro, otro en la puerta y otro camina hacia el local
+PASS el cliente de la puerta empieza su rutina dentro
+PASS con el cupo lleno libera un paseante lejano y envía otro cliente
+PASS no supera la capacidad del local
+PASS el producto va del estante a la mano, al mostrador, al cajero y de vuelta al cliente
+PASS el cliente entrega el dinero en la mano del cajero
+PASS el cajero devuelve el vuelto en la mano y el cliente lo guarda
+PASS al pasar el dinero las dos manos se juntan sobre el mostrador
+PASS el cajero solo trabaja con el cliente que está en el mostrador
+PASS en el banco el número se entrega por la bandeja
+PASS el cajero deja el efectivo en la bandeja y el cliente lo guarda
+PASS mira dos puestos ajenos antes del suyo
+PASS el pago dura lo que el guion necesita para pasar dinero y vuelto
+PASS el cliente que ya estaba dentro empieza en su puesto y completa la compra
+PASS no se crea un cliente dentro si el local está lleno
+PASS el cliente que solo mira se va sin comprar y libera su lugar
+STREET_TESTS_PASSED 63

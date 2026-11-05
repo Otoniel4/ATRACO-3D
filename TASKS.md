@@ -569,3 +569,40 @@ Alain probó la revisión 20 y reportó grupos inmóviles en las esquinas. Solic
 ## Recuperación de la reconstrucción B1 — revisión 22 (pendiente de prueba)
 
 La revisión 21 falló al retirar la carpeta generada y dejó una ciudad parcial. Alain cerró Unity. Se repusieron 534 archivos de la copia de revisión 20 y se verificaron los 538. El constructor 22 usa carpetas independientes para cada intento y publica el informe tras guardar e importar la nueva escena. Pendientes reconstrucción y Play por Alain. Pruebas en `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Clientes en locales y llegada con mapa B1 — revisión 23 (pendiente de prueba)
+
+Alain probó la revisión 22: al llegar con M al supermercado, al banco o a la joyería no había peatones y nadie entraba. Causas: tras el viaje los peatones solo reaparecían a más de 30 m y poco a poco, y cada local admitía un solo cliente con búsqueda de 32 m. La revisión 23 repuebla al instante tras un salto de más de 40 m. Mantiene hasta tres clientes por local a menos de 85 m: uno empieza en la puerta y otro llega caminando por su acera. Libera paseantes lejanos si el cupo está lleno. Solo cambian scripts de Street; no hace falta reconstruir la ciudad. Compilación contra Unity 6000.3.27f2 y 50 pruebas superadas; Play pendiente de Alain. Guía: `Assets/Party/docs/Guarida-B1-Correccion.md`. No cerrar B1 ni hacer commit hasta su confirmación.
+
+## Banco rediseñado y personal en locales B1 — revisión 24 (pendiente de aprobación visual y prueba)
+
+Alain pidió empleados en todos los negocios y diseños menos básicos, empezando por el banco. El banco nuevo se basa en referencias de sucursales reales: ventanillas con vidrio al fondo, zona de personal con bóveda, recepción, turnos, cajeros automáticos aparte, asesores, gerencia y sala de espera. Tiene 8 empleados con uniforme (4 cajeros, 2 asesores sentados, gerente y recepcionista). Los puestos se declaran en `shop_layouts.json` y los coloca `City25Staff`. Constructor `ciudad25-24`. Capturas en `Art/Previews~/local_banco_*.png`. Pendientes: aprobación visual de Alain, reconstrucción y Play. Después, mismo criterio en joyería, supermercado, minimarket, comida y ropa. Guía: `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Joyería rediseñada con personal B1 — revisión 25 (pendiente de aprobación visual y prueba)
+
+Alain aprobó el diseño del banco. La joyería sigue las referencias: circuito de vitrinas con el vendedor detrás, mostrador con taburetes y nichos iluminados al fondo, dos islas, lámpara de araña, escaparates, espera y zona de personal. Tiene 4 empleados con uniforme (cajera, asesora y dos vendedores). Capturas en `Art/Previews~/local_joyeria_*.png`. Pendientes: aprobación visual, reconstrucción y Play. Después siguen supermercado, minimarket, comida y ropa.
+
+## Supermercado rediseñado con personal B1 — revisión 26 (pendiente de aprobación visual y prueba)
+
+Alain aprobó la joyería. El supermercado sigue las referencias: verdulería en la entrada, cuatro pasillos con ofertas, refrigerados al fondo y a la derecha, carnicería y panadería, y tres cajas junto a la salida. Tiene 6 empleados (tres cajeros, reponedor, carnicero y panadera). Son 177.320 triángulos frente a 132.408 antes, por las estanterías existentes; medir con el Profiler en Play. Capturas en `Art/Previews~/local_supermercado_*.png`. Pendientes: aprobación, reconstrucción y Play. Faltan minimarket, comida y ropa.
+
+## Minimarket, comida y ropa rediseñados con personal B1 — revisión 27 (pendiente de aprobación visual y prueba)
+
+Alain aprobó el supermercado. Los tres locales restantes siguen sus referencias:
+
+- **Minimarket:** caja en la entrada, café, bebidas frías y comida caliente.
+- **Comida:** mostrador con cocina abierta, retiro, bebidas y reservados, mesa comunitaria y mesas de dos.
+- **Ropa:** vidrieras, mesa de entrada, caja a la izquierda, pared derecha de prendas, percheros y probadores.
+
+Los seis tipos tienen personal: 22 cajeros y 76 empleados más en la ciudad. Pendientes: aprobación visual, reconstrucción, Play y Profiler. Guía: `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+**2026-11-05:** Alain aprobó visualmente los seis locales (revisiones 24 a 27). Pendiente: reconstrucción y Play en Unity de las revisiones 23 a 27, y Profiler. Sin commit hasta su confirmación.
+
+
+## Venta realista, personal trabajando y clientes que deciden B1 — revisión 28 (pendiente de prueba)
+
+Guion del mostrador compartido por cliente y cajero: producto del estante al mostrador, escaneo, billetes de mano en mano y vuelto. El banco usa número y efectivo por la bandeja. El personal trabaja entre clientes según su rol. Los clientes miran puestos ajenos y el 75 % compra. Hasta 5 clientes por local (sin superar sus puestos), cada 2–5 s. Constructor `ciudad25-28`. 61 pruebas y compilación contra Unity; Play pendiente de Alain. Guía: `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Puertas, locales en marcha y bolsa B1 — revisión 29 (pendiente de prueba)
+
+Alain reportó que las puertas no abrían, que los clientes esperaban afuera, que al llegar con M no había gente comprando y que la bolsa salía en la espalda. Ahora las personas ya no bloquean el giro de la hoja, las alfombras no tienen collider y el revestimiento se separa de la bisagra (seis locales regenerados con planos idénticos). Al llegar, los locales cercanos ya tienen clientes dentro, uno en la puerta y otro en camino. La bolsa queda fija en la mano. Constructor `ciudad25-29`, 63 pruebas y compilación; Play pendiente.

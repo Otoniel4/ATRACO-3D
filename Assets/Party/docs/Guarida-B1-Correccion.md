@@ -171,3 +171,393 @@ La prueba posterior cargó la ciudad restaurada, pero la revisión 22 se detuvo 
 ### Verificación de la revisión 22
 
 Pasaron 15 regresiones con el código real de preparación y sustitutos de escenas y AssetDatabase. Incluyen una etapa ya activa, borrado parcial, restauración de una ciudad desde escenas vacías, publicación con archivo bloqueado y preservación de escenas ajenas en Build Settings. El bloqueo del informe y la comparación de archivos usaron el sistema de archivos real de Windows. El respaldo reconoció una revisión publicada y rechazó una ruta externa. Alarma.CityLife.Editor y Alarma.City.Editor compilaron contra las DLL de Unity instaladas. La reconstrucción con el importador nativo y la prueba en Play quedan pendientes.
+
+## Revisión 23 de clientes en supermercado, banco y joyería
+
+Alain probó la revisión 22. Al llegar con M al supermercado, al banco o a la joyería no había peatones caminando y nadie entraba a los locales.
+
+Causas en el código de la población de aceras:
+
+1. **Llegada con el mapa.** Tras el viaje se retiraban los peatones lejanos, pero los nuevos solo podían aparecer a más de 30 m del jugador y a razón de cuatro intentos cada medio segundo. El entorno del local quedaba vacío varios segundos.
+2. **Visitas escasas.** Cada local aceptaba un único cliente a la vez. Un peatón solo valoraba visitar un local situado a menos de 32 m por su misma acera. Con 45 peatones repartidos en 120 m, una tienda concreta casi nunca recibía visitas.
+
+Cambios, sin reconstruir la ciudad ni modificar la escena publicada:
+
+- `SidewalkPopulation` reconoce un salto mayor de 40 m entre dos cuadros como viaje con el mapa. En ese caso repuebla al instante desde 6 m del jugador.
+- Cada local abierto a menos de 85 m del jugador mantiene hasta tres clientes. Al llegar, uno empieza ya frente a la puerta y entra, y otro aparece en la misma acera y camina hacia el local. Después, los clientes nuevos llegan cada 4–10 s, fuera de cámara, a 8–40 m de la entrada.
+- Si el cupo de 45 peatones está lleno, la población retira un paseante sin visita, lejano y fuera de cámara, para dejar sitio a un cliente.
+- `SidewalkVisit` acepta varios clientes, con una separación de 4 s entre llegadas para evitar choques en la puerta. La búsqueda de locales por la acera llega a 45 m.
+- `SidewalkWalker` recibe el local asignado, busca la ruta por su acera y reserva su lugar. Si no existe ruta sin cruzar la calzada, no se envía.
+
+Los valores se ajustan en el componente **Peatones** de la escena (sección «Clientes de los locales»), sin regenerar la ciudad.
+
+### Archivos de la revisión 23
+
+- `Scripts/AI/Street/SidewalkPopulation.cs`, `SidewalkVisit.cs` y `SidewalkWalker.cs`.
+- Pruebas en `Art/BlenderScripts/HideoutB1Fix~/SidewalkTests~/`: `VisitTests.cs` y `StreetStubs.cs` actualizados, `PopulationTests.cs` nuevo, `run_tests.py` sin versión fija de .NET. Resultados en `runtime-results.txt`.
+- Registro en esta guía, AGENTS.md y TASKS.md.
+
+### Prueba de la revisión 23 en Unity
+
+1. Volver a Unity y esperar la compilación. Console sin errores rojos.
+2. Pulsar **Alarma > Crear y probar juego**. Debe abrir la revisión publicada y entrar en Play sin reconstruir.
+3. Abrir el mapa con M y viajar al supermercado. Desde el primer segundo debe haber peatones en la acera. Un cliente debe empezar en la puerta y entrar. Otro debe llegar caminando.
+4. Esperar 30–60 s frente al local. Deben entrar más clientes, como máximo tres a la vez. Dentro eligen el producto, hacen cola, pagan, reciben la boleta y salen a la acera.
+5. Repetir en el banco (retiran efectivo en el mostrador) y en la joyería.
+6. Revisar Console. Si aparece «Rutina de compra interrumpida» o cualquier error, adjuntar texto y captura.
+
+### Verificación de la revisión 23
+
+Alarma.AI y Alarma.City.Editor compilaron con C# 9 contra las DLL de Unity 6000.3.27f2 instaladas. Pasaron 50 pruebas de calle, visitas y población: las 36 anteriores, 8 nuevas de capacidad, ruta asignada y arranque en la puerta, y 6 de población, entre ellas el viaje con M a 296 m. Los ensayos sustituyen PhysX, la cámara y el pool por modelos simples. No se ejecutó Play.
+
+### Explicación de la revisión 23
+
+La población es una **Object Pool**: reutiliza peatones en lugar de crearlos y destruirlos. El viaje se detecta observando la posición del jugador, sin que el mapa conozca a los peatones (**D**, inversión de dependencias). Cada clase conserva una responsabilidad (**S**). La población decide cuántos clientes y cuándo llegan. La visita guarda las reservas del local. El planificador calcula rutas. El peatón camina y ejecuta su rutina. Los números nuevos son campos serializados, así que se ajustan en el Inspector sin cambiar el código (**O**).
+
+## Revisión 24: banco rediseñado y personal en los locales
+
+Alain pidió personal atendiendo en todos los negocios y diseños menos básicos, empezando por el banco. Antes, cada local tenía un solo cajero con ropa de civil y el banco tenía cuatro ventanillas y cuatro escritorios vacíos.
+
+**Referencias consultadas.** Distribución de sucursales: ventanillas al fondo por seguridad, recepción pasada la entrada, asesores, espera cómoda y cajeros automáticos aparte (The Financial Brand, Archello, Design Clarity).
+
+**Banco nuevo** (`build_shops.py`, `furnish_banco`):
+
+- Cuatro ventanillas con vidrio de seguridad, bandeja, número y pantalla «TURNO A-07». La zona de personal tiene bóveda, cajas fuertes y archivadores, con puertas «SOLO PERSONAL».
+- Fila con postes y cordón hasta la ventanilla 2, donde ahora se hace el retiro (antes era un mostrador junto a la puerta).
+- Recepción «INFORMACIÓN», máquina de turnos, folletos y vestíbulo «CAJEROS 24 H».
+- Dos cubículos de asesores con vidrio y afiches, oficina de «GERENCIA» con biblioteca y una sala de espera con dos grupos de sillas.
+- Losas de 2 m, zócalo de madera, cuadros, lámparas colgantes, marquesina lisa y pilares revestidos (sin toldo a rayas). Total: 246 piezas y 53.256 triángulos.
+
+**Personal.** Cada local puede declarar puestos (`staff` en `shop_layouts.json`) con rol, pose, posición y uniforme. El banco tiene 8 empleados:
+
+- 4 cajeros de pie (uno es el cajero que atiende).
+- 2 asesores sentados.
+- 1 gerente sentado.
+- 1 recepcionista.
+
+`analyze_staff_uniforms.py` midió en qué altura cae cada material de los diez civiles y guardó las prendas de arriba y de abajo en `Characters/Cast/staff_uniform_slots.json`. `City25Staff` las cambia por el saco verde y el pantalón grafito del banco; el gerente va de traje azul. Los sentados usan la misma regla de huesos que los conductores (`SeatedPose`). Los demás locales no cambian hasta su propio rediseño.
+
+`build_shops.py -- --only banco` regenera solo ese local y conserva los otros cinco: su FBX, su entrada del JSON y sus materiales. `alarmart.py` acepta el motor EEVEE de Blender 4.5 y de Blender 5.
+
+### Archivos de la revisión 24
+
+- Blender:
+  - `Art/BlenderScripts/build_shops.py` y `alarmart.py`.
+  - Nuevo `analyze_staff_uniforms.py`.
+  - `BlenderSources~/Alarma_Shops_banco.blend`.
+- Salida:
+  - `Art/City/Shops/Local_Banco.fbx`, `shop_layouts.json` y `shop_materials.json`.
+  - `Art/Characters/Cast/staff_uniform_slots.json`.
+- Capturas: `Art/Previews~/local_banco_{fachada,interior,pasillo,ventanillas,asesores,gerencia}.png`.
+- Unity:
+  - Nuevo `Scripts/City/Editor/City25/City25Staff.cs`.
+  - `City25Shops.cs` y `City25Data.cs`.
+  - `City25Builder.cs`: constructor `ciudad25-24`.
+
+### Prueba de la revisión 24 en Unity
+
+1. Volver a Unity y esperar la importación de `Local_Banco.fbx` y la compilación. Console sin errores rojos.
+2. Pulsar **Alarma > Crear y probar juego**. Esta vez reconstruye la ciudad porque cambiaron el banco y el constructor. Console debe mostrar «Personal de locales: 22 cajeros y 21 empleados más» (3 bancos × 7).
+3. Con M, viajar al banco. Revisar:
+   - Fachada sin toldo.
+   - Cuatro cajeros detrás del vidrio.
+   - Asesores y gerente sentados en sus sillas.
+   - Recepcionista en la entrada.
+   - Todos con uniforme.
+4. Esperar a un cliente: entra, hace fila entre los cordones, retira en la ventanilla 2 y sale.
+5. Si un empleado flota, atraviesa la silla o mira hacia la pared, enviar captura y su nombre en Hierarchy.
+
+### Verificación de la revisión 24
+
+Blender 4.5.10 generó el banco sin errores. Las capturas se revisaron: ventanillas, sala, asesores y gerencia. La comprobación de la cuadrícula caminable (misma regla que `City25Shops.Cells`) dio 916 celdas, todos los puntos de la rutina dentro y conectados desde la acera. Los otros cinco locales quedaron idénticos en el JSON. Alarma.AI y Alarma.City.Editor compilaron contra Unity 6000.3.27f2. No se ejecutaron la reconstrucción ni Play.
+
+## Revisión 25: joyería rediseñada con personal
+
+Alain aprobó el banco de la revisión 24 y pidió seguir con la joyería. Antes eran cajas sueltas sobre un piso de tablero, sin luz de acento ni empleados.
+
+**Referencias.** Las joyerías usan un circuito de vitrinas con el vendedor detrás. Suman un mostrador donde el cliente se sienta para piezas caras y luz en tres capas: general, de acento y de vitrina. La zona de personal está separada (Jewel360, InStore, Degree Furniture).
+
+**Joyería nueva** (`furnish_joyeria` y `showcase` en `build_shops.py`):
+
+- **Fondo:** mostrador de atención de 10 m con vitrina, tres taburetes de terciopelo y caja a la derecha. Detrás hay cuatro nichos de nogal con fondo morado, estantes de vidrio y luz. Encima, el letrero dorado «JOYERÍA AURA». La puerta «SOLO PERSONAL» lleva a las cajas fuertes y al panel de alarma.
+- **Lados:** seis vitrinas separadas de la pared, con tira de luz y joyas. El vendedor atiende desde el pasillo trasero, con espejos de marco dorado y una línea de luz detrás.
+- **Centro:** dos islas hexagonales con cúpula de cristal para rodear y una lámpara de araña dorada. Hay focos sobre cada vitrina y los láseres de seguridad siguen sobre el mostrador.
+- **Entrada:** escaparates con pedestales, un busto con collar y anillos. También hay un rincón de espera con dos sillones y mesa dorada, un espejo de pie, una planta y una alfombra de terciopelo.
+- **Acabados:** paredes champán, losas oscuras de 2 m, marquesina morada y pilares revestidos (sin toldo a rayas). Total: 229 piezas y 25.860 triángulos.
+
+**Personal:** 4 empleados con saco ciruela y pantalón negro:
+
+- La cajera en el mostrador.
+- Una asesora junto a los taburetes.
+- Dos vendedores detrás de las vitrinas laterales.
+
+Los clientes miran joyas en 12 puestos (vitrinas, islas y mostrador), hacen fila y pagan en la caja del mostrador.
+
+### Archivos de la revisión 25
+
+- `Art/BlenderScripts/build_shops.py` y `BlenderSources~/Alarma_Shops_joyeria.blend`.
+- `Art/City/Shops/Local_Joyeria.fbx`, `shop_layouts.json` y `shop_materials.json`.
+- Capturas: `Art/Previews~/local_joyeria_{fachada,interior,pasillo,mostrador,vitrinas,islas}.png`.
+- Sin cambios de código en Unity: `City25Staff` lee los puestos nuevos.
+
+### Prueba de la revisión 25 en Unity
+
+1. Volver a Unity y esperar la importación. Pulsar **Alarma > Crear y probar juego**. Reconstruye la ciudad.
+2. La Console debe mostrar «Personal de locales: 22 cajeros y 30 empleados más»: 3 bancos × 7 y 3 joyerías × 3.
+3. Con M, viajar a la joyería. Revisar los cuatro empleados con uniforme y a los clientes mirando vitrinas, haciendo fila y pagando en el mostrador.
+4. Repetir la revisión del banco de la revisión 24.
+
+### Verificación de la revisión 25
+
+Blender 4.5.10 generó la joyería sin errores y las capturas se revisaron. La cuadrícula caminable dio 1069 celdas, con todos los puntos de la rutina dentro y conectados. Los otros cinco locales siguen idénticos en el JSON, incluido el banco. Alarma.City.Editor compiló contra Unity 6000.3.27f2. No se ejecutaron la reconstrucción ni Play.
+
+## Revisión 26: supermercado rediseñado con personal
+
+Alain aprobó la joyería de la revisión 25 y pidió seguir con el supermercado. Antes tenía tres pasillos, una sola caja junto a la puerta y cajones de fruta contra la pared.
+
+**Referencias.** Las frutas y verduras reciben al cliente en la entrada. Las góndolas forman un circuito y los refrigerados van al fondo para que se recorra el local. Las cajas quedan visibles desde todo el local y las ofertas se ponen en los extremos de los pasillos (Esselunga en Archello, Florida Trend, ITRetail, Seattle Times).
+
+**Supermercado nuevo** (`furnish_supermercado` y `checkout_lane` en `build_shops.py`):
+
+- **Cajas:** tres líneas numeradas junto a la salida, con cinta, escáner, caja registradora, zona de embolsado y luz. La primera es la que cobra. Una baranda separa la salida.
+- **Verdulería:** al entrar a la derecha, dos islas de mesas con cajones inclinados de fruta y verdura, una balanza, carros y canastos junto a la puerta.
+- **Pasillos:** cuatro pasillos (LIMPIEZA, ABARROTES, SNACKS, CONSERVAS) con letreros colgantes y una isla «OFERTA» con latas en cada punta. Hay estanterías de limpieza en la pared izquierda.
+- **Fondo:** lácteos refrigerados a la izquierda y un mostrador de «CARNICERÍA · PANADERÍA» con vitrina, cortes, pan y repisas a la derecha. Bebidas frías en la pared derecha, más el cajero automático.
+- **Acabados:** losas de 2 m y marquesina naranja con pilares revestidos (sin toldo a rayas). Total: 412 piezas y 177.320 triángulos. El anterior tenía 132.408. El 70 % viene del prop `RetailShelf` ya existente (45 estanterías en lugar de 36). Queda pendiente medir con el Profiler en Play antes de decidir si se optimiza.
+
+**Personal:** 6 empleados:
+
+- Tres cajeros con polo naranja.
+- Un reponedor con su carro de cajas.
+- Un carnicero y una panadera con ropa blanca.
+
+Los clientes miran productos en 37 puestos, hacen fila en la caja 1 (tres lugares) y pagan.
+
+### Archivos de la revisión 26
+
+- `Art/BlenderScripts/build_shops.py` y `BlenderSources~/Alarma_Shops_supermercado.blend`.
+- `Art/City/Shops/Local_Supermercado.fbx`, `shop_layouts.json` y `shop_materials.json`.
+- Capturas: `Art/Previews~/local_supermercado_{fachada,interior,pasillo,cajas,verduleria,carniceria}.png`.
+- Sin cambios de código en Unity.
+
+### Prueba de la revisión 26 en Unity
+
+1. Volver a Unity y esperar la importación. Pulsar **Alarma > Crear y probar juego**. Reconstruye la ciudad.
+2. La Console debe mostrar «Personal de locales: 22 cajeros y 50 empleados más»: bancos 3 × 7, joyerías 3 × 3 y supermercados 4 × 5.
+3. Con M, viajar al supermercado. Revisar los tres cajeros, el reponedor, la carnicería con su personal y a los clientes eligiendo productos, haciendo fila en la caja 1 y pagando.
+4. Abrir Window > Analysis > Profiler dentro del supermercado y anotar los milisegundos de CPU y GPU. Con eso se decide si hay que aligerar las estanterías.
+
+### Verificación de la revisión 26
+
+Blender 4.5.10 generó el supermercado sin errores y las capturas se revisaron. La cuadrícula caminable dio 908 celdas, con todos los puntos de la rutina dentro y conectados. Banco, joyería y los demás locales siguen idénticos en el JSON. Alarma.City.Editor compiló contra Unity 6000.3.27f2. No se ejecutaron la reconstrucción, Play ni el Profiler.
+
+## Revisión 27: minimarket, comida y ropa rediseñados con personal
+
+Alain aprobó el supermercado de la revisión 26 y pidió seguir. Con estos tres locales, los seis tipos quedan rediseñados con personal.
+
+**Referencias.**
+
+- **Minimarket:** caja en la entrada para recibir y vigilar, impulso en el mostrador, café contra una pared y lejos de la puerta, bebidas frías al fondo y pasillos visibles (Parts Town, NRS, SLD, CSP Daily News).
+- **Comida rápida:** pedido en mostrador con cocina abierta, retiro separado de la fila y asientos por zonas: reservados, mesa comunitaria y mesas de dos (Toast, QSR Magazine).
+- **Ropa:** zona despejada al entrar, caja adelante a la izquierda, lo más vendido en la pared derecha y asiento junto a los probadores (Small Business Trends, Top to Toe).
+
+**Minimarket** (`cash_counter`, `wall_stock`):
+
+- Caja a la izquierda de la entrada con golosinas de impulso y repisa de colores detrás con panel «LOTERÍA».
+- Tres pasillos cortos con islas de snacks y «BEBIDAS FRÍAS» con refrigeradores en todo el fondo.
+- Vitrina caliente con salchichas en la esquina, estación de «CAFÉ» con tres máquinas y vasos, expendedora, cajero automático, hielo, canastos y espejo convexo.
+- Personal: cajera y reponedor, con polo verde.
+- 217 piezas y 94.060 triángulos; la mayor parte son las estanterías del kit.
+
+**Comida** (`booth`):
+
+- Mostrador de pedidos con caja, bandejas bajo lámparas de calor y menús colgantes (HAMBURGUESAS, COMBOS, BEBIDAS).
+- Cocina abierta con plancha y campana, freidora, mesa de armado con salsas y refrigeradores.
+- Bebidas de autoservicio y estante «RETIRO» numerado a los lados. Condimentos y basurero con bandejas camino a la salida.
+- Tres reservados con cuadros y lámparas, mesa comunitaria con 12 taburetes, mesas de dos y el letrero «SABOR DE BARRIO».
+- Personal: cajera con polera roja, dos cocineros de blanco y un mesero.
+- 237 piezas y 26.160 triángulos.
+
+**Ropa** (`round_rack`):
+
+- Vidrieras con maniquíes sobre tarimas y mesa de presentación con prendas dobladas en la zona de entrada.
+- Caja a la izquierda con bolsas y panel «MODA URBANA».
+- Pared derecha con rieles de prendas y cubículos de doblados.
+- Cuatro percheros redondos y tres rectos con letreros MUJER y HOMBRE.
+- Cuatro probadores numerados, espejo grande y banca para acompañantes.
+- Personal: cajera, vendedora y encargada de probadores, con polera negra y jeans.
+- 264 piezas y 25.196 triángulos.
+
+Los tres locales usan losas de 2 m. Ropa usa marquesina y revestimiento; minimarket y comida conservan su toldo para variar la calle.
+
+### Archivos de la revisión 27
+
+- `Art/BlenderScripts/build_shops.py` y `BlenderSources~/Alarma_Shops_minimarket_comida_ropa.blend`.
+- `Art/City/Shops/Local_Minimarket.fbx`, `Local_Comida.fbx`, `Local_Ropa.fbx`, `shop_layouts.json` y `shop_materials.json`.
+- Capturas: `Art/Previews~/local_{minimarket,comida,ropa}_*.png` (seis por local).
+- Sin cambios de código en Unity.
+
+### Prueba de la revisión 27 en Unity (todos los locales)
+
+1. Volver a Unity, esperar la importación y pulsar **Alarma > Crear y probar juego**. Reconstruye la ciudad.
+2. La Console debe mostrar «Personal de locales: 22 cajeros y 76 empleados más». Son 4 minimarkets × 1, 4 supermercados × 5, 3 joyerías × 3, 3 bancos × 7, 6 locales de comida × 3 y 2 tiendas de ropa × 2.
+3. Con M, recorrer un local de cada tipo: personal con uniforme en su puesto y clientes eligiendo, haciendo fila y pagando.
+4. Con el Profiler, medir dentro del supermercado y del minimarket, que tienen más triángulos.
+
+### Verificación de la revisión 27
+
+Blender 4.5.10 generó los tres locales sin errores y las capturas se revisaron. La cuadrícula caminable quedó completa: minimarket 1282 celdas, comida 1122 y ropa 1359. Los seis locales tienen todos los puntos de la rutina dentro y conectados. Banco, joyería y supermercado siguen idénticos en el JSON. Alarma.City.Editor compiló contra Unity 6000.3.27f2. No se ejecutaron la reconstrucción, Play ni el Profiler.
+
+### Aprobación visual — 2026-11-05
+
+Alain aprobó las capturas de Blender de los seis locales: banco (revisión 24), joyería (25), supermercado (26) y minimarket, comida y ropa (27). La aprobación corresponde al diseño. Siguen pendientes la reconstrucción en Unity, la prueba en Play de las revisiones 23 a 27 (clientes, viaje con M y personal) y la medición con el Profiler. B1 y su commit esperan esa confirmación.
+
+
+## Revisión 28: venta realista, personal trabajando y clientes que deciden
+
+Alain pidió:
+
+- Animaciones de venta realistas en cada lugar. El cliente lleva el producto al trabajador y lo deja en la mesa; el trabajador cobra y devuelve el vuelto.
+- Agarre correcto de los objetos con la mano.
+- Clientes más frecuentes y en mayor número, que entren, revisen productos y a veces se vayan sin comprar.
+
+**Punto de partida.** Los civiles solo traen seis clips (Idle, Walk, Run, Browse, Pay, CarryWalk) y un brazo derecho con IK hasta el marcador `Grip_R6` de la palma. El cajero solo estiraba el brazo hacia la caja. El producto «en el mostrador» quedaba a los pies del cliente. Sin clips nuevos de Mixamo, la venta se arma con esos clips más alcance procedural, con cliente y cajero sincronizados por un mismo guion.
+
+**Guion del mostrador** (`Domain/CounterChoreography.cs`, sin Unity y con pruebas). Para cada estado y segundo indica a qué apunta la mano del cliente y la del cajero, y dónde está cada objeto.
+
+- **Compra:**
+  1. El cliente toma el producto del estante.
+  2. Lo deja sobre el mostrador.
+  3. El cajero lo toma, lo pasa por el escáner y lo deja del lado del cliente.
+  4. El cliente saca los billetes del bolsillo y se los da en la mano.
+  5. El cajero los guarda en la caja, saca el vuelto y lo entrega en la mano.
+  6. El cliente guarda el vuelto y se lleva la compra.
+- **Banco:**
+  1. El cliente saca número en la máquina de turnos y lo pasa por la bandeja.
+  2. El cajero lo toma y registra el retiro en su terminal.
+  3. El cajero cuenta el efectivo y lo deja en la bandeja.
+  4. El cliente lo toma y lo guarda.
+- **Tiempos** (`CounterTiming`): tomar 1,2 s, dejar 1,4 s, escanear 2,4 s, pagar 3,0 s, vuelto 1,2 s, llevar 1,2 s.
+
+**En la escena:**
+
+- `CounterExchange` (nuevo) calcula sobre el mostrador dónde se deja el producto, dónde queda la compra y dónde se pasa el dinero. Mueve el brazo del cajero, que da medio paso hacia el mostrador al tomar o entregar.
+- El cliente también se acerca hasta 32 cm desde su lugar y mira la caja.
+- `ShoppingPresentation` pone cada objeto donde dice el guion (estante, mano, mostrador o mano del cajero). Si el cliente no compra, el producto queda en su estante.
+- El gesto de pagar solo aparece al entregar y recibir dinero.
+
+**Personal trabajando** (`StaffWork`, nuevo). Entre clientes cada empleado lleva la mano a sus puntos de trabajo según su rol:
+
+- Cajeros, recepción, asesores y gerente teclean.
+- Cocineros, carnicero y panadera trabajan en la plancha o la vitrina con el gesto de manipular.
+- El reponedor acomoda estantes a distintas alturas.
+- Vendedores, mesero y probadores atienden con gestos más espaciados.
+
+Los sentados mueven las manos sobre el escritorio. El cajero pausa su trabajo mientras atiende.
+
+**Clientes que deciden** (`PedestrianRoutine`):
+
+- Antes de su puesto miran hasta dos puestos ajenos. Si uno está ocupado más de 6 s, pasan al siguiente.
+- El 75 % compra y el resto se va sin comprar (`PedestrianSettings.BuyChance` y `MaxLooks`).
+- En el banco también pasan primero por la máquina de turnos o los folletos.
+
+**Más gente y más seguido:**
+
+- Cada local cercano mantiene hasta 5 clientes, nunca más que sus puestos.
+- Nuevos clientes cada 2–5 s, en locales a menos de 100 m.
+- Los paseantes reconsideran visitar cada 2–5 s, con una búsqueda de 55 m.
+- Las llegadas se separan 2,5 s y el cupo de peatones pasa de 45 a 55.
+
+### Archivos de la revisión 28
+
+- Nuevos:
+  - `Scripts/AI/CityLifeR5/Domain/CounterChoreography.cs`
+  - `Scripts/AI/CityLifeR5/CounterExchange.cs`
+  - `Scripts/AI/CityLifeR5/StaffWork.cs`
+- Modificados en `Scripts/AI/CityLifeR5/`:
+  - `Domain/PedestrianRoutine.cs`
+  - `ShopActivity.cs`
+  - `ShoppingPresentation.cs`
+  - `PedestrianActor.cs`
+  - `CashierPresentation.cs`
+  - `PedestrianPresentation.cs`
+  - `PedestrianSettings.cs` (`PaySeconds` reemplazado por `BuyChance` y `MaxLooks`)
+- Modificados en `Scripts/AI/Street/`: `SidewalkPopulation.cs`, `SidewalkVisit.cs` y `SidewalkWalker.cs`.
+- Editor:
+  - `City25Staff.cs`: rutinas de trabajo por rol.
+  - `City25Shops.cs`: trabajo del cajero.
+  - `City25Builder.cs`: constructor `ciudad25-28`.
+- Pruebas en `Art/BlenderScripts/HideoutB1Fix~/SidewalkTests~/`:
+  - Nuevo `CounterTests.cs`.
+  - Actualizados `VisitTests.cs`, `PopulationTests.cs`, `StreetTests.cs` y `run_tests.py`.
+  - Resultados en `runtime-results.txt`.
+
+### Prueba de la revisión 28 en Unity
+
+1. Volver a Unity y esperar la compilación. Console sin errores rojos.
+2. Pulsar **Alarma > Crear y probar juego**. Reconstruye la ciudad (constructor `ciudad25-28`).
+3. Con M, viajar al supermercado y mirar la caja 1 de cerca. El cliente deja el producto en la cinta. La cajera lo toma, lo pasa por el escáner y lo deja al otro lado. El cliente saca billetes y se los da. La cajera los guarda y devuelve el vuelto. El cliente lo guarda y se lleva la compra.
+4. En el banco: el cliente toma número en la máquina, lo pasa por la bandeja, el cajero teclea, deja el efectivo en la bandeja y el cliente lo guarda.
+5. Mirar al personal entre clientes: cajeros tecleando, cocineros en la plancha, reponedor en los estantes, asesores sentados con las manos en el escritorio.
+6. Contar clientes: varios entrando, mirando más de un producto. Algunos se van sin comprar.
+7. Si una mano atraviesa el mostrador, un objeto queda flotando o alguien se queda quieto en la fila, enviar captura con el nombre del local y del NPC.
+
+### Verificación de la revisión 28
+
+Pasaron 61 pruebas: las 50 anteriores, actualizadas a los nuevos tiempos y capacidades, y 11 nuevas. Las nuevas cubren el recorrido del producto, el dinero de mano en mano, el vuelto, las manos juntas al pagar, el cajero solo con el cliente del mostrador, número y efectivo por la bandeja del banco, mirar dos puestos ajenos, la duración del pago, irse sin comprar y no superar los puestos del local. Alarma.CityLife, Alarma.AI, Alarma.CityLife.Editor, Alarma.Playtest y Alarma.City.Editor compilaron con C# 9 contra Unity 6000.3.27f2. No se ejecutaron la reconstrucción ni Play: la orientación del objeto en la palma y el alcance real del brazo se ven en Unity.
+
+**Límite.** El agarre es de una mano (derecha) con IK y el resto del cuerpo usa los seis clips existentes. Para movimientos más finos se pueden agregar clips de Mixamo (tomar un objeto, teclear, cocinar, entregar). Alain los descarga en el navegador; según CLAUDE.md, los FBX crudos de Mixamo no se suben al repositorio público.
+
+
+## Revisión 29: puertas que abren, locales en marcha al llegar y bolsa en la mano
+
+Alain probó la revisión 28 y envió dos capturas (COMIDA y SUPERMERCADO) con tres problemas:
+
+- No podía abrir la puerta de ningún local. La animación de empujar se veía, pero la hoja no giraba, y los clientes quedaban esperando afuera.
+- Al llegar con M todavía no había gente comprando.
+- Un cliente quieto con su compra llevaba la bolsa en la espalda.
+
+**Causas.**
+
+1. `ShopDoor` solo deja girar la hoja si su recorrido no toca ningún collider, y eso incluía a las personas. Con más clientes había gente esperando a ambos lados de la puerta y nadie podía abrir: un bloqueo mutuo.
+2. Las alfombras nuevas de entrada recibieron un collider a 13 cm de altura, justo donde pasa el borde inferior de la hoja.
+3. El revestimiento de los pilares de banco, joyería, supermercado y ropa quedó pegado a la bisagra y trababa la apertura hacia afuera.
+4. Al llegar con M, la población solo ponía un cliente en la puerta y otro caminando.
+5. La bolsa cuelga del agarre de la mano, pero el clip `Idle` la anima hacia otra posición cuando el cliente se queda quieto.
+
+**Correcciones.**
+
+- `ShopDoor`: la hoja solo se detiene ante estructura y muebles; las personas ya no la frenan. Sigue quedando abierta mientras alguien pasa.
+- `City25Kit`: alfombras sin collider (Runner, LoungeRug, CubicleRug, Rug, VipCarpet, BankStripe).
+- `build_shops.py`: el revestimiento junto a la puerta empieza a 15 cm de la bisagra. Se regeneraron los seis locales y sus planos quedaron idénticos.
+- **Locales en marcha:** al llegar con M, cada local cercano arranca con clientes ya comprando dentro (capacidad − 2, hasta 3), uno entrando por la puerta y otro en camino. Los de adentro empiezan en su puesto mirando productos y siguen la visita completa: eligen, hacen fila, pagan y salen.
+  - Nuevos `PedestrianRoutine.BeginInside`, `ResumeInside` y `PedestrianActor.BeginInside`.
+  - `SidewalkWalker` recibe `VisitStart` (Sidewalk, Door o Inside).
+- `PedestrianPresentation`: guarda el giro de la bolsa en reposo y la vuelve a poner en la mano después del Animator.
+- Constructor `ciudad25-29`.
+
+### Archivos de la revisión 29
+
+- `Scripts/AI/CityLifeR5/`: `ShopDoor.cs`, `Domain/PedestrianRoutine.cs`, `PedestrianActor.cs` y `PedestrianPresentation.cs`.
+- `Scripts/AI/Street/`: `SidewalkWalker.cs` y `SidewalkPopulation.cs`.
+- `Scripts/City/Editor/City25/`: `City25Kit.cs` y `City25Builder.cs`.
+- `Art/BlenderScripts/build_shops.py`.
+- Regenerados: `Art/City/Shops/Local_*.fbx`, `BlenderSources~/Alarma_Shops_*.blend` y capturas de `Previews~`.
+- Pruebas en `SidewalkTests~`: `VisitTests.cs`, `PopulationTests.cs`, `CounterTests.cs` y `runtime-results.txt`.
+
+### Prueba de la revisión 29 en Unity
+
+1. Volver a Unity, esperar la importación y pulsar **Alarma > Crear y probar juego**. Reconstruye la ciudad.
+2. Ir a cualquier local y abrir la puerta con E desde afuera y desde adentro, con y sin clientes cerca. Debe abrir siempre. Probar también la guarida.
+3. Viajar con M al supermercado, al banco y a un local de comida. Desde el primer segundo debe haber clientes dentro mirando o comprando, uno entrando y otro llegando. Los clientes no deben quedarse esperando afuera.
+4. Mirar a un cliente quieto con su compra: la bolsa va en la mano, no en la espalda.
+
+### Verificación de la revisión 29
+
+Pasaron 63 pruebas. Las nuevas cubren:
+
+- Al llegar hay un cliente comprando dentro, otro en la puerta y otro en camino.
+- Quien empieza adentro completa la compra.
+- No se crea un cliente dentro si el local está lleno.
+
+Los cinco ensamblados compilaron contra Unity 6000.3.27f2. El giro de la puerta usa la física de Unity, así que su prueba es la de Play.

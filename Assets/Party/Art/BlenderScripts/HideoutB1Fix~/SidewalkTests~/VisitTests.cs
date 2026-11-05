@@ -11,6 +11,7 @@ namespace Alarma.AI.CityLife
     public class ShopActivity : MonoBehaviour
     {
         public bool IsConfigured = true;
+        public int StationCount = 5;
         public ShopService Service = new ShopService("test", new ShopQueue(1), 1, 3, 700);
         public ShopTaskSettings Tasks = new ShopTaskSettings();
         public object Traffic;
@@ -20,7 +21,13 @@ namespace Alarma.AI.CityLife
         public bool Failed;
         public PedestrianState CurrentState;
         public int WalletCents = 1200;
-        public int Begins;
+        public int Begins, Insides;
+        public bool BeginInside(int id, ShopActivity shop, PedestrianSettings settings, int marker, object traffic, int wallet)
+        {
+            Insides++;
+            CurrentState = PedestrianState.Browsing;
+            return true;
+        }
         public bool Begin(int id, Vector3 position, ShopActivity shop, PedestrianSettings settings, bool shopper, int marker,
             object traffic, bool oneVisit, int? wallet)
         {
@@ -78,8 +85,58 @@ internal static class VisitTests
         check(shopper.Begins == 1 && shopper.CurrentState == PedestrianState.Inactive && Math.Abs(walker.transform.position.z) <= .28f,
             "el mismo actor vuelve a la acera después de la visita");
         walker.End();
+        CheckCustomers(graph, walkable, check, tick);
         CheckTransaction(false, check);
         CheckTransaction(true, check);
+    }
+
+    // Revisión 23: varios clientes por local, clientes enviados por la población y arranque en la puerta.
+    private static void CheckCustomers(SidewalkGraph crossing, SidewalkGraph walkable, Action<bool,string> check, Action<SidewalkWalker[]> tick)
+    {
+        var shared = new SidewalkVisit(new ShopActivity(), 4, 0, new Vector3(8,.175f,1.7f));
+        var planner = new SidewalkVisitPlanner(3);
+        var visits = new[]{shared};
+        var settings = new PedestrianSettings();
+        var path = new List<int>();
+        SidewalkWalker Customer() { var w = new SidewalkWalker { Component = new PedestrianActor() }; w.Configure(new Animator()); return w; }
+
+        var blocked = Customer();
+        check(!blocked.Begin(crossing, null, 0, 3, planner, visits, settings, 20, shared) && shared.Customers == 0,
+            "no envía un cliente que tendría que cruzar la calzada");
+
+        var first = Customer(); var second = Customer();
+        bool sent = first.Begin(walkable, null, 0, 4, planner, visits, settings, 21, shared)
+            && second.Begin(walkable, null, 8, 5, planner, visits, settings, 22, shared);
+        check(sent && shared.Customers == 2 && first.Visiting && second.Visiting, "un local admite varios clientes a la vez");
+        check(planner.Find(walkable, 6, visits, 100000, path) == null, "separa la siguiente llegada a la puerta");
+        Time.time += SidewalkVisitPlanner.ArrivalSpacing + .1f;
+        check(planner.Find(walkable, 6, visits, 100000, path) == shared, "admite otro cliente tras la pausa y bajo la capacidad");
+
+        var shopper = (PedestrianActor)first.Component;
+        for (int i = 0; i < 150 && shopper.Begins == 0; i++) tick(new[]{first});
+        check(shopper.Begins == 1 && (first.transform.position - shared.Approach).sqrMagnitude < .0001f,
+            "el cliente enviado camina por su acera y entra al local");
+
+        var door = Customer();
+        bool placed = door.Begin(walkable, null, 9, 6, planner, visits, settings, 23, shared, VisitStart.Door);
+        bool startsAtDoor = (door.transform.position - shared.Approach).sqrMagnitude < .0001f;
+        tick(new[]{door});
+        check(placed && startsAtDoor && ((PedestrianActor)door.Component).Begins == 1 && shared.Customers == 3,
+            "al llegar el jugador un cliente ya está entrando por la puerta");
+        Time.time += SidewalkVisitPlanner.ArrivalSpacing + .1f;
+        check(planner.Find(walkable, 6, visits, 100000, path) == null, "respeta la capacidad del local");
+
+        var small = new SidewalkVisit(new ShopActivity { StationCount = 1 }, 4, 0, new Vector3(8,.175f,1.7f));
+        var lone = Customer();
+        lone.Begin(walkable, null, 0, 7, planner, new[]{small}, settings, 24, small);
+        Time.time += SidewalkVisitPlanner.ArrivalSpacing + .1f;
+        check(small.Customers == 1 && planner.Find(walkable, 6, new[]{small}, 100000, path) == null,
+            "nunca admite más clientes que puestos tiene el local");
+        lone.End();
+        first.End(); second.End(); door.End();
+        Time.time += 4.1f; // pausa que deja libre el lugar de quien se va
+        check(shared.Customers == 0 && planner.Find(walkable, 6, visits, 100000, path) == shared,
+            "al terminar cada cliente libera su lugar");
     }
 
     private static void CheckTransaction(bool withdrawal, Action<bool,string> check)
@@ -96,10 +153,10 @@ internal static class VisitTests
         bool browsed = false;
         visitor.StateChanged += state => browsed |= state == PedestrianState.Browsing;
         visitor.Start();
-        for (int i = 0; i < 160; i++) visitor.Tick(.1f);
+        for (int i = 0; i < 300; i++) visitor.Tick(.1f);
         int expectedWallet = withdrawal ? 2700 : 1300;
         check(visitor.State == PedestrianState.Completed && visitor.WalletCents == expectedWallet
-            && service.Stock == 1 && service.TillCents == 700 && browsed != withdrawal
+            && service.Stock == 1 && service.TillCents == 700 && browsed
             && (withdrawal ? service.WithdrawalCount == 1 && service.PurchaseCount == 0 : service.PurchaseCount == 1 && service.WithdrawalCount == 0),
             withdrawal ? "retira efectivo del banco y completa la visita una vez" : "elige, paga y completa la compra una vez");
         check(queue.IndexOf(8) < 0 && service.Find(8) == null, "libera caja y sesión al salir " + (withdrawal ? "del banco" : "de tienda"));

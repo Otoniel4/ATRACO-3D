@@ -311,3 +311,34 @@ Constructor `ciudad25-21`. Población local unificada para paseo, compras y reti
 ## Recuperación de la reconstrucción B1 — revisión 22 (pendiente de prueba)
 
 El borrado de la carpeta de ciudad en la revisión 21 quedó parcial. Con Unity cerrado se repusieron 534 archivos y se cotejaron los 538 con la copia verificada de la revisión 20. Constructor `ciudad25-22` en ruta independiente por intento, informe publicado tras importar la escena, recuperación del montaje previo y respaldo portátil vinculado al informe. Mantener Unity 6000.3.27f2. Pendiente prueba en Play de Alain dentro de B1.
+
+## Clientes en locales y llegada con mapa B1 — revisión 23 (pendiente de prueba)
+
+Sin peatones al viajar con M al supermercado, banco o joyería y sin visitas visibles. `SidewalkPopulation` repuebla tras saltos de más de 40 m y mantiene hasta tres clientes por local a menos de 85 m: uno en la puerta al llegar y otros caminando por la misma acera. `SidewalkVisit` admite capacidad con llegadas separadas 4 s. `SidewalkWalker` acepta un local asignado con ruta sin cruzar la calzada. Solo cambian scripts de runtime; la escena publicada sirve sin reconstruir. Mantener Unity 6000.3.27f2. Pendiente Play de Alain dentro de B1.
+
+## Banco rediseñado y personal en locales B1 — revisión 24 (pendiente)
+
+`build_shops.py -- --only <tipos>` regenera solo esos locales y fusiona JSON y materiales. El banco nuevo tiene ventanillas con vidrio, zona de personal, recepción, cajeros automáticos, asesores, gerencia y sala de espera. Los puestos `staff` (rol, pose stand/seat, uniforme) van en `shop_layouts.json` y los coloca `City25Staff` con las prendas de `Characters/Cast/staff_uniform_slots.json` (`analyze_staff_uniforms.py`). Constructor `ciudad25-24`. Blender 4.5.10 en este equipo; `alarmart.py` acepta EEVEE de 4.5 y de 5. Pendiente aprobación visual y Play de Alain; luego seguir con los otros cinco locales.
+
+## Joyería rediseñada con personal B1 — revisión 25 (pendiente)
+
+Banco aprobado visualmente por Alain (revisión 24, Play pendiente). Joyería regenerada con `build_shops.py -- --only joyeria`: circuito de vitrinas (`showcase`), mostrador con taburetes, nichos, islas, araña, escaparates y 4 empleados. Faltan supermercado, minimarket, comida y ropa con el mismo criterio.
+
+## Supermercado rediseñado con personal B1 — revisión 26 (pendiente)
+
+Joyería aprobada visualmente por Alain. Supermercado regenerado con `--only supermercado`: tres cajas (`checkout_lane`), verdulería, cuatro pasillos con ofertas, lácteos, carnicería y panadería, bebidas y 6 empleados. Son 177.320 triángulos (antes 132.408, por `Prop_RetailShelf`); medir con el Profiler antes de optimizar. Faltan minimarket, comida y ropa.
+
+## Minimarket, comida y ropa rediseñados con personal B1 — revisión 27 (pendiente)
+
+Supermercado aprobado visualmente por Alain. Minimarket, comida y ropa regenerados con `--only minimarket,comida,ropa`, con nuevos helpers `cash_counter`, `wall_stock`, `booth` y `round_rack`. Los seis tipos de local tienen puestos `staff`: se esperan 22 cajeros y 76 empleados más. Pendiente Play y Profiler de Alain.
+
+**2026-11-05:** Diseño de los seis locales aprobado por Alain. Falta Play de las revisiones 23 a 27 y Profiler antes de cerrar B1 o hacer commit.
+
+
+## Venta realista, personal trabajando y clientes que deciden B1 — revisión 28 (pendiente)
+
+`CounterChoreography` (dominio, probado) dicta manos y objetos por estado y segundo. `CounterExchange` aplica anclas del mostrador, IK y medio paso del cajero. `ShoppingPresentation` mueve producto, billetes, vuelto y número. `StaffWork` hace trabajar al personal por rol (`City25Staff.AddWork`). `PedestrianRoutine` agrega `Looks`, `Buys` y `CounterTiming`; `PedestrianSettings.PaySeconds` pasó a `BuyChance` y `MaxLooks`. Población: 5 clientes por local (tope = puestos), cupo 55. Constructor `ciudad25-28`. Solo existen seis clips; los clips extra de Mixamo quedan como mejora con descarga de Alain.
+
+## Puertas, locales en marcha y bolsa B1 — revisión 29 (pendiente)
+
+`ShopDoor` barre la hoja solo contra estática (sin capas 28 a 31) para evitar bloqueos con multitudes. `City25Kit` excluye alfombras de colisión. El revestimiento junto a la puerta va a ±1,42 m. `VisitStart.Inside` y `BeginInside` crean clientes ya comprando al llegar con M. `PedestrianPresentation` fija la bolsa con `bagRest`. Constructor `ciudad25-29`.

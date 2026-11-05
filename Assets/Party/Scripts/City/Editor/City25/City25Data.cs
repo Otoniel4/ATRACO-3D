@@ -76,7 +76,13 @@ namespace Alarma.City.Editor
         public int price_cents;
         public float width, depth, door_width;
         public float[] walkable, obstacles, sidewalk, entry, exit, stations, products, queue, counter, scan, cashier, receipt, till;
+        public StaffPost[] staff = Array.Empty<StaffPost>();
     }
+    // Puesto de un empleado en coordenadas locales del local; pose «stand» o «seat» y materiales de su uniforme.
+    [Serializable] internal sealed class StaffPost { public string role, pose, top, bottom; public float x, z, yaw, seat; }
+    // Prendas de cada civil que se cambian por el uniforme (analyze_staff_uniforms.py).
+    [Serializable] internal sealed class UniformSlots { public UniformModel[] models = Array.Empty<UniformModel>(); }
+    [Serializable] internal sealed class UniformModel { public string model; public string[] top = Array.Empty<string>(), bottom = Array.Empty<string>(); }
 
     [Serializable] internal sealed class GroundManifest { public float sector_m, half; public int count; public GroundSector[] sectors = Array.Empty<GroundSector>(); }
     [Serializable] internal sealed class GroundSector { public string id; public int[] sector; public float[] center; public int faces; }
