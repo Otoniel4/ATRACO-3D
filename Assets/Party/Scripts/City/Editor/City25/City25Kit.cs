@@ -17,7 +17,6 @@ namespace Alarma.City.Editor
     // Todo vive en Art/City (arte versionado) y se actualiza sin cambiar GUID, así que repetirlo es rápido.
     internal static class City25Kit
     {
-        private const string Prefabs = City25Paths.Kit + "/Prefabs";
         // Autos del proyecto (ruedas y puertas separadas); ya traen sus materiales de paleta.
         public static readonly string[] Cars = { "Car_Sedan", "Car_Hatchback", "Car_SUV", "Car_Pickup", "Car_Van", "Car_Coupe", "Car_Taxi" };
         private const string Palette = "Assets/Party/Data/CarPalette.asset";
@@ -30,7 +29,7 @@ namespace Alarma.City.Editor
         public static KitManifest Manifest()
             => new KitManifest { pieces = Manifests.SelectMany(m => City25Paths.Read<KitManifest>(City25Paths.Kit + m).pieces).ToArray() };
 
-        public static Dictionary<string, GameObject> Prepare(KitManifest kit)
+        public static Dictionary<string, GameObject> Prepare(KitManifest kit, string output)
         {
             string[] pieces = Directory.GetFiles(City25Paths.Kit, "*.fbx", SearchOption.AllDirectories).Select(p => p.Replace('\\', '/')).ToArray();
             string[] ground = Directory.GetFiles(City25Paths.Ground, "*.fbx").Select(p => p.Replace('\\', '/')).ToArray();
@@ -47,22 +46,21 @@ namespace Alarma.City.Editor
             var missing = names.Where(n => !materials.ContainsKey(n)).ToArray();
             if (missing.Length > 0) Debug.LogWarning("Ciudad 2 km: materiales sin color en los manifiestos (se usa el color del FBX): " + string.Join(", ", missing));
             FlatMaterialLibrary.Remap(models, materials, "Ciudad 2 km");
-            FlatMaterialLibrary.EnsureFolder(Prefabs);
             var lamps = LampMaterials();
             var prefabs = new Dictionary<string, GameObject>(StringComparer.Ordinal);
             foreach (var piece in kit.pieces)
             {
                 string model = pieces.FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == piece.id) ?? throw new FileNotFoundException("Falta la pieza del kit", piece.id);
-                prefabs[piece.id] = MakePrefab(piece, model, lamps);
+                prefabs[piece.id] = MakePrefab(piece, model, lamps, output);
             }
             var palette = CarColors();
-            foreach (string id in Cars) prefabs[id] = MakeParked(id, palette);
-            foreach (string path in shops) prefabs[Path.GetFileNameWithoutExtension(path)] = MakeShop(path);
+            foreach (string id in Cars) prefabs[id] = MakeParked(id, palette, output);
+            foreach (string path in shops) prefabs[Path.GetFileNameWithoutExtension(path)] = MakeShop(path, output);
             return prefabs;
         }
 
         // Local con interior: colisión de malla en la estructura y los muebles, y la puerta de dos hojas lista para abrirse.
-        private static GameObject MakeShop(string path)
+        private static GameObject MakeShop(string path, string output)
         {
             string id = Path.GetFileNameWithoutExtension(path);
             var root = new GameObject(id);
@@ -71,13 +69,14 @@ namespace Alarma.City.Editor
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
                 model.transform.SetParent(root.transform, false);
                 Transform left = Part(root, "DoorLeaf_L"), right = Part(root, "DoorLeaf_R");
-                // Puertas extra de un lugar (portón peatonal y portón corredizo del escondite): opcionales.
-                Transform gate = Optional(root, "GateLeaf_L"), slide = Optional(root, "SlideGate");
+                // Accesos adicionales de la guarida.
+                Transform gate = Optional(root, "GateLeaf_L"), garage = Optional(root, "GarageDoor");
+                Transform slide = garage != null ? garage : Optional(root, "SlideGate");
                 var moving = new[] { left, right, gate, slide }.Where(t => t != null).ToArray();
                 foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))
                 {
                     string name = filter.name;
-                    bool decoration = name.StartsWith("FloorTiles", StringComparison.Ordinal) || name.StartsWith("CeilingLight", StringComparison.Ordinal)
+                    bool decoration = name.StartsWith("Detail_", StringComparison.Ordinal) || name.StartsWith("FloorTiles", StringComparison.Ordinal) || name.StartsWith("CeilingLight", StringComparison.Ordinal)
                         || name.StartsWith("Aisle", StringComparison.Ordinal) || name.StartsWith("Sign", StringComparison.Ordinal) || name.StartsWith("Awning", StringComparison.Ordinal);
                     if (!decoration && !moving.Any(leaf => filter.transform.IsChildOf(leaf))) filter.gameObject.AddComponent<MeshCollider>();
                 }
@@ -87,9 +86,12 @@ namespace Alarma.City.Editor
                 root.AddComponent<ShopDoor>().Configure(left, right, gateway);
                 if (gate != null) root.AddComponent<ShopDoor>().Configure(gate, null, Part(root, "Umbral_Porton"));
                 if (slide != null)
-                    root.AddComponent<ReviewSlidingDoor>().Configure(slide, Part(root, "Umbral_Auto"), Part(root, "SlideGate_Abierto").localPosition - slide.localPosition);
-                FlatMaterialLibrary.EnsureFolder(City25Paths.Shops + "/Prefabs");
-                return PrefabUtility.SaveAsPrefabAsset(root, City25Paths.Shops + "/Prefabs/" + id + ".prefab");
+                {
+                    var open = Part(root, garage != null ? "GarageOpen" : "SlideGate_Abierto");
+                    root.AddComponent<ReviewSlidingDoor>().Configure(slide, Part(root, "Umbral_Auto"),
+                        slide.parent.InverseTransformVector(open.position - slide.position), garage != null);
+                }
+                return PrefabUtility.SaveAsPrefabAsset(root, output + "/Prefabs/" + id + ".prefab");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
@@ -97,19 +99,42 @@ namespace Alarma.City.Editor
         // Caja de colisión de una hoja de puerta, en el espacio de su bisagra para que gire con ella.
         private static void LeafCollider(Transform leaf)
         {
-            var renderers = leaf.GetComponentsInChildren<Renderer>(true);
-            var bounds = renderers[0].bounds; foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+            var bounds = new Bounds();
+            bool found = false, legacyFrame = false;
+            foreach (var filter in leaf.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (filter.sharedMesh == null || filter.name.StartsWith("Detail_", StringComparison.Ordinal)
+                    || filter.name.Contains("Handle") || filter.name.StartsWith("DoorBar_", StringComparison.Ordinal)) continue;
+                legacyFrame |= filter.name.StartsWith("DoorFrame_", StringComparison.Ordinal);
+                var mesh = filter.sharedMesh.bounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    var point = new Vector3((corner & 1) == 0 ? mesh.min.x : mesh.max.x,
+                        (corner & 2) == 0 ? mesh.min.y : mesh.max.y, (corner & 4) == 0 ? mesh.min.z : mesh.max.z);
+                    point = leaf.InverseTransformPoint(filter.transform.TransformPoint(point));
+                    if (!found) { bounds = new Bounds(point, Vector3.zero); found = true; }
+                    else bounds.Encapsulate(point);
+                }
+            }
+            if (!found) throw new InvalidOperationException("La hoja no tiene geometría de colisión: " + leaf.name);
+            if (legacyFrame)
+            {
+                // En los locales anteriores, la bisagra coincide con la jamba. Dejar libre ese pequeño tramo
+                // permite girar a ambos lados sin que el grosor de la caja bloquee la propia bisagra.
+                float gap = Mathf.Min(bounds.size.x * .18f, .14f / leaf.TransformVector(Vector3.right).magnitude);
+                bounds.center += Vector3.right * (Mathf.Sign(bounds.center.x) * gap * .5f);
+                bounds.size -= Vector3.right * gap;
+            }
             var box = leaf.gameObject.AddComponent<BoxCollider>();
-            box.center = leaf.InverseTransformPoint(bounds.center);
-            Vector3 size = leaf.InverseTransformVector(bounds.size);
-            box.size = new Vector3(Mathf.Abs(size.x), Mathf.Abs(size.y), Mathf.Abs(size.z));
+            box.center = bounds.center;
+            box.size = bounds.size;
         }
 
         public static GameObject CarModel(string id) => AssetDatabase.LoadAssetAtPath<GameObject>(City25Paths.Vehicles + "/" + id + ".fbx") ?? throw new FileNotFoundException("Falta el auto", id);
 
         // Auto estacionado: no se abre ni se mueve, así que sus ~120 piezas se juntan en una malla por material
         // (unas 20). Las luces y el tablero van apagados. Pintura fija según su posición. Se regenera con la ciudad.
-        private static GameObject MakeParked(string id, CarPalette palette)
+        private static GameObject MakeParked(string id, CarPalette palette, string output)
         {
             var root = new GameObject(id);
             try
@@ -136,26 +161,29 @@ namespace Alarma.City.Editor
                 {
                     var combined = new Mesh { name = id + "_" + group.Key.name, indexFormat = IndexFormat.UInt32 };
                     combined.CombineMeshes(group.Value.ToArray(), true, true);
-                    AssetDatabase.CreateAsset(combined, City25Paths.Output + "/Art/" + combined.name + ".asset");
+                    FlatMaterialLibrary.EnsureFolder(output + "/Art");
+                    AssetDatabase.CreateAsset(combined, output + "/Art/" + combined.name + ".asset");
                     var part = new GameObject(group.Key.name);
                     part.transform.SetParent(root.transform, false);
                     part.AddComponent<MeshFilter>().sharedMesh = combined;
-                    part.AddComponent<MeshRenderer>().sharedMaterial = LightsOff(group.Key);
+                    part.AddComponent<MeshRenderer>().sharedMaterial = LightsOff(group.Key, output);
                 }
                 var box = root.AddComponent<BoxCollider>(); box.center = bounds.center; box.size = bounds.size;
                 root.AddComponent<CarAppearance>().Configure(palette, false, PaintRenderers(root, id), null);
-                return PrefabUtility.SaveAsPrefabAsset(root, City25Paths.Output + "/Prefabs/" + id + "_Estacionado.prefab");
+                FlatMaterialLibrary.EnsureFolder(output + "/Prefabs");
+                return PrefabUtility.SaveAsPrefabAsset(root, output + "/Prefabs/" + id + "_Estacionado.prefab");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
         // Copia sin emisión de los materiales que brillan (faros, pilotos, intermitentes, pantallas): un auto estacionado está apagado.
-        private static Material LightsOff(Material material)
+        private static Material LightsOff(Material material, string output)
         {
             if (!material.IsKeywordEnabled("_EMISSION")) return material;
-            string path = City25Paths.Output + "/Materials/" + material.name + "_Apagado.mat";
+            string path = output + "/Materials/" + material.name + "_Apagado.mat";
             var off = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (off != null) return off;
+            FlatMaterialLibrary.EnsureFolder(output + "/Materials");
             off = new Material(material) { name = material.name + "_Apagado" };
             off.DisableKeyword("_EMISSION");
             off.SetColor("_EmissionColor", Color.black);
@@ -209,7 +237,7 @@ namespace Alarma.City.Editor
             importer.SaveAndReimport();
         }
 
-        private static GameObject MakePrefab(KitPiece piece, string modelPath, Material[] lamps)
+        private static GameObject MakePrefab(KitPiece piece, string modelPath, Material[] lamps, string output)
         {
             var root = new GameObject(piece.id);
             try
@@ -223,7 +251,7 @@ namespace Alarma.City.Editor
                     throw new InvalidOperationException($"{piece.id}: medidas {bounds.size} distintas de kit.json ({piece.width} × {piece.depth}).");
                 AddCollider(root, piece, bounds);
                 if (piece.kind == "signal") AddLamps(root, lamps);
-                return PrefabUtility.SaveAsPrefabAsset(root, Prefabs + "/" + piece.id + ".prefab");
+                return PrefabUtility.SaveAsPrefabAsset(root, output + "/Prefabs/" + piece.id + ".prefab");
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }

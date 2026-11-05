@@ -6,8 +6,8 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Alarma.AI.CityLife;
+using Alarma.AI.CityLife.Editor;
 using Alarma.Core.Settings;
 using Alarma.City.Playtest;
 using Alarma.City.Playtest.Editor;
@@ -18,7 +18,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-17";
+        private const string Version = "ciudad25-22";
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -26,65 +26,82 @@ namespace Alarma.City.Editor
         public static void BuildAndPlay()
         {
             if (building || EditorApplication.isPlayingOrWillChangePlaymode) return;
-            building = true; Scene stage = default; var previous = SceneManager.GetActiveScene();
+            building = true;
+            City25BuildRecovery recovery = null;
             try
             {
                 ReviewSceneProtection.Capture();
                 string stamp = Stamp();
-                if (File.Exists(City25Paths.Report))
+                var ready = ReadReport();
+                if (ready != null && ready.version == Version + "|" + stamp)
                 {
-                    var ready = JsonUtility.FromJson<City25Record>(File.ReadAllText(City25Paths.Report));
-                    if (ready.complete && ready.version == Version + "|" + stamp && File.Exists(ready.scene)) { EditorSceneManager.OpenScene(ready.scene, OpenSceneMode.Single); StartPlay(); return; }
+                    EditorSceneManager.OpenScene(ready.scene, OpenSceneMode.Single);
+                    SelectBuildScene(ready.scene);
+                    StartPlay();
+                    return;
                 }
-                // La escena anterior de la ciudad vive en la carpeta que se regenera: se reemplaza por la nueva antes de borrarla.
-                bool replacing = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).Any(s => s.path.StartsWith(City25Paths.Output + "/", StringComparison.Ordinal));
-                stage = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, replacing ? NewSceneMode.Single : NewSceneMode.Additive); SceneManager.SetActiveScene(stage);
-                if (AssetDatabase.IsValidFolder(City25Paths.Output)) AssetDatabase.DeleteAsset(City25Paths.Output);
-                PrepareOutput();
+                recovery = new City25BuildRecovery(ready?.scene);
+                string output = recovery.Output;
+                PrepareOutput(output);
+                var stage = recovery.OpenStage();
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Kit y suelo", .05f);
-                var prefabs = City25Kit.Prepare(City25Kit.Manifest());
+                var prefabs = City25Kit.Prepare(City25Kit.Manifest(), output);
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Protagonistas", .45f);
-                var (roles, walkers, civilians, shoppers, guard, police) = City25Characters.Prepare(City25Paths.Output);
+                var (roles, walkers, civilians, shoppers, guard, police) = City25Characters.Prepare(output);
                 var city = City25Paths.Read<CityObjects>(City25Paths.Plan + "/city_objects.json");
                 var ground = City25Paths.Read<GroundManifest>(City25Paths.Ground + "/ground.json");
                 var world = City25World.Build(prefabs, city, ground);
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Jugador, mapa y luz", .9f);
-                var map = City25Map.Create(City25Paths.Output);
+                var map = City25Map.Create(output);
                 var hideout = map.Places.FirstOrDefault(p => p.Category == "escondite") ?? throw new InvalidOperationException("El plano no tiene escondite.");
                 var streamer = world.Root.AddComponent<CitySectorStreamer>();
                 var settings = Settings();
-                var rig = ReviewPlayerRig.Create(streamer, hideout.Position + Vector3.up * .5f, roles, FarClip, settings);
+                var hideoutModel = world.Places.Single(p => p.data.place.kind == "escondite").instance;
+                var entrance = hideoutModel.GetComponentsInChildren<Transform>(true).SingleOrDefault(t => t.name == "PlayerSpawn")
+                    ?? throw new InvalidOperationException("El modelo de la guarida no tiene el marcador PlayerSpawn dentro del recibidor.");
+                var rig = ReviewPlayerRig.Create(streamer, entrance.position, roles, FarClip, settings);
+                rig.Player.transform.rotation = Quaternion.Euler(0f, entrance.eulerAngles.y, 0f);
+                rig.Camera.ResetView(entrance.eulerAngles.y);
                 streamer.Configure(rig.Player.transform, world.Sectors, ground.half, ActiveRadius);
-                var (shops, shopDoors) = City25Shops.Build(City25Paths.Output, world, City25Paths.Read<ShopLayouts>(City25Paths.Shops + "/shop_layouts.json"), shoppers);
+                var (shops, shopDoors) = City25Shops.Build(output, world, City25Paths.Read<ShopLayouts>(City25Paths.Shops + "/shop_layouts.json"), shoppers);
                 var doors = new GameObject("Puertas").AddComponent<ReviewDoorInteraction>();
-                // Todas las puertas de los lugares se abren con E: las de los locales y las del escondite (casa, portón y portón corredizo).
+                // E interactúa con el acceso más cercano. Las hojas abatibles también admiten empuje al acercarse.
                 var hinged = world.Places.SelectMany(p => p.instance.GetComponentsInChildren<ShopDoor>()).Union(shopDoors).ToArray();
                 var sliding = world.Places.SelectMany(p => p.instance.GetComponentsInChildren<ReviewSlidingDoor>()).ToArray();
                 doors.Configure(rig.Input, rig.Player.transform, hinged, sliding);
-                Shoppers(shops, shoppers, rig.Player.transform);
+                foreach (var shop in shops) shop.Traffic.ConfigureBlocker(rig.Player.transform);
                 int sentries = City25Security.Place(world, guard, police);
                 var life = City25Paths.Read<CityLife>(City25Paths.Plan + "/city_life.json");
                 var signals = City25Life.Signals(life, world.Signals);
-                City25Life.Pedestrians(City25Paths.Output, life, signals, walkers, rig.Player.transform);
-                City25Traffic.Build(City25Paths.Output, signals, rig.Player.transform, civilians);
+                City25Life.Pedestrians(output, life, signals, walkers, rig.Player.transform, shops, ShopperSettings());
+                City25Traffic.Build(output, signals, rig.Player.transform, civilians);
                 ReviewPlayerRig.Lighting(180, 430);
                 ReviewPlayerRig.CreateInterface(rig, streamer, doors, map, settings);
-                string acceptance = City25Acceptance.Validate(stage, world, city, hideout.Position);
-                File.WriteAllText(City25Paths.Output + "/Acceptance.json", acceptance);
-                if (!EditorSceneManager.SaveScene(stage, City25Paths.Scene)) throw new IOException("No se pudo guardar la escena de la ciudad.");
-                var record = new City25Record { complete = true, version = Version + "|" + stamp, scene = City25Paths.Scene, objects = world.Placed, sectors = world.Sectors.Length, places = map.Places.Length };
-                File.WriteAllText(City25Paths.Report, JsonUtility.ToJson(record, true)); AssetDatabase.Refresh();
-                for (int i = SceneManager.sceneCount - 1; i >= 0; i--) { var other = SceneManager.GetSceneAt(i); if (other != stage) EditorSceneManager.CloseScene(other, true); }
+                string acceptance = City25Acceptance.Validate(stage, world, city, rig.Player);
+                File.WriteAllText(output + "/Acceptance.json", acceptance);
+                if (!EditorSceneManager.SaveScene(stage, recovery.ScenePath)) throw new IOException("No se pudo guardar la escena de la ciudad.");
+                AssetDatabase.ImportAsset(recovery.ScenePath, ImportAssetOptions.ForceSynchronousImport);
+                var record = new City25Record { complete = true, version = Version + "|" + stamp, scene = recovery.ScenePath, objects = world.Placed, sectors = world.Sectors.Length, places = map.Places.Length };
+                recovery.Publish(JsonUtility.ToJson(record, true));
+                SelectBuildScene(recovery.ScenePath);
+                AssetDatabase.Refresh();
                 Selection.activeGameObject = rig.Player.gameObject;
                 Debug.Log($"Alarma: ciudad 2 × 2 km lista con {world.Placed} objetos en {world.Sectors.Length} sectores, {signals.Count} semáforos con ciclo, peatones en las aceras, autos con conductor, {shops.Length} locales con interior, {sentries} guardias y policías y {map.Places.Length} lugares en el mapa. Inicio en el escondite; M: mapa, Esc: menú.");
                 StartPlay();
             }
             catch (Exception error)
             {
-                if (stage.IsValid() && stage.isLoaded) EditorSceneManager.CloseScene(stage, true);
-                if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
-                if (AssetDatabase.IsValidFolder(City25Paths.Output)) AssetDatabase.DeleteAsset(City25Paths.Output);
-                if (!(error is OperationCanceledException)) { Debug.LogException(error); EditorUtility.DisplayDialog("Ciudad 2 km interrumpida", error.Message + "\n\nTus escenas siguen abiertas. Revisa Console.", "Cerrar"); }
+                string recovered = "No se reemplazó la ciudad guardada.";
+                if (recovery != null)
+                {
+                    try { recovered = recovery.Restore(); }
+                    catch (Exception restoreError)
+                    {
+                        Debug.LogException(restoreError);
+                        recovered = "La ciudad anterior sigue guardada. Puedes abrir su escena desde Project.";
+                    }
+                }
+                if (!(error is OperationCanceledException)) { Debug.LogException(error); EditorUtility.DisplayDialog("Ciudad 2 km interrumpida", error.Message + "\n\n" + recovered + "\nRevisa Console.", "Cerrar"); }
             }
             finally { building = false; EditorUtility.ClearProgressBar(); }
         }
@@ -101,8 +118,7 @@ namespace Alarma.City.Editor
             return settings;
         }
 
-        // Compradores cerca del jugador: llegan por la acera, empujan la puerta, eligen productos, hacen fila, pagan y salen.
-        private static void Shoppers(ShopActivity[] shops, PedestrianActor[] civilians, Transform player)
+        private static PedestrianSettings ShopperSettings()
         {
             const string path = "Assets/Party/Data/ShopperSettings.asset";
             var settings = AssetDatabase.LoadAssetAtPath<PedestrianSettings>(path);
@@ -113,15 +129,34 @@ namespace Alarma.City.Editor
                 settings.ActivationRadius = 90; settings.DeactivationRadius = 140;
                 AssetDatabase.CreateAsset(settings, path);
             }
-            var population = new GameObject("Compradores");
-            population.AddComponent<CityPopulationDirector>().Configure(settings, civilians, shops, player, population.AddComponent<LocalCityLifeAuthority>(), null);
-            foreach (var shop in shops) shop.Traffic.ConfigureBlocker(player);
+            return settings;
         }
 
-        private static void PrepareOutput()
+        private static City25Record ReadReport()
         {
-            foreach (string child in new[] { "Art", "Data", "Materials", "Controllers", "Prefabs", "Scenes" }) Directory.CreateDirectory(City25Paths.Output + "/" + child);
-            AssetDatabase.Refresh();
+            if (!File.Exists(City25Paths.Report)) return null;
+            City25Record ready;
+            try { ready = JsonUtility.FromJson<City25Record>(File.ReadAllText(City25Paths.Report)); }
+            catch (ArgumentException) { return null; }
+            return ready != null && ready.complete && City25Paths.IsCityScene(ready.scene) && File.Exists(ready.scene) ? ready : null;
+        }
+
+        private static void SelectBuildScene(string scene)
+        {
+            var scenes = EditorBuildSettings.scenes;
+            if (scenes.Any(entry => entry.path == scene)) return;
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                if (!City25Paths.IsCityScene(scenes[i].path)) continue;
+                scenes[i] = new EditorBuildSettingsScene(scene, scenes[i].enabled);
+                EditorBuildSettings.scenes = scenes;
+                return;
+            }
+        }
+
+        private static void PrepareOutput(string output)
+        {
+            foreach (string child in new[] { "Art", "Data", "Materials", "Controllers", "Prefabs", "Scenes" }) FlatMaterialLibrary.EnsureFolder(output + "/" + child);
         }
 
         private static void StartPlay()

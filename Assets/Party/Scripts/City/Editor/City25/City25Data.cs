@@ -17,8 +17,19 @@ namespace Alarma.City.Editor
         public const string Vehicles = "Assets/Party/Art/Vehicles";
         public const string Shops = "Assets/Party/Art/City/Shops";
         public const string Output = "Assets/Party/Generated/Ciudad2km";
-        public const string Scene = Output + "/Scenes/Ciudad_2km.unity";
+        public const string SceneSuffix = "/Scenes/Ciudad_2km.unity";
+        public const string Scene = Output + SceneSuffix;
+        public const string Revisions = Output + "/Revisiones";
         public const string Report = Output + "/BuildReport.json";
+
+        public static bool IsCityScene(string path)
+        {
+            if (path == Scene) return true;
+            const string prefix = Revisions + "/R_";
+            return path != null && path.Length == prefix.Length + 32 + SceneSuffix.Length
+                && path.StartsWith(prefix, StringComparison.Ordinal) && path.EndsWith(SceneSuffix, StringComparison.Ordinal)
+                && Guid.TryParseExact(path.Substring(prefix.Length, 32), "N", out _);
+        }
         // Colores planos del kit y del elenco, y los del suelo nuevo.
         public static readonly string[] ColorManifests = { "Assets/Party/Art/Materials/FlatColors.json", Ground + "/ground_materials.json", Vehicles + "/vehicle_materials.json", Shops + "/shop_materials.json", Kit + "/street_materials.json", Kit + "/district_materials.json", Shops + "/hideout_materials.json" };
 

@@ -8,13 +8,15 @@ import argparse
 import hashlib
 import io
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 MANIFEST = ROOT / "Assets/Party/Tools~/backup-manifest.json"
-SCENE = "Assets/Party/Generated/Ciudad2km/Scenes/Ciudad_2km.unity"
+CITY_OUTPUT = "Assets/Party/Generated/Ciudad2km"
+SCENE = CITY_OUTPUT + "/Scenes/Ciudad_2km.unity"
 LIMIT = 100 * 1024 * 1024
 PART_SIZE = 48 * 1024 * 1024
 
@@ -45,7 +47,20 @@ def record(path):
                 sha256=digest(canonical), normalize_crlf=normalized)
 
 
+def current_scene():
+    report_path = local_path(CITY_OUTPUT + "/BuildReport.json")
+    if not report_path.is_file():
+        return SCENE
+    report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    scene = report.get("scene", "")
+    revision = re.fullmatch(re.escape(CITY_OUTPUT) + r"/Revisiones/R_[0-9a-f]{32}/Scenes/Ciudad_2km\.unity", scene)
+    if not report.get("complete") or (scene != SCENE and revision is None) or not local_path(scene).is_file():
+        raise ValueError("El informe de ciudad no apunta a una escena publicada.")
+    return scene
+
+
 def snapshot():
+    scene = current_scene()
     archives = []
     for source in sorted((ROOT / "Assets/Party/Art").rglob("*.blend")):
         if source.stat().st_size <= LIMIT:
@@ -89,7 +104,9 @@ def snapshot():
         if path.stat().st_size >= LIMIT:
             raise ValueError("Archivo que GitHub no aceptará: " + relative)
         files.append(record(path))
-    contents = dict(format=1, scene=SCENE, unity="6000.3.27f2", archives=archives, files=files)
+    if not any(entry["path"] == scene for entry in files):
+        raise ValueError("La escena publicada no está incluida en el inventario: " + scene)
+    contents = dict(format=1, scene=scene, unity="6000.3.27f2", archives=archives, files=files)
     MANIFEST.write_text(json.dumps(contents, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(dict(files=len(files), archives=archives, total_bytes=sum(f["bytes"] for f in files)), ensure_ascii=False))
 

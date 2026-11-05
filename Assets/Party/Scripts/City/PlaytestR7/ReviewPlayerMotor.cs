@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Alarma.Core.Contracts;
 namespace Alarma.City.Playtest
 {
@@ -16,14 +17,42 @@ namespace Alarma.City.Playtest
         private Vector3 spawn,planar;
         private float vertical;
         private bool needsGround=true;
+        private bool doorLocked;
+        private Vector3 doorDirection, doorFacing;
         public float Speed{get;private set;}
         public event Action<float> SpeedChanged;
+        public bool DoorInteractionActive => doorLocked;
+        public float BodyRadius => controller != null ? controller.radius : .24f;
+        public Vector3 MoveDirection => Quaternion.Euler(0, view != null ? view.Yaw : 0, 0)
+            * new Vector3(input != null ? input.Move.x : 0, 0, input != null ? input.Move.y : 0);
+
+        public bool BeginDoorInteraction()
+        {
+            if (doorLocked || needsGround || controller == null || !controller.enabled) return false;
+            doorLocked = true;
+            planar = Vector3.zero;
+            return true;
+        }
+
+        public void GuideDoorInteraction(Vector3 delta, Vector3 facing)
+        {
+            if (!doorLocked) return;
+            doorDirection = Vector3.ClampMagnitude(delta / Mathf.Max(Time.deltaTime, .001f), 1.25f);
+            doorFacing = facing;
+        }
+
+        public void EndDoorInteraction()
+        {
+            doorLocked = false;
+            doorDirection = doorFacing = planar = Vector3.zero;
+        }
         public void Configure(ReviewInput controls,ReviewCamera camera,IPlayableWorld playable,Vector3 position)
         {input=controls;view=camera;world=playable;worldSource=playable as MonoBehaviour;spawn=position;transform.position=position;}
-        private void Awake(){controller=GetComponent<CharacterController>();world??=worldSource as IPlayableWorld;}
+        private void Awake(){controller=GetComponent<CharacterController>();world??=worldSource as IPlayableWorld;spawn=transform.position;}
         public void Teleport(Vector3 position)
         {
-            if(controller==null)controller=GetComponent<CharacterController>();controller.enabled=false;transform.position=position;controller.enabled=true;spawn=position;planar=Vector3.zero;vertical=0;needsGround=true;
+            EndDoorInteraction();
+            if(controller==null)controller=GetComponent<CharacterController>();controller.enabled=false;transform.position=position;controller.enabled=true;planar=Vector3.zero;vertical=0;needsGround=true;
         }
         private void Update()
         {
@@ -31,15 +60,18 @@ namespace Alarma.City.Playtest
             if(!world.ReadyAt(transform.position)){planar=Vector3.zero;Publish(0);return;}
             if(needsGround)
             {
-                Physics.SyncTransforms();if(Physics.Raycast(transform.position+Vector3.up*3,Vector3.down,out var hit,10,~((1<<29)|(1<<30)|(1<<31)),QueryTriggerInteraction.Ignore))
-                {controller.enabled=false;transform.position=hit.point+Vector3.up*.035f;controller.enabled=true;}
+                Physics.SyncTransforms();
+                if(!ReviewPlayerGrounding.TryResolve(gameObject.scene.GetPhysicsScene(),transform.position,
+                    controller.height,controller.radius,controller.slopeLimit,out var grounded,out _))
+                {planar=Vector3.zero;Publish(0);return;}
+                controller.enabled=false;transform.position=grounded;controller.enabled=true;spawn=grounded;vertical=0;
                 needsGround=false;
             }
-            Vector2 axis=input.Active?input.Move:Vector2.zero;
-            Vector3 direction=Quaternion.Euler(0,view.Yaw,0)*new Vector3(axis.x,0,axis.y);
+            Vector3 direction = doorLocked ? doorFacing : input.Active ? MoveDirection : Vector3.zero;
             // Arranque y frenado graduales: sin saltos de velocidad ni pies que patinan al soltar las teclas.
-            Vector3 target=direction*(input.Run?RunSpeed:WalkSpeed);
-            planar=Vector3.MoveTowards(planar,target,(target.sqrMagnitude>planar.sqrMagnitude?Acceleration:Deceleration)*Time.deltaTime);
+            Vector3 target = doorLocked ? doorDirection : direction * (input.Run ? RunSpeed : WalkSpeed);
+            planar = doorLocked ? target : Vector3.MoveTowards(planar, target,
+                (target.sqrMagnitude > planar.sqrMagnitude ? Acceleration : Deceleration) * Time.deltaTime);
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
             if(controller.isGrounded && vertical<0)vertical=-2;else vertical-=Gravity*Time.deltaTime;
             Physics.SyncTransforms();controller.Move((planar+Vector3.up*vertical)*Time.deltaTime);

@@ -98,8 +98,26 @@ namespace Alarma.AI.CityLife.Editor
 
         public static void EnsureFolder(string path)
         {
-            if (AssetDatabase.IsValidFolder(path)) return;
-            Directory.CreateDirectory(path); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            path = path.Replace('\\', '/').TrimEnd('/');
+            if (path == "Assets")
+            {
+                if (!AssetDatabase.IsValidFolder(path)) throw new IOException("Unity no reconoce la carpeta Assets.");
+                return;
+            }
+            if (!path.StartsWith("Assets/", StringComparison.Ordinal) || path.Split('/').Any(p => p == ".." || p.Length == 0))
+                throw new ArgumentException("Ruta de carpeta de assets no válida: " + path, nameof(path));
+            if (AssetDatabase.IsValidFolder(path) && Directory.Exists(path)) return;
+            string parent = Path.GetDirectoryName(path).Replace('\\', '/');
+            EnsureFolder(parent);
+            // Una carpeta física todavía no importada no equivale a una carpeta registrada en Unity.
+            if (Directory.Exists(path)) AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            if (AssetDatabase.IsValidFolder(path) && Directory.Exists(path)) return;
+            if (Directory.Exists(path) || AssetDatabase.IsValidFolder(path))
+                throw new IOException("La carpeta no coincide entre disco y AssetDatabase: " + path);
+            string guid = AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
+            if (string.IsNullOrEmpty(guid) || !string.Equals(AssetDatabase.GUIDToAssetPath(guid), path, StringComparison.OrdinalIgnoreCase)
+                || !AssetDatabase.IsValidFolder(path) || !Directory.Exists(path))
+                throw new IOException("Unity no pudo crear y registrar la carpeta exacta: " + path);
         }
 
         [Serializable] private sealed class OriginalPalette { public OriginalColor[] colors = Array.Empty<OriginalColor>(); }

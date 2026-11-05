@@ -1,0 +1,19 @@
+PASS piso interior bajo cielo raso a 3m
+PASS consulta anterior reproduce seleccion de losa
+PASS sin apoyo no acepta destino
+PASS no baja mas de 65cm al resolver inicio
+PASS rechaza pendiente fuera de limite
+PASS rechaza cuerpo dentro de mueble o puerta
+PASS ignora personajes de capa 29 al validar cuerpo
+PASS ignora jugador y triggers en la sonda
+PASS destino del mapa a y0 admite vereda elevada
+PASS rechaza escena fisica invalida
+PASS rechaza capsula invalida
+PASS Awake recaptura destino guardado y evita origen cero
+PASS espera mundo listo sin mover jugador
+PASS sin soporte mantiene pendiente y no avanza
+PASS nuevo intento resuelve planta baja y guarda respawn valido
+PASS teleport sin apoyo conserva ultimo respawn seguro
+PASS teleport valido recaptura respawn y suelo de vereda
+PASS caida recupera ultimo punto seguro sin ir al origen
+ANALYTIC_RULE_TESTS_PASSED 18

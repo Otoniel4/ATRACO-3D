@@ -12,7 +12,7 @@ namespace Alarma.AI.CityLife
             if(current!=session)
             {
                 if(product!=null)Destroy(product);current=session;
-                if(current!=null && shop.Tasks.ProductPrefab!=null)product=shop.ClaimProduct(current);
+                if(current!=null && !shop.Tasks.IsWithdrawal && shop.Tasks.ProductPrefab!=null)product=shop.ClaimProduct(current);
             }
             if(current==null)return;
             if(product!=null)
@@ -25,7 +25,9 @@ namespace Alarma.AI.CityLife
                 if(current.Stage==ShoppingStage.Paid && routine.State==PedestrianState.ReceivingReceipt)
                     product.transform.position=Vector3.Lerp(shop.Scan.position,shop.Counter.position,Mathf.Clamp01(routine.StateSeconds/.8f));
             }
-            bool offering=routine.State==PedestrianState.Paying;
+            bool offering = shop.Tasks.IsWithdrawal
+                ? current.Stage == ShoppingStage.Paid && routine.State == PedestrianState.Collecting || current.Stage == ShoppingStage.Collected
+                : routine.State == PedestrianState.Paying;
             if(offering && money==null && shop.Tasks.MoneyPrefab!=null)money=Instantiate(shop.Tasks.MoneyPrefab,grip);
             if(money!=null)money.SetActive(offering);
         }

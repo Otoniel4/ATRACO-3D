@@ -7,13 +7,13 @@ namespace Alarma.AI.CityLife
         public CityPoint(float x,float y,float z){X=x;Y=y;Z=z;}
     }
     public interface IPedestrianMotor {bool MoveTo(CityPoint destination);bool HasArrived{get;}void Stop();}
-    public enum PedestrianState {Inactive,Walking,WaitingForEntry,Entering,Browsing,PickingUp,WaitingForSpace,Queueing,Placing,Scanning,Paying,ReceivingReceipt,Collecting,ClearingCounter,Leaving,Resting,Failed}
+    public enum PedestrianState {Inactive,Walking,WaitingForEntry,Entering,Browsing,PickingUp,WaitingForSpace,Queueing,Placing,Scanning,Paying,ReceivingReceipt,Collecting,ClearingCounter,Leaving,Resting,Failed,Completed}
     public sealed class PedestrianPlan
     {
         public CityPoint[] Walk=Array.Empty<CityPoint>(),Entry=Array.Empty<CityPoint>(),BrowseStations=Array.Empty<CityPoint>(),Queue=Array.Empty<CityPoint>(),Exit=Array.Empty<CityPoint>();
         public float BrowseSeconds=1.5f,PaySeconds=.9f,RestSeconds=3f,TravelTimeout=80f,QueueTimeout=80f;
         public int WalletCents=10000;
-        public bool VisitsShop=true;
+        public bool VisitsShop=true, OneVisit;
     }
     // Máquina de tareas. Los tiempos de interacción empiezan al llegar, nunca durante el trayecto.
     public sealed class PedestrianRoutine
@@ -24,7 +24,8 @@ namespace Alarma.AI.CityLife
         public ShoppingSession Session=>session;
         public float StateSeconds=>time;
         public bool Carrying=>session!=null && (session.Stage==ShoppingStage.InHand || session.Stage==ShoppingStage.Collected);
-        public bool HoldingBag=>session!=null && session.Stage==ShoppingStage.Collected;
+        public int WalletCents => plan.WalletCents;
+        public bool HoldingBag=>!service.IsWithdrawal && session!=null && session.Stage==ShoppingStage.Collected;
         public bool Interaction=>State>=PedestrianState.Placing && State<=PedestrianState.Collecting || State==PedestrianState.PickingUp;
         public event Action<PedestrianState> StateChanged;public event Action Purchased;public event Action Failed;
         public PedestrianRoutine(int id,IPedestrianMotor motor,ShopQueue queue,PedestrianPlan plan,ShopService service)
@@ -44,10 +45,12 @@ namespace Alarma.AI.CityLife
                     if(++point<plan.Walk.Length)Move(plan.Walk[point]);else {motor.Stop();Change(plan.VisitsShop?PedestrianState.WaitingForEntry:PedestrianState.Resting);}break;
                 case PedestrianState.WaitingForEntry:
                     if(service.TryBegin(id,plan.WalletCents,out session)){point=0;Change(PedestrianState.Entering);Move(plan.Entry[0]);}
-                    else if(time>plan.QueueTimeout)Change(PedestrianState.Resting);break;
+                    else if(time>plan.QueueTimeout)FinishVisit();break;
                 case PedestrianState.Entering:
                     if(Timeout() || !motor.HasArrived)break;
-                    if(++point<plan.Entry.Length)Move(plan.Entry[point]);else {browsing=false;Change(PedestrianState.Browsing);Move(plan.BrowseStations[session.Station]);}break;
+                    if(++point<plan.Entry.Length)Move(plan.Entry[point]);
+                    else if (service.IsWithdrawal) Change(PedestrianState.PickingUp);
+                    else {browsing=false;Change(PedestrianState.Browsing);Move(plan.BrowseStations[session.Station]);}break;
                 case PedestrianState.Browsing:
                     if(!motor.HasArrived){Timeout();break;}
                     if(!browsing){browsing=true;time=0;motor.Stop();}
@@ -66,7 +69,7 @@ namespace Alarma.AI.CityLife
                 case PedestrianState.Scanning:
                     if(time>=1.2f){if(service.Scan(id))Change(PedestrianState.Paying);else Fail();}break;
                 case PedestrianState.Paying:
-                    if(time>=plan.PaySeconds){if(service.Pay(id)){Purchased?.Invoke();plan.WalletCents=session.WalletCents;Change(PedestrianState.ReceivingReceipt);}else BeginExit();}break;
+                    if(time>=plan.PaySeconds){if(service.Pay(id)){if (!service.IsWithdrawal) Purchased?.Invoke();plan.WalletCents=session.WalletCents;Change(PedestrianState.ReceivingReceipt);}else BeginExit();}break;
                 case PedestrianState.ReceivingReceipt:if(time>=.8f)Change(PedestrianState.Collecting);break;
                 case PedestrianState.Collecting:
                     if(time<.8f)break;if(!service.Collect(id)){Fail();break;}point=0;Change(PedestrianState.ClearingCounter);Move(plan.Exit[0]);break;
@@ -79,7 +82,12 @@ namespace Alarma.AI.CityLife
                     if(time>=plan.RestSeconds){session=null;point=0;Change(PedestrianState.Walking);Move(plan.Walk[0]);}break;
             }
         }
-        private void NextExit(){Change(PedestrianState.Leaving);if(++point<plan.Exit.Length)Move(plan.Exit[point]);else {motor.Stop();Change(PedestrianState.Resting);}}
+        private void NextExit(){Change(PedestrianState.Leaving);if(++point<plan.Exit.Length)Move(plan.Exit[point]);else {motor.Stop();FinishVisit();}}
+        private void FinishVisit() => Change(plan.OneVisit ? PedestrianState.Completed : PedestrianState.Resting);
+        public void TryLeaveVisit()
+        {
+            if (plan.OneVisit && State == PedestrianState.Failed) BeginExit();
+        }
         private void BeginExit(){queue.Release(id);service.Release(id);session=null;point=0;Change(PedestrianState.Leaving);if(plan.Exit.Length>0)Move(plan.Exit[0]);else Change(PedestrianState.Resting);}
         private void UpdateQueue(){int i=queue.IndexOf(id);if(i<0 || i>=plan.Queue.Length){Fail();return;}if(i!=queueIndex){queueIndex=i;Move(plan.Queue[i]);}}
         private bool Timeout(){if(time<=plan.TravelTimeout)return false;Fail();return true;}

@@ -1,0 +1,27 @@
+PASS carpeta existente no crea duplicados
+PASS jerarquÃ­a registrada padre antes que hijo
+PASS carpeta fÃ­sica no importada se registra sin Art1
+PASS normaliza barras y barra final
+PASS rechaza ruta fuera de Assets
+PASS rechaza traversal
+PASS rechaza componente vacÃ­o
+PASS rechaza cadena vacÃ­a
+PASS CreateFolder fallido no se acepta
+PASS GUID de carpeta con sufijo se rechaza
+PASS importaciÃ³n fallida de carpeta fÃ­sica se rechaza
+PASS registro obsoleto sin carpeta fÃ­sica se reconstruye
+PASS snapshot incluye archivos anidados y meta fuera de Assets
+PASS rollback recupera bytes GUID y Ãºnica escena antes de cerrar
+PASS fallo antes de mutaciÃ³n no borra Output
+PASS rollback conserva montaje de dos escenas y escena activa
+PASS primer intento fallido retira salida parcial y restaura escena externa
+PASS fallo al abrir recuperaciÃ³n conserva backup y escena cargada
+PASS setup incompleto recupera la ciudad guardada como fallback
+PASS sin escena recuperable no cierra la Ãºnica escena
+PASS Complete retira solo backup y conserva salida publicada
+PASS Restore tras Complete no borra la ciudad nueva
+PASS catch publicado no llama rollback aunque UI falle
+PASS catch no publicado ejecuta recuperaciÃ³n
+PASS catch con recuperaciÃ³n fallida conserva ruta de backup
+PASS catch previo al snapshot no toca la ciudad guardada
+RECOVERY_POLICY_TESTS_PASSED 26

@@ -48,7 +48,13 @@ class Kit:
         m = bpy.data.materials.new(full)
         m.diffuse_color = (*color, alpha)
         m.use_nodes = True
-        bsdf = m.node_tree.nodes.get('Principled BSDF')
+        # Blender traduce el nombre visible del nodo; su tipo permanece estable.
+        bsdf = next((node for node in m.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'), None)
+        if bsdf is None:
+            bsdf = m.node_tree.nodes.new('ShaderNodeBsdfPrincipled')
+            output = next((node for node in m.node_tree.nodes if node.type == 'OUTPUT_MATERIAL'), None)
+            output = output or m.node_tree.nodes.new('ShaderNodeOutputMaterial')
+            m.node_tree.links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
         bsdf.inputs['Base Color'].default_value = (*color, 1)
         bsdf.inputs['Roughness'].default_value = .7
         if emission:

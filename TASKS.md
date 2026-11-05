@@ -546,3 +546,26 @@ Alain pidió respaldar en GitHub el proyecto guardado, incluidos `.blend` y esce
 - Respaldo vigente: `Generated/Ciudad2km`, fuentes Blender, modelos, `.meta`, capturas, datos y configuración. Solo el `.blend` R9 de más de 100 MiB se restaura desde su ZIP íntegro fragmentado en partes de 48 MiB; el resto se guarda directamente. Herramientas en `Assets/Party/Tools~`, instrucciones en README y `docs/RESPALDO-Y-LIMPIEZA.md`.
 - `City25Builder` compara contenido SHA-256 en lugar de fechas para que el clon reutilice la escena guardada; BuildReport migrado sin editar la escena. Build Settings apunta a Ciudad_2km. Recetas comunes con rutas relativas al proyecto.
 - Esta solicitud autoriza el commit y la publicación del mantenimiento de respaldo; no aprueba B1 ni cierra tareas de juego. Mantener Unity 6000.3.27f2 y ciudad de 2 × 2 km. Play sigue reservado a Alain.
+
+
+## Corrección de guarida B1 — 2026-11-04 (pendiente de prueba)
+
+Alain reportó aparición sobre la losa y pidió corregir interior/muebles. Confirmó guardar y cerrar Unity. Motor y aceptación comparten sonda corta cerca de pies y cápsula libre; Awake recupera punto guardado de respawn. Modelo con PlayerSpawn dentro del recibidor y cámara orientada al interior. Constructor ciudad25-18 exige el marcador y reconstruirá una vez con Alarma/Crear y probar juego. Escena guardada: solo se ajustan posiciones iniciales de jugador y cámara.
+Soportes de monitores/TV, patas de sillas, cojines, mesa baja, casilleros, dinero/bolsos, cocina y perchas corregidos. Puerta deja margen bajo dintel; detalles pequeños sin collider. Generado por Blender MCP 5.2.3; FBX reimportado (363 mallas, 13.392 triángulos) y viewport revisado. 18 pruebas analíticas y compilación runtime/editor superadas; no son PhysX ni Play. Guía: docs/Guarida-B1-Correccion.md; evidencia en Art/BlenderScripts/HideoutB1Fix~. Mantener Unity 6000.3.27f2 y ciudad de 2 × 2 km. No cerrar B1, avanzar a B2 ni hacer commit/publicación hasta prueba y confirmación de Alain.
+
+
+## Corrección de recuperación B1 — revisión 19 (pendiente de prueba)
+
+Alain reportó Parent directory must exist al crear Car_Sedan_Alarma_Trim.asset y escena Untitled sin cámara. Editor.log confirma error MakeParked y cierre de última escena en catch. Alain cerró Unity. Se recuperaron 538 archivos Generated faltantes desde Git, reaplicando las posiciones B1 (SHA-256 de escena 5920f16cb8bb45c6b84aa2c851a3d3d2047d8e30ff861fc64a30f87046f4606d); no se sobrescribieron archivos existentes ni se revirtieron materiales escritos por Unity. EnsureFolder registra/verifica carpetas mediante AssetDatabase.CreateFolder y se comprueban los padres antes de crear mallas/materiales/prefabs. City25BuildRecovery conserva copia exacta de salida y metadatos fuera de Assets, recupera antes de restaurar escenas y nunca cierra la última ni borra salida por un error anterior a mutación. Constructor ciudad25-19. Guía actualizada en docs/Guarida-B1-Correccion.md. Sin abrir Unity ni Play; no cerrar B1, avanzar ni hacer commit hasta confirmación.
+
+## Corrección de aceras y acceso B1 — revisión 20 (pendiente de prueba)
+
+Alain probó la revisión 19 y observó peatones atravesando muros y un portón que impedía salir. La revisión 20 recalcula rutas de acera y cruces, valida geometría al construir y comprueba obstáculos en movimiento. La puerta abatible espera contacto de la palma antes de girar y espacio libre antes de cerrar. El exterior de la guarida se ajusta con sendero continuo, poste de lámpara, portón y jardinera. Copia verificada de la ciudad 19 en `Library/Alarma/City25Recovery/AntesRevision20-CiudadGuardada19.zip`. Pruebas y archivos en `Assets/Party/docs/Guarida-B1-Correccion.md`. Pendientes reconstrucción y Play por Alain dentro de B1.
+
+## Corrección B1 de cruces, visitas y garaje — revisión 21 (pendiente de prueba)
+
+Alain probó la revisión 20 y reportó grupos inmóviles en las esquinas. Solicitó visitas de peatones a tiendas y bancos y un garaje en el acceso vehicular. La revisión 21 introduce alternativas ante cruces ocupados y une el paseo, la compra o retiro y el regreso a la acera en el mismo peatón. Garaje cubierto con persiana enrollable. Copia local verificada de la ciudad 20. Procedimiento y resultados en `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Recuperación de la reconstrucción B1 — revisión 22 (pendiente de prueba)
+
+La revisión 21 falló al retirar la carpeta generada y dejó una ciudad parcial. Alain cerró Unity. Se repusieron 534 archivos de la copia de revisión 20 y se verificaron los 538. El constructor 22 usa carpetas independientes para cada intento y publica el informe tras guardar e importar la nueva escena. Pendientes reconstrucción y Play por Alain. Pruebas en `Assets/Party/docs/Guarida-B1-Correccion.md`.

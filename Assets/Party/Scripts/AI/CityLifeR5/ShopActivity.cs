@@ -10,7 +10,7 @@ namespace Alarma.AI.CityLife
         [SerializeField] private ShopTaskSettings tasks;
         [SerializeField] private Transform counterPoint,scanPoint,cashierGrip,receiptPoint,tillPoint;
         private ShopQueue queue;private ShopService service;private GameObject money,receipt;private float moneyUntil,receiptUntil;
-        [SerializeField] private int purchaseCount,stock,tillCents;
+        [SerializeField] private int purchaseCount, withdrawalCount, stock,tillCents;
         [SerializeField] private string lastReceipt;
         public int ReservedVariant=>reservedVariant;
         public ShopQueue Queue=>queue??(queue=new ShopQueue(Mathf.Max(1,queuePoints.Length)));
@@ -18,7 +18,7 @@ namespace Alarma.AI.CityLife
         {
             get
             {
-                if(service==null){service=new ShopService(tasks.ShopId,Queue,browsePoints.Length,tasks.InitialStock,tasks.PriceCents);service.Changed+=OnTransaction;}
+                if(service==null){service=new ShopService(tasks.ShopId,Queue,browsePoints.Length,tasks.InitialStock,tasks.PriceCents,tasks.IsWithdrawal);service.Changed+=OnTransaction;}
                 return service;
             }
         }
@@ -40,22 +40,31 @@ namespace Alarma.AI.CityLife
         {walkRoute=walk;entryRoute=entry;browsePoints=browse;queuePoints=positions;exitRoute=exit;productPoints=products;counterPoint=counter;scanPoint=scan;receiptPoint=receiptAnchor;tillPoint=till;tasks=settings;}
         public void ConfigureStaff(int variant,ShopDoor entrance,Transform grip){reservedVariant=variant;door=entrance;cashierGrip=grip;}
         // Quien llega a la puerta la empuja; devuelve true si estaba cerrada (el NPC hace el gesto de abrir).
-        public bool PushDoor(Vector3 p){if(door==null || !door.InReach(p))return false;bool closed=!door.IsOpen;door.Push();return closed;}
+        public bool PushDoor(Vector3 p){if(door==null || !door.InReach(p))return false;bool closed=!door.IsOpen;door.PushFrom(p);return closed;}
+        public ShopDoor Entrance => door;
         public Transform DoorHandle=>door!=null?door.Handle:null;
         public Transform ProductPoint(int station)=>productPoints[station];
         public Transform BrowsePoint(int station)=>browsePoints[station];
-        public PedestrianPlan CreatePlan(PedestrianSettings settings,bool visits,int start)
+        public PedestrianPlan CreatePlan(PedestrianSettings settings,bool visits,int start,bool oneVisit=false,int? wallet=null)
         {
-            return new PedestrianPlan{Walk=Points(walkRoute,start),Entry=Points(entryRoute),BrowseStations=Points(browsePoints),Queue=Points(queuePoints),Exit=Points(exitRoute),BrowseSeconds=settings.BrowseSeconds,PaySeconds=settings.PaySeconds,TravelTimeout=settings.TravelTimeout,QueueTimeout=settings.QueueTimeout,VisitsShop=visits,WalletCents=tasks.CustomerWalletCents};
+            var walk = Points(walkRoute,start);
+            var exit = Points(exitRoute);
+            if (oneVisit)
+            {
+                Array.Resize(ref walk, 1);
+                Array.Resize(ref exit, exit.Length + 1);
+                exit[exit.Length - 1] = walk[0];
+            }
+            return new PedestrianPlan{Walk=walk,Entry=Points(entryRoute),BrowseStations=Points(browsePoints),Queue=Points(queuePoints),Exit=exit,BrowseSeconds=settings.BrowseSeconds,PaySeconds=settings.PaySeconds,TravelTimeout=settings.TravelTimeout,QueueTimeout=settings.QueueTimeout,VisitsShop=visits,OneVisit=oneVisit,WalletCents=wallet??tasks.CustomerWalletCents};
         }
         private void OnTransaction(ShoppingSession session,ShopAction action)
         {
-            purchaseCount=service.PurchaseCount;stock=service.Stock;tillCents=service.TillCents;lastReceipt=session.ReceiptId??lastReceipt;
+            purchaseCount=service.PurchaseCount;withdrawalCount=service.WithdrawalCount;stock=service.Stock;tillCents=service.TillCents;lastReceipt=session.ReceiptId??lastReceipt;
             if(action==ShopAction.Paid)
             {
                 if(money==null && tasks.MoneyPrefab!=null)money=Instantiate(tasks.MoneyPrefab);
                 if(money!=null){money.transform.SetParent(cashierGrip,false);money.SetActive(true);moneyUntil=Time.time+.75f;}
-                PurchaseCompleted?.Invoke(PurchaseCount);
+                if (!tasks.IsWithdrawal) PurchaseCompleted?.Invoke(PurchaseCount);
             }
             if(action==ShopAction.Receipt)
             {

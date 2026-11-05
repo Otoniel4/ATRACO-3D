@@ -1,0 +1,27 @@
+PASS E solicita palma antes de mover hoja
+PASS ninguna hoja abre antes de confirmar contacto
+PASS solo se empuja una vez el acceso más cercano
+PASS paso libre devuelve locomoción y suelta palma
+PASS avanzar cerca del umbral activa empuje sin repetir E
+PASS mantener W tras atasco no repite el gesto
+PASS E permite reintentar un empuje fallido
+PASS obstáculo en acercamiento cancela antes del empuje
+PASS cambiar de rol cancela gesto anterior
+PASS abrir menú libera el bloqueo
+PASS portón corredizo más cercano recibe E solo
+DOOR_INTERACTION_TESTS_PASSED 11
+
+PASS La cáp­sula de otro peatón bloquea el acercamiento
+PASS Un destino ocupado no permite desplazar los pies
+PASS Consulta de física llena conserva la posición
+PASS Ignora su propia cápsula y limita la velocidad de acercamiento
+PASS El acercamiento no supera 32 cm desde la celda reservada
+PASS Repetir la reserva conserva el desplazamiento
+PASS La reserva de otro peatón respeta el cuerpo desplazado
+PASS El barrido del próximo paso comienza en los pies reales
+PASS Reservar otra celda mantiene continuidad sin regresar al centro
+PASS No se inicia acercamiento en un paso sin terminar
+PASS Tras liberar la puerta continúa la ruta hacia la celda vecina
+PASS El visitante espera si la acera ocupa su siguiente celda
+PASS La reserva local sigue controlando sus propios residentes
+PEDESTRIAN_DOOR_APPROACH_TESTS_PASSED 13

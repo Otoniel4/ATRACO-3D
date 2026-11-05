@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Alarma.AI.CityLife;
+using Alarma.AI.Street;
 
 namespace Alarma.City.Editor
 {
@@ -16,6 +17,7 @@ namespace Alarma.City.Editor
         public static (ShopActivity[] shops, ShopDoor[] doors) Build(string folder, City25World.Result world, ShopLayouts layouts, PedestrianActor[] civilians)
         {
             var shops = new List<ShopActivity>(); var doors = new List<ShopDoor>();
+            Physics.SyncTransforms();
             int index = 0;
             foreach (var (data, instance) in world.Places)
             {
@@ -44,10 +46,12 @@ namespace Alarma.City.Editor
             var products = Points(layout.products, 3).Select((v, i) => Marker(root, shop, "Product_" + i, v, null)).ToArray();
             var tasks = ScriptableObject.CreateInstance<ShopTaskSettings>();
             tasks.ShopId = id; tasks.ProductName = layout.product_name; tasks.PriceCents = layout.price_cents; tasks.CustomerWalletCents = Math.Max(200000, layout.price_cents * 3); tasks.InitialStock = 500;
+            tasks.IsWithdrawal = layout.kind == "banco";
+            if (tasks.IsWithdrawal) tasks.ProductName = "Retiro de efectivo";
             tasks.ProductPrefab = Prop(layout.product); tasks.MoneyPrefab = Prop("CashStack"); tasks.ReceiptPrefab = Receipt(folder);
             AssetDatabase.CreateAsset(tasks, folder + "/Data/Shop_" + index + ".asset");
             activity.Configure(walk, entry, browse, queue, exit, products, Snap("Counter", layout.counter)[0], Free("Scan", layout.scan, 3), Free("Receipt", layout.receipt, 3), Free("Till", layout.till, 3), tasks);
-            root.gameObject.AddComponent<ShopStockDisplay>();
+            if (!tasks.IsWithdrawal) root.gameObject.AddComponent<ShopStockDisplay>();
             // Cajero: un civil del elenco detrás del mostrador mirando hacia la caja; no sale a comprar.
             int variant = (index * 3 + 4) % civilians.Length;
             var staff = UnityEngine.Object.Instantiate(civilians[variant], root);
@@ -81,9 +85,15 @@ namespace Alarma.City.Editor
             var list = points.ToList(); var lookup = list.Select((p, i) => (p, i)).ToDictionary(t => t.p, t => t.i);
             return list.Select(p => new TrafficCell
             {
-                Position = shop.TransformPoint(new Vector3(p.x * Step, .1f, p.y * Step)),
+                Position = FloorPoint(shop, p, layout.depth * .5f),
                 Links = Neighbours(p).Where(lookup.ContainsKey).Select(n => lookup[n]).ToArray()
             }).ToArray();
+        }
+
+        private static Vector3 FloorPoint(Transform shop, Vector2Int cell, float frontage)
+        {
+            Vector3 point = shop.TransformPoint(new Vector3(cell.x * Step, .1f, cell.y * Step));
+            return cell.y * Step > frontage && SidewalkClearance.TryGround(point, out Vector3 floor) ? floor : point;
         }
 
         private static IEnumerable<Vector2Int> Neighbours(Vector2Int p)

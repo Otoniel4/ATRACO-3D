@@ -11,7 +11,7 @@ namespace Alarma.Traffic
     public sealed class TrafficCar : MonoBehaviour, IVehicleState
     {
         private const float Acceleration = 2.2f, ComfortBrake = 2.8f, BrakeRate = 7f, StopWait = 1.2f, YieldSpeed = 4f;
-        private const float TurnSpeed = 4.5f, StuckLimit = 6f, GhostTime = 2.5f, MaxSteer = 32f, SignalDistance = 35f;
+        private const float TurnSpeed = 4.5f, MaxSteer = 32f, SignalDistance = 35f;
         private static readonly int Obstacles = (1 << 28) | (1 << 29) | (1 << 30); // autos, personajes y jugador
 
         [SerializeField] private Transform[] wheels = System.Array.Empty<Transform>();
@@ -28,7 +28,7 @@ namespace Alarma.Traffic
         private Collider body;
         private int link, upcoming, index, turnSide;
         private bool turning, mustStop, obstacle;
-        private float speed, waited, stuck, ghostUntil, nextScan, remaining, spin, steer;
+        private float speed, waited, nextScan, remaining, spin, steer;
 
         public bool Braking { get; private set; }
         // El intermitente se enciende en los últimos metros antes de doblar y durante la curva.
@@ -54,7 +54,8 @@ namespace Alarma.Traffic
         {
             network = roads; signals = lights; random = new System.Random(seed);
             body = GetComponent<Collider>();
-            speed = 0f; stuck = 0f; ghostUntil = 0f; steer = 0f;
+            speed = 0f; steer = 0f;
+            obstacle = false; nextScan = 0f; Braking = false;
             Follow(startLink, Mathf.Clamp(startPoint, 0, network.PointCount(startLink) - 2));
             transform.SetPositionAndRotation(path[index - 1], Quaternion.LookRotation(path[index] - path[index - 1]));
         }
@@ -97,7 +98,12 @@ namespace Alarma.Traffic
         {
             if (network == null) return;
             float dt = Time.deltaTime;
-            if (Time.time >= nextScan) { nextScan = Time.time + .1f; obstacle = Time.time >= ghostUntil && Blocked(); }
+            // Una espera larga no desactiva la detección. El auto vuelve a avanzar al despejarse el carril.
+            if (Time.time >= nextScan)
+            {
+                nextScan = Time.time + .1f;
+                obstacle = Blocked();
+            }
             remaining = turning ? 0f : Remaining();
             float cruise = network.Speed(link);
             float target = turning ? (turnSide != 0 ? TurnSpeed : cruise * .8f) : cruise;
@@ -108,9 +114,6 @@ namespace Alarma.Traffic
             float rate = target > speed ? Acceleration : (obstacle || speed - target > 2.5f ? BrakeRate : ComfortBrake);
             speed = Mathf.MoveTowards(speed, target, rate * dt);
             Braking = target < speed - .05f || (speed < .3f && target < .1f);
-            // Si queda trabado por otro auto mucho tiempo, sigue sin detectar choques un momento: evita atascos eternos.
-            stuck = obstacle && speed < .1f ? stuck + dt : 0f;
-            if (stuck > StuckLimit) { ghostUntil = Time.time + GhostTime; stuck = 0f; }
             Advance(speed * dt);
             AnimateWheels(dt);
         }

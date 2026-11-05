@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8978631835840108346
+--- !u!1 &8920905830339136970
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,10 +8,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1110717694947189691}
-  - component: {fileID: 9021793236316564285}
-  - component: {fileID: 4674854903283373272}
-  - component: {fileID: 9055547812172491274}
+  - component: {fileID: 698042872986711519}
+  - component: {fileID: 8819400324016484933}
+  - component: {fileID: 7078575846080415215}
+  - component: {fileID: 4151965522634888777}
   m_Layer: 29
   m_Name: Peaton_NPC06_Mechanic
   m_TagString: Untagged
@@ -19,29 +19,29 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1110717694947189691
+--- !u!4 &698042872986711519
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8978631835840108346}
+  m_GameObject: {fileID: 8920905830339136970}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1694882487436704062}
+  - {fileID: 3412027203081092968}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!136 &9021793236316564285
+--- !u!136 &8819400324016484933
 CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8978631835840108346}
+  m_GameObject: {fileID: 8920905830339136970}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -58,13 +58,13 @@ CapsuleCollider:
   m_Height: 1.7
   m_Direction: 1
   m_Center: {x: 0, y: 0.85, z: 0}
---- !u!54 &4674854903283373272
+--- !u!54 &7078575846080415215
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8978631835840108346}
+  m_GameObject: {fileID: 8920905830339136970}
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
@@ -85,26 +85,26 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &9055547812172491274
+--- !u!114 &4151965522634888777
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8978631835840108346}
+  m_GameObject: {fileID: 8920905830339136970}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1803ee902f273204bafae0e3a7727a3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Alarma.AI::Alarma.AI.Street.SidewalkWalker
-  animator: {fileID: 4712245637990327108}
---- !u!1001 &1157380956417203925
+  animator: {fileID: 8771279782255256850}
+--- !u!1001 &2941780557302028419
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1110717694947189691}
+    m_TransformParent: {fileID: 698042872986711519}
     m_Modifications:
     - target: {fileID: -9210167951416524716, guid: c2f58d9becf02634d9bd077fd07c99f6, type: 3}
       propertyPath: m_Layer
@@ -431,13 +431,13 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c2f58d9becf02634d9bd077fd07c99f6, type: 3}
---- !u!4 &1694882487436704062 stripped
+--- !u!4 &3412027203081092968 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c2f58d9becf02634d9bd077fd07c99f6, type: 3}
-  m_PrefabInstance: {fileID: 1157380956417203925}
+  m_PrefabInstance: {fileID: 2941780557302028419}
   m_PrefabAsset: {fileID: 0}
---- !u!95 &4712245637990327108 stripped
+--- !u!95 &8771279782255256850 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: c2f58d9becf02634d9bd077fd07c99f6, type: 3}
-  m_PrefabInstance: {fileID: 1157380956417203925}
+  m_PrefabInstance: {fileID: 2941780557302028419}
   m_PrefabAsset: {fileID: 0}

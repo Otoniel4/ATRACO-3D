@@ -34,7 +34,7 @@ namespace Alarma.City.Editor
             // Los modelos de civiles también se sientan en los autos que circulan.
             // Los mismos civiles compran en los locales (con su lógica de compra) y atienden la caja.
             var shoppers = manifest.characters.Where(c => civilians.Contains(c.id)).Select(c => PedestrianPrefabFactory.MakePrefab(folder, c)).ToArray();
-            return (roles, civilians.Select(id => Walker(folder, id)).ToArray(), civilians.Select(id => AssetDatabase.LoadAssetAtPath<GameObject>(Model(folder, id))).ToArray(), shoppers,
+            return (roles, shoppers.Select((actor, index) => Walker(folder, civilians[index], actor)).ToArray(), civilians.Select(id => AssetDatabase.LoadAssetAtPath<GameObject>(Model(folder, id))).ToArray(), shoppers,
                     Sentry(folder, Sentries[0]), Sentry(folder, Sentries[1]));
         }
 
@@ -76,23 +76,17 @@ namespace Alarma.City.Editor
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
-        // Peatón de acera: modelo con su Animator, cuerpo cinemático en la capa de personajes (29) y el paseante.
-        private static SidewalkWalker Walker(string folder, string id)
+        // Un mismo cuerpo pasea y visita comercios con su rutina interior.
+        private static SidewalkWalker Walker(string folder, string id, PedestrianActor actor)
         {
-            string path = Model(folder, id);
-            var root = new GameObject("Peaton_" + id);
+            var root = (GameObject)PrefabUtility.InstantiatePrefab(actor.gameObject);
+            root.name = "Peaton_" + id;
             try
             {
-                var visual = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
-                visual.transform.SetParent(root.transform, false);
-                var animator = visual.GetComponentInChildren<Animator>() ?? visual.AddComponent<Animator>();
-                animator.runtimeAnimatorController = CityLifeAnimatorFactory.Create(folder + "/Controllers/Peaton_" + id + ".controller", path);
+                var animator = root.GetComponentInChildren<Animator>();
                 animator.applyRootMotion = false; animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
-                foreach (var t in visual.GetComponentsInChildren<Transform>(true))
-                    if (t.name.StartsWith("ShoppingBag_", StringComparison.Ordinal)) t.gameObject.SetActive(false); // la bolsa es para quien compra
-                var body = root.AddComponent<CapsuleCollider>(); body.height = 1.7f; body.radius = .25f; body.center = new Vector3(0f, .85f, 0f);
+                root.GetComponent<CapsuleCollider>().radius = .25f;
                 root.AddComponent<Rigidbody>().isKinematic = true; // se mueve por código sin que la física lo empuje
-                foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 29;
                 root.AddComponent<SidewalkWalker>().Configure(animator);
                 return PrefabUtility.SaveAsPrefabAsset(root, folder + "/Prefabs/Peaton_" + id + ".prefab").GetComponent<SidewalkWalker>();
             }
