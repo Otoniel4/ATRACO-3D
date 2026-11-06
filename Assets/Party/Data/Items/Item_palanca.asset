@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a8a6e06190f13e4bb1b6a2b24b95f5b, type: 3}
+  m_Name: Item_palanca
+  m_EditorClassIdentifier: Alarma.Player::Alarma.Player.Items.ItemDefinition
+  id: palanca
+  displayName: Palanca
+  description: Fuerza cerraduras, cajas registradoras y puertas. Hace ruido.
+  category: 1
+  tier: 0
+  maxStack: 1
+  icon: {fileID: 2800000, guid: b86993deb3d3b554291b3fbd24204915, type: 3}
+  handModel: {fileID: 919132149155446097, guid: e4a69a52b48349d4b85a084f9211d8b8, type: 3}
+  holdStyle: 3
+  action: {fileID: 11400000, guid: 996b32b044e7e65498a4d9d89357bb6b, type: 2}
+  holdEuler: {x: 0, y: 0, z: 0}
+  holdOffset: {x: 0, y: 0, z: 0}

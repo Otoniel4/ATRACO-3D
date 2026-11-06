@@ -12,7 +12,12 @@ namespace Alarma.AI.CityLife
         {
             {HumanBodyBones.RightUpperArm,new[]{"RightUpperArm","UpperArm.R"}},
             {HumanBodyBones.RightLowerArm,new[]{"RightLowerArm","LowerArm.R"}},
+            {HumanBodyBones.RightHand,new[]{"RightHand","Wrist.R"}},
             {HumanBodyBones.Spine,new[]{"Spine","Abdomen"}},
+            {HumanBodyBones.Chest,new[]{"Chest"}},
+            {HumanBodyBones.LeftUpperArm,new[]{"LeftUpperArm","UpperArm.L"}},
+            {HumanBodyBones.LeftLowerArm,new[]{"LeftLowerArm","LowerArm.L"}},
+            {HumanBodyBones.LeftHand,new[]{"LeftHand","Wrist.L"}},
             {HumanBodyBones.LeftFoot,new[]{"LeftFoot","Foot.L"}},
         };
         public static Transform Find(Transform root,HumanBodyBones bone)

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a8a6e06190f13e4bb1b6a2b24b95f5b, type: 3}
+  m_Name: Item_pistola
+  m_EditorClassIdentifier: Alarma.Player::Alarma.Player.Items.ItemDefinition
+  id: pistola
+  displayName: Pistola
+  description: Apuntar a alguien lo intimida. Disparar derriba, nunca mata.
+  category: 0
+  tier: 0
+  maxStack: 1
+  icon: {fileID: 2800000, guid: 8b685e0912081cd42ada0c476de5e6a1, type: 3}
+  handModel: {fileID: 919132149155446097, guid: fb0f44566324cc5438356db8dd8684f0, type: 3}
+  holdStyle: 1
+  action: {fileID: 11400000, guid: ce168a8d5b1a2424d93df9f6812e9996, type: 2}
+  holdEuler: {x: 0, y: 0, z: 0}
+  holdOffset: {x: 0, y: 0, z: 0}

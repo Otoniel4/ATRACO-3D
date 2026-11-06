@@ -86,3 +86,7 @@ El pack Universal Base Characters y los personajes construidos sobre él ya no s
 ## Mapa de la ciudad e iconos — 2026-11-03
 
 `Art/UI/Map/mapa_base.png`, los iconos de `Art/UI/Map/Icons/` y `plano_ciudad.png` se dibujan con `City25~/city_plan.py`. Los glifos de los iconos salen de Noto Emoji y los textos de Inter, ambas fuentes con licencia SIL Open Font License 1.1, tomadas de la instalación de Blender. No se usan fuentes de Windows en recursos del juego. Dentro del juego, los textos del mapa usan la fuente integrada de Unity.
+
+## Clips de uso de objetos — 2026-11-05
+
+`Art/Characters/Animations/Alarma_ItemActions_Men.fbx` y `_Women.fbx` contienen solo el esqueleto de los packs Ultimate Modular Men y Women de Quaternius (CC0 1.0, ver arriba) y 12 clips propios: once acciones y el clip de referencia «Reposo». Los clips se animan con bpy en `Art/BlenderScripts/build_action_clips.py` a partir de `Data/Items/item_actions.json` y parten del primer cuadro del clip `Idle_Neutral` del mismo pack. No se usan clips de Mixamo ni de otras bibliotecas. La Universal Animation Library de Quaternius (CC0) queda como fuente posible: si Alain la descarga, se registra aquí antes de usarla.

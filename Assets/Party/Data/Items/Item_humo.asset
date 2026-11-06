@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a8a6e06190f13e4bb1b6a2b24b95f5b, type: 3}
+  m_Name: Item_humo
+  m_EditorClassIdentifier: Alarma.Player::Alarma.Player.Items.ItemDefinition
+  id: humo
+  displayName: Granada de humo
+  description: "Tapa la vista de c\xE1maras, guardias y polic\xEDas."
+  category: 2
+  tier: 1
+  maxStack: 3
+  icon: {fileID: 2800000, guid: 853911b6223a94d42a6d73622db86076, type: 3}
+  handModel: {fileID: 919132149155446097, guid: 993d3604e8de65c42a37ed4e733c85ae, type: 3}
+  holdStyle: 3
+  action: {fileID: 11400000, guid: b169da84a56aeb64dbc4a78814acabbe, type: 2}
+  holdEuler: {x: 0, y: 0, z: 0}
+  holdOffset: {x: 0, y: 0, z: 0}

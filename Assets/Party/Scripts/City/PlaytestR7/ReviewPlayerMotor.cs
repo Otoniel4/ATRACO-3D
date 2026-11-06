@@ -20,6 +20,10 @@ namespace Alarma.City.Playtest
         private bool doorLocked;
         private Vector3 doorDirection, doorFacing;
         public float Speed{get;private set;}
+        // Apuntando: el cuerpo mira hacia la cámara, camina de costado más despacio y no corre.
+        public bool FaceView{get;set;}
+        // Quieto mientras dura una acción de cuerpo completo (forzar con la palanca, abrir con la ganzúa, colocar la termita).
+        public bool HoldStill{get;set;}
         public event Action<float> SpeedChanged;
         public bool DoorInteractionActive => doorLocked;
         public float BodyRadius => controller != null ? controller.radius : .24f;
@@ -69,10 +73,11 @@ namespace Alarma.City.Playtest
             }
             Vector3 direction = doorLocked ? doorFacing : input.Active ? MoveDirection : Vector3.zero;
             // Arranque y frenado graduales: sin saltos de velocidad ni pies que patinan al soltar las teclas.
-            Vector3 target = doorLocked ? doorDirection : direction * (input.Run ? RunSpeed : WalkSpeed);
+            Vector3 target = doorLocked ? doorDirection : HoldStill ? Vector3.zero : direction * (FaceView ? WalkSpeed * .6f : input.Run ? RunSpeed : WalkSpeed);
             planar = doorLocked ? target : Vector3.MoveTowards(planar, target,
                 (target.sqrMagnitude > planar.sqrMagnitude ? Acceleration : Deceleration) * Time.deltaTime);
-            if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
+            if(FaceView && !doorLocked)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.Euler(0,view.Yaw,0),TurnSpeed*Time.deltaTime);
+            else if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
             if(controller.isGrounded && vertical<0)vertical=-2;else vertical-=Gravity*Time.deltaTime;
             Physics.SyncTransforms();controller.Move((planar+Vector3.up*vertical)*Time.deltaTime);
             Vector3 p=transform.position;float limit=world.HalfSize;p.x=Mathf.Clamp(p.x,-limit,limit);p.z=Mathf.Clamp(p.z,-limit,limit);

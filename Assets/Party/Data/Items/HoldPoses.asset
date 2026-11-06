@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 371dc8cf3f90d214b9997b6f1ec53405, type: 3}
+  m_Name: HoldPoses
+  m_EditorClassIdentifier: Alarma.Player::Alarma.Player.Items.HoldPoseLibrary
+  poses:
+  - style: 1
+    offset: {x: 0.05, y: -0.2, z: 0.34}
+    euler: {x: 14, y: 0, z: 0}
+    runOffset: {x: 0.12, y: -0.24, z: 0.24}
+    runEuler: {x: 55, y: 8, z: 0}
+    sway: 0.012
+    rightFingers: {x: -1, y: 0, z: 0.35}
+    leftFingers: {x: 1, y: -0.2, z: 0.3}
+  - style: 2
+    offset: {x: 0.12, y: -0.12, z: 0.14}
+    euler: {x: 8, y: -25, z: 0}
+    runOffset: {x: 0.08, y: -0.08, z: 0.14}
+    runEuler: {x: 20, y: -55, z: 15}
+    sway: 0.016
+    rightFingers: {x: -1, y: 0, z: 0.35}
+    leftFingers: {x: 0.9, y: 0.4, z: 0.2}
+  - style: 3
+    offset: {x: 0.2, y: -0.36, z: 0.16}
+    euler: {x: 100, y: 0, z: 0}
+    runOffset: {x: 0.2, y: -0.34, z: 0.1}
+    runEuler: {x: 120, y: 0, z: 0}
+    sway: 0.02
+    rightFingers: {x: -1, y: 0, z: 0.3}
+    leftFingers: {x: 1, y: 0, z: 0.3}
+  - style: 4
+    offset: {x: 0.2, y: -0.36, z: 0.2}
+    euler: {x: 25, y: 0, z: 0}
+    runOffset: {x: 0.2, y: -0.34, z: 0.12}
+    runEuler: {x: 40, y: 0, z: 0}
+    sway: 0.02
+    rightFingers: {x: -1, y: 0, z: 0.3}
+    leftFingers: {x: 1, y: 0, z: 0.3}
+  - style: 5
+    offset: {x: 0.12, y: -0.18, z: 0.3}
+    euler: {x: -55, y: 0, z: 0}
+    runOffset: {x: 0.12, y: -0.24, z: 0.22}
+    runEuler: {x: -20, y: 0, z: 0}
+    sway: 0.01
+    rightFingers: {x: -1, y: -0.3, z: 0}
+    leftFingers: {x: 1, y: -0.3, z: 0}
+  - style: 6
+    offset: {x: 0.05, y: -0.24, z: 0.28}
+    euler: {x: 0, y: 0, z: 0}
+    runOffset: {x: 0.05, y: -0.26, z: 0.22}
+    runEuler: {x: 10, y: 0, z: 0}
+    sway: 0.014
+    rightFingers: {x: -0.3, y: 0, z: 1}
+    leftFingers: {x: 0.3, y: 0, z: 1}

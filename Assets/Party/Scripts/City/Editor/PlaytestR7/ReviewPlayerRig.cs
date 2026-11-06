@@ -1,15 +1,19 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using Alarma.Animation;
 using Alarma.Core.Contracts;
 using Alarma.Core.Settings;
+using Alarma.Player.Editor;
+using Alarma.Player.Items;
+using Alarma.UI.Hud;
 using Alarma.UI.Map;
 using Alarma.UI.Pause;
 namespace Alarma.City.Playtest.Editor
 {
-    // Arma el jugador de prueba sobre cualquier ciudad que cumpla IPlayableWorld: controles, cuerpo, cámara, roles, mapa, menú e interfaz.
+    // Arma el jugador de prueba sobre cualquier ciudad que cumpla IPlayableWorld: controles, cuerpo, cámara, roles, inventario, mapa, menú e interfaz.
     public static class ReviewPlayerRig
     {
-        public sealed class Parts{public ReviewInput Input;public ReviewPlayerMotor Player;public ReviewCamera Camera;public ReviewCharacterView Character;}
+        public sealed class Parts{public ReviewInput Input;public ReviewPlayerMotor Player;public ReviewCamera Camera;public ReviewCharacterView Character;public PlayerInventory Inventory;public ItemUser Items;}
         public static Parts Create(IPlayableWorld world,Vector3 spawn,GameObject[] roles,float farClip,GameSettings settings)
         {
             var input=new GameObject("Controles de la prueba").AddComponent<ReviewInput>();
@@ -19,7 +23,17 @@ namespace Alarma.City.Playtest.Editor
             var cameraObject=new GameObject("Main Camera");cameraObject.tag="MainCamera";var camera=cameraObject.AddComponent<Camera>();cameraObject.AddComponent<AudioListener>();camera.cullingMask=~(1<<31);camera.farClipPlane=farClip;camera.nearClipPlane=.08f;camera.backgroundColor=new Color(.64f,.78f,.88f);
             var cameraRig=cameraObject.AddComponent<ReviewCamera>();
             player.Configure(input,cameraRig,world,spawn);cameraRig.Configure(input,player.transform,settings);character.Configure(input,player,roles);
-            return new Parts{Input=input,Player=player,Camera=cameraRig,Character=character};
+            // Inventario (barra rápida 1–5, mochila con Tab) y el objeto elegido en la mano.
+            var (rules,loadout,poses)=ItemAssets.Prepare();
+            // Clips de cuerpo para usar objetos (capas Acciones del Animator de cada rol).
+            ItemActionAnimatorAssets.AddTo(roles);
+            var inventory=playerObject.AddComponent<PlayerInventory>();inventory.Configure(rules,loadout);
+            var held=playerObject.AddComponent<HeldItemView>();held.Configure(inventory,character,poses);
+            // Clic derecho apunta y clic izquierdo dispara o usa la herramienta (ItemUser), con la mira desde la cámara.
+            var user=playerObject.AddComponent<ItemUser>();user.Configure(inventory,held,input,cameraObject.transform);
+            playerObject.AddComponent<ItemActionAnimator>().Configure(user,character);
+            playerObject.AddComponent<ReviewInventoryControls>().Configure(input,inventory,user,cameraRig,player);
+            return new Parts{Input=input,Player=player,Camera=cameraRig,Character=character,Inventory=inventory,Items=user};
         }
         public static ReviewInterface CreateInterface(Parts rig,IPlayableWorld world,ReviewDoorInteraction doors,CityMapDefinition map,GameSettings settings)
         {
@@ -28,7 +42,11 @@ namespace Alarma.City.Playtest.Editor
             var mapObject=new GameObject("Mapa y minimapa");
             var screen=mapObject.AddComponent<CityMapScreen>();screen.Configure(map,rig.Player.transform);
             var minimap=mapObject.AddComponent<CityMinimap>();minimap.Configure(map,rig.Player.transform);
-            var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause);
+            var items=new GameObject("Inventario");
+            var hotbar=items.AddComponent<HotbarView>();hotbar.Configure(rig.Inventory,rig.Items);
+            items.AddComponent<CrosshairView>().Configure(rig.Items);
+            var backpack=items.AddComponent<InventoryScreen>();backpack.Configure(rig.Inventory);
+            var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause,backpack,hotbar);
             return ui;
         }
         // Sol, luz ambiente y niebla; la niebla oculta el borde de lo que la cámara dibuja.

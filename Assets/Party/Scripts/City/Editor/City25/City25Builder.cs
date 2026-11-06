@@ -18,7 +18,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-29";
+        private const string Version = "ciudad25-35";
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -171,8 +171,24 @@ namespace Alarma.City.Editor
         // Cambia cuando se regenera el plano, el kit, el suelo o el mapa: entonces hay que preparar de nuevo.
         private static string Stamp() => string.Join(",", new[]
         {
-            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json"
-        }.Select(ContentHash));
+            City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json",
+            "Assets/Party/Data/Items/item_actions.json", // animaciones y datos de uso de los objetos (ItemActionAssets)
+            ActionClips + "/item_action_clips.json"       // clips de cuerpo para usar objetos (ItemActionAnimatorAssets)
+        }.Select(ContentHash).Concat(Directory.GetFiles(City25Paths.Shops, "Local_*.fbx").Concat(Directory.GetFiles(ActionClips, "*.fbx"))
+            .OrderBy(path => path, StringComparer.Ordinal).Select(ModelHash)).Concat(RigScripts.SelectMany(folder => Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
+            .OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash)));
+
+        // El código de los componentes que el constructor arma y guarda en la escena (jugador, inventario e interfaz):
+        // si cambia, la escena guardada queda vieja y hay que prepararla otra vez.
+        private static readonly string[] RigScripts = { "Assets/Party/Scripts/Player", "Assets/Party/Scripts/UI", "Assets/Party/Scripts/City/PlaytestR7", "Assets/Party/Scripts/City/Editor/PlaytestR7", "Assets/Party/Scripts/Animation" };
+        private const string ActionClips = "Assets/Party/Art/Characters/Animations";
+
+        private static string ModelHash(string path)
+        {
+            using (var model = File.OpenRead(path))
+            using (var algorithm = SHA256.Create())
+                return BitConverter.ToString(algorithm.ComputeHash(model)).Replace("-", string.Empty);
+        }
 
         // Las fechas cambian al clonar Git; el contenido permite reutilizar la escena respaldada en otro equipo.
         private static string ContentHash(string path)

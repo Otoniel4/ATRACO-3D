@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a8a6e06190f13e4bb1b6a2b24b95f5b, type: 3}
+  m_Name: Item_rifle
+  m_EditorClassIdentifier: Alarma.Player::Alarma.Player.Items.ItemDefinition
+  id: rifle
+  displayName: Rifle
+  description: Alcance largo para los golpes grandes.
+  category: 0
+  tier: 2
+  maxStack: 1
+  icon: {fileID: 2800000, guid: 2fa8cec895ca15145b2b0a519aeff7e4, type: 3}
+  handModel: {fileID: 919132149155446097, guid: 81d3b31b85a5b124a8ea7e4d2c9a314a, type: 3}
+  holdStyle: 2
+  action: {fileID: 11400000, guid: ca5e5513e8c492e41854324a8313f902, type: 2}
+  holdEuler: {x: 0, y: 0, z: 0}
+  holdOffset: {x: 0, y: 0, z: 0}

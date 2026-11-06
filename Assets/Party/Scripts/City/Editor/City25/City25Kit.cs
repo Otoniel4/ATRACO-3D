@@ -40,7 +40,10 @@ namespace Alarma.City.Editor
             foreach (string path in cars) Configure(path, false);
             string[] shops = Directory.GetFiles(City25Paths.Shops, "*.fbx").Select(p => p.Replace('\\', '/')).ToArray();
             foreach (string path in shops) Configure(path, false);
-            var models = pieces.Concat(ground).Concat(cars).Concat(shops).ToArray();
+            // Armas y herramientas que se ven en la mano del jugador (build_weapons.py): mismos colores planos que la ciudad.
+            string[] weapons = Directory.GetFiles(City25Paths.Weapons, "*.fbx").Select(p => p.Replace('\\', '/')).ToArray();
+            foreach (string path in weapons) Configure(path, false);
+            var models = pieces.Concat(ground).Concat(cars).Concat(shops).Concat(weapons).ToArray();
             var names = FlatMaterialLibrary.UsedNames(models);
             var materials = FlatMaterialLibrary.Create(City25Paths.Kit, City25Paths.ColorManifests, names);
             var missing = names.Where(n => !materials.ContainsKey(n)).ToArray();
