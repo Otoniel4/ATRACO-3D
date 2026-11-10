@@ -7,10 +7,13 @@ namespace Alarma.AI.CityLife
         public CityPoint(float x,float y,float z){X=x;Y=y;Z=z;}
     }
     public interface IPedestrianMotor {bool MoveTo(CityPoint destination);bool HasArrived{get;}void Stop();}
-    public enum PedestrianState {Inactive,Walking,WaitingForEntry,Entering,Browsing,PickingUp,WaitingForSpace,Queueing,Placing,Scanning,Paying,ReceivingReceipt,Collecting,ClearingCounter,Leaving,Resting,Failed,Completed}
+    public enum PedestrianState {Inactive,Walking,WaitingForEntry,Entering,Browsing,PickingUp,WaitingForSpace,Queueing,Placing,Scanning,Paying,ReceivingReceipt,Collecting,ClearingCounter,Leaving,Resting,Failed,Completed,ApproachingCounter}
     public sealed class PedestrianPlan
     {
-        public CityPoint[] Walk=Array.Empty<CityPoint>(),Entry=Array.Empty<CityPoint>(),BrowseStations=Array.Empty<CityPoint>(),Queue=Array.Empty<CityPoint>(),Exit=Array.Empty<CityPoint>();
+        public CityPoint[] Walk=Array.Empty<CityPoint>(),Entry=Array.Empty<CityPoint>(),BrowseStations=Array.Empty<CityPoint>(),Exit=Array.Empty<CityPoint>();
+        // Puntos de la fila de cada caja (Queues[caja][lugar]); el primero está junto al mostrador.
+        public CityPoint[][] Queues=Array.Empty<CityPoint[]>();
+        public CityPoint[] Counters=Array.Empty<CityPoint>();
         public float BrowseSeconds=1.5f,RestSeconds=3f,TravelTimeout=80f,QueueTimeout=80f;
         public CounterTiming Timing=CounterTiming.Standard;
         // Puestos que mira antes del suyo y si al final compra: no todos los clientes se llevan algo.
@@ -23,10 +26,12 @@ namespace Alarma.AI.CityLife
     public sealed class PedestrianRoutine
     {
         private const float LookFraction=.7f, LookPatience=6f;
-        private readonly int id;private readonly IPedestrianMotor motor;private readonly ShopQueue queue;private readonly ShopService service;private readonly PedestrianPlan plan;
-        private int point,queueIndex=-1,look;private float time;private bool browsing;private ShoppingSession session;
+        private readonly int id;private readonly IPedestrianMotor motor;private readonly CheckoutLanes lanes;private readonly ShopService service;private readonly PedestrianPlan plan;
+        private int point,queueIndex=-1,look,lane=-1;private float time;private bool browsing;private ShoppingSession session;
         public PedestrianState State{get;private set;}=PedestrianState.Inactive;
         public ShoppingSession Session=>session;
+        // Caja donde hace fila o paga (-1 antes de elegir).
+        public int Lane=>lane;
         public float StateSeconds=>time;
         public CounterTiming Timing=>plan.Timing;
         public bool Carrying=>session!=null && (session.Stage==ShoppingStage.InHand || session.Stage==ShoppingStage.Collected);
@@ -36,11 +41,11 @@ namespace Alarma.AI.CityLife
         // Puesto que está mirando ahora: primero los ajenos de plan.Looks y al final el reservado.
         public int BrowsingStation=>session==null?-1:look<plan.Looks.Length?plan.Looks[look]:session.Station;
         public event Action<PedestrianState> StateChanged;public event Action Purchased;public event Action Failed;
-        public PedestrianRoutine(int id,IPedestrianMotor motor,ShopQueue queue,PedestrianPlan plan,ShopService service)
-        {this.id=id;this.motor=motor??throw new ArgumentNullException(nameof(motor));this.queue=queue??throw new ArgumentNullException(nameof(queue));this.plan=plan??throw new ArgumentNullException(nameof(plan));this.service=service??throw new ArgumentNullException(nameof(service));}
+        public PedestrianRoutine(int id,IPedestrianMotor motor,CheckoutLanes lanes,PedestrianPlan plan,ShopService service)
+        {this.id=id;this.motor=motor??throw new ArgumentNullException(nameof(motor));this.lanes=lanes??throw new ArgumentNullException(nameof(lanes));this.plan=plan??throw new ArgumentNullException(nameof(plan));this.service=service??throw new ArgumentNullException(nameof(service));}
         public void Start()
         {
-            if(plan.Walk.Length==0 || (plan.VisitsShop && (plan.Entry.Length==0 || plan.BrowseStations.Length==0 || plan.Queue.Length<queue.Capacity || plan.Exit.Length==0))){Fail();return;}
+            if(plan.Walk.Length==0 || (plan.VisitsShop && (plan.Entry.Length==0 || plan.BrowseStations.Length==0 || !QueuesFit() || plan.Exit.Length==0))){Fail();return;}
             foreach(int station in plan.Looks)if(station<0 || station>=plan.BrowseStations.Length){Fail();return;}
             point=0;Change(PedestrianState.Walking);Move(plan.Walk[0]);
         }
@@ -48,7 +53,7 @@ namespace Alarma.AI.CityLife
         // Devuelve el puesto para colocarlo, o -1 si el local está lleno.
         public int BeginInside()
         {
-            if(!plan.VisitsShop || plan.Exit.Length==0 || plan.BrowseStations.Length==0 || plan.Queue.Length<queue.Capacity
+            if(!plan.VisitsShop || plan.Exit.Length==0 || plan.BrowseStations.Length==0 || !QueuesFit()
                || !service.TryBegin(id,plan.WalletCents,out session)){session=null;return -1;}
             look=plan.Looks.Length;point=0;
             Change(PedestrianState.Browsing);
@@ -67,7 +72,7 @@ namespace Alarma.AI.CityLife
                     if(++point<plan.Walk.Length)Move(plan.Walk[point]);else {motor.Stop();Change(plan.VisitsShop?PedestrianState.WaitingForEntry:PedestrianState.Resting);}break;
                 case PedestrianState.WaitingForEntry:
                     if(service.TryBegin(id,plan.WalletCents,out session)){point=0;Change(PedestrianState.Entering);Move(plan.Entry[0]);}
-                    else if(time>plan.QueueTimeout)FinishVisit();break;
+                    else if(time>(plan.OneVisit ? Math.Min(plan.QueueTimeout, 6f) : plan.QueueTimeout))FinishVisit();break;
                 case PedestrianState.Entering:
                     if(Timeout() || !motor.HasArrived)break;
                     if(++point<plan.Entry.Length)Move(plan.Entry[point]);
@@ -78,11 +83,18 @@ namespace Alarma.AI.CityLife
                     if(time<timing.Pick)break;if(!service.PickUp(id)){Fail();break;}
                     Change(PedestrianState.WaitingForSpace);break;
                 case PedestrianState.WaitingForSpace:
-                    if(queue.TryJoin(id)){queueIndex=-1;Change(PedestrianState.Queueing);UpdateQueue();}
+                    int choice=lanes.Choose();if(choice>=0 && lanes[choice].TryJoin(id)){lane=choice;queueIndex=-1;Change(PedestrianState.Queueing);UpdateQueue();}
                     else if(time>plan.QueueTimeout)BeginExit();break;
                 case PedestrianState.Queueing:
                     if(time>plan.QueueTimeout){BeginExit();break;}UpdateQueue();
-                    if(queueIndex==0 && motor.HasArrived){motor.Stop();Change(PedestrianState.Placing);}break;
+                    if(queueIndex==0 && motor.HasArrived)
+                    {
+                        if(lane<plan.Counters.Length){Change(PedestrianState.ApproachingCounter);Move(plan.Counters[lane]);}
+                        else {motor.Stop();Change(PedestrianState.Placing);}
+                    }break;
+                case PedestrianState.ApproachingCounter:
+                    if(Timeout() || !motor.HasArrived)break;
+                    motor.Stop();Change(PedestrianState.Placing);break;
                 case PedestrianState.Placing:
                     if(time>=timing.Place){if(service.Place(id))Change(PedestrianState.Scanning);else Fail();}break;
                 case PedestrianState.Scanning:
@@ -94,7 +106,7 @@ namespace Alarma.AI.CityLife
                     if(time<timing.Bag)break;if(!service.Collect(id)){Fail();break;}point=0;Change(PedestrianState.ClearingCounter);Move(plan.Exit[0]);break;
                 case PedestrianState.ClearingCounter:
                     if(Timeout() || !motor.HasArrived)break;
-                    queue.Release(id);service.Release(id);NextExit();break;
+                    lanes.Release(id);service.Release(id);NextExit();break;
                 case PedestrianState.Leaving:
                     if(!Timeout() && motor.HasArrived)NextExit();break;
                 case PedestrianState.Resting:
@@ -124,12 +136,31 @@ namespace Alarma.AI.CityLife
         {
             if (plan.OneVisit && State == PedestrianState.Failed) BeginExit();
         }
-        private void BeginExit(){queue.Release(id);service.Release(id);session=null;point=0;Change(PedestrianState.Leaving);if(plan.Exit.Length>0)Move(plan.Exit[0]);else Change(PedestrianState.Resting);}
-        private void UpdateQueue(){int i=queue.IndexOf(id);if(i<0 || i>=plan.Queue.Length){Fail();return;}if(i!=queueIndex){queueIndex=i;Move(plan.Queue[i]);}}
+        public void CancelInteraction()
+        {
+            if (!Interaction) return;
+            service.CancelUncollected(id);
+            if (session != null) plan.WalletCents = session.WalletCents;
+            BeginExit();
+        }
+        public void ReturnFromEntrance()
+        {
+            if (!plan.OneVisit || State != PedestrianState.Entering) return;
+            lanes.Release(id);
+            service.Release(id);
+            session = null;
+            point = plan.Exit.Length - 1;
+            Change(PedestrianState.Leaving);
+            Move(plan.Exit[point]);
+        }
+        private void BeginExit(){lanes.Release(id);service.Release(id);session=null;point=0;Change(PedestrianState.Leaving);if(plan.Exit.Length>0)Move(plan.Exit[0]);else Change(PedestrianState.Resting);}
+        private void UpdateQueue(){int i=lane<0?-1:lanes[lane].IndexOf(id);if(i<0 || i>=plan.Queues[lane].Length){Fail();return;}if(i!=queueIndex){queueIndex=i;Move(plan.Queues[lane][i]);}}
+        // Cada caja tiene su fila con lugar para todos los que admite.
+        private bool QueuesFit(){if(plan.Queues.Length<lanes.Count)return false;for(int i=0;i<lanes.Count;i++)if(plan.Queues[i]==null || plan.Queues[i].Length<lanes[i].Capacity)return false;return true;}
         private bool Timeout(){if(time<=plan.TravelTimeout)return false;Fail();return true;}
         private void Move(CityPoint p){time=0;if(!motor.MoveTo(p))Fail();}
         private void Change(PedestrianState state){State=state;time=0;StateChanged?.Invoke(state);}
-        private void Fail(){queue.Release(id);service.Release(id);motor.Stop();Change(PedestrianState.Failed);Failed?.Invoke();}
-        public void Reset(){queue.Release(id);service.Release(id);motor.Stop();session=null;queueIndex=-1;Change(PedestrianState.Inactive);}
+        private void Fail(){lanes.Release(id);service.Release(id);motor.Stop();Change(PedestrianState.Failed);Failed?.Invoke();}
+        public void Reset(){lanes.Release(id);service.Release(id);motor.Stop();session=null;queueIndex=-1;lane=-1;Change(PedestrianState.Inactive);}
     }
 }

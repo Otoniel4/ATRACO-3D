@@ -29,6 +29,9 @@ namespace Alarma.AI.CityLife
         public Transform Handle => handle;
         public bool IsOpen => CanPass;
         public bool CanPass => angle >= (right == null ? 82f : 70f);
+        // Hoja abierta del todo: recién ahí el camino de salida queda libre de la hoja (a 70° todavía lo roza).
+        public bool FullyOpen => angle >= OpenAngle - 2f;
+        public string BlockingObstacle { get; private set; } = "ninguno";
 
         public void Configure(Transform leftLeaf, Transform rightLeaf, Transform gateway)
         {
@@ -120,18 +123,22 @@ namespace Alarma.AI.CityLife
             Vector3 center = box.bounds.center;
             Vector3 p = right == null ? center : leaf.position + Flat(center - leaf.position) * 1.55f;
             p.y = threshold != null ? threshold.position.y + 1.15f : center.y;
+            string bar = marker.Replace("PushContact_", "DoorBar_");
             foreach (var t in leaf.GetComponentsInChildren<Transform>(true))
-                if (t.name == marker || t.name.StartsWith(marker + ".", StringComparison.Ordinal))
+                if (t.name == marker || t.name.StartsWith(marker + ".", StringComparison.Ordinal)
+                    || t.name == bar || t.name.StartsWith(bar + ".", StringComparison.Ordinal))
                 {
-                    p = t.position;
+                    // Parte alta de la placa: permite apoyar la palma con los dedos hacia arriba.
+                    // El antiguo centro bajo exigía extender el brazo más allá de su longitud real.
+                    p = t.position + Vector3.up * .14f;
                     break;
                 }
             // Cada cara conserva su ancla. Otro actor no puede desplazar la que ya está usando una mano.
-            front = PlaceContact(leaf, "DoorPalmFront", box.ClosestPoint(p + normal * .17f));
-            back = PlaceContact(leaf, "DoorPalmBack", box.ClosestPoint(p - normal * .17f));
+            front = PlaceContact(leaf, "DoorPalmFront", box.ClosestPoint(p + normal * .17f), normal);
+            back = PlaceContact(leaf, "DoorPalmBack", box.ClosestPoint(p - normal * .17f), -normal);
         }
 
-        private static Transform PlaceContact(Transform leaf, string name, Vector3 point)
+        private static Transform PlaceContact(Transform leaf, string name, Vector3 point, Vector3 outward)
         {
             var contact = leaf.Find(name);
             if (contact == null)
@@ -140,6 +147,7 @@ namespace Alarma.AI.CityLife
                 contact.SetParent(leaf, false);
             }
             contact.position = point;
+            contact.rotation = Quaternion.LookRotation(outward);
             return contact;
         }
 
@@ -149,7 +157,7 @@ namespace Alarma.AI.CityLife
             bool requested = Time.time < until;
             if (!requested && angle <= .001f) return;
             Physics.SyncTransforms();
-            bool hold = requested || (angle > 1f && Occupied());
+            bool hold = requested || (angle > 1f && ThresholdOccupied());
             float target = hold ? OpenAngle : 0f;
             float velocity = angularVelocity;
             float proposed = Mathf.SmoothDampAngle(angle, target, ref velocity,
@@ -160,6 +168,7 @@ namespace Alarma.AI.CityLife
 
             // Un grado por muestra cubre el arco de la hoja, incluidos los cambios de fotograma grandes.
             int samples = Mathf.CeilToInt(difference);
+            BlockingObstacle = "ninguno";
             for (int i = 1; i <= samples; i++)
                 if (!PoseClear(Mathf.Lerp(angle, proposed, (float)i / samples)))
                 {
@@ -172,7 +181,14 @@ namespace Alarma.AI.CityLife
             ApplyPose(angle);
         }
 
-        private bool Occupied()
+        public bool OnSameSide(Vector3 a, Vector3 b)
+        {
+            Vector3 normal = ClosedNormal(left, leftBox, leftClosed);
+            Vector3 origin = threshold.position;
+            return (Vector3.Dot(a - origin, normal) >= 0f) == (Vector3.Dot(b - origin, normal) >= 0f);
+        }
+
+        private bool ThresholdOccupied()
         {
             Quaternion orientation = Quaternion.LookRotation(ClosedNormal(left, leftBox, leftClosed));
             int count = Physics.OverlapBoxNonAlloc(threshold.position + Vector3.up * .95f,
@@ -195,10 +211,15 @@ namespace Alarma.AI.CityLife
             half = new Vector3(Mathf.Max(.008f, half.x - .012f), Mathf.Max(.008f, half.y - .012f), Mathf.Max(.008f, half.z - .012f));
             int count = Physics.OverlapBoxNonAlloc(center, half, overlaps, world, SweepMask, QueryTriggerInteraction.Ignore);
             bool clear = count < overlaps.Length;
+            if (!clear) BlockingObstacle = "consulta de colisiones saturada";
             for (int i = 0; i < count; i++)
             {
                 Collider c = overlaps[i];
-                if (c != null && !c.transform.IsChildOf(left) && !(right != null && c.transform.IsChildOf(right))) clear = false;
+                if (c != null && !c.transform.IsChildOf(left) && !(right != null && c.transform.IsChildOf(right)))
+                {
+                    clear = false;
+                    BlockingObstacle = c.transform.name;
+                }
             }
             ClearOverlaps(count);
             return clear;

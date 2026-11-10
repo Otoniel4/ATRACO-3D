@@ -166,4 +166,6 @@ def main():
     print('CLIPS', len(clips), files)
 
 
-main()
+# Sus funciones también las usa build_npc_reaction_clips.py.
+if __name__ == '__main__':
+    main()

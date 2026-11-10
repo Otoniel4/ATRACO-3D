@@ -24,6 +24,10 @@ namespace Alarma.City.Playtest
         public bool FaceView{get;set;}
         // Quieto mientras dura una acción de cuerpo completo (forzar con la palanca, abrir con la ganzúa, colocar la termita).
         public bool HoldStill{get;set;}
+        private const float AlignSeconds=.3f;
+        private Pose alignTarget;private float alignLeft;
+        // Lo pide un objeto que necesita que el jugador se pare en un lugar (bridas: detrás de la persona arrodillada).
+        public void AlignTo(Pose pose){alignTarget=pose;alignLeft=AlignSeconds;}
         public event Action<float> SpeedChanged;
         public bool DoorInteractionActive => doorLocked;
         public float BodyRadius => controller != null ? controller.radius : .24f;
@@ -73,11 +77,21 @@ namespace Alarma.City.Playtest
             }
             Vector3 direction = doorLocked ? doorFacing : input.Active ? MoveDirection : Vector3.zero;
             // Arranque y frenado graduales: sin saltos de velocidad ni pies que patinan al soltar las teclas.
-            Vector3 target = doorLocked ? doorDirection : HoldStill ? Vector3.zero : direction * (FaceView ? WalkSpeed * .6f : input.Run ? RunSpeed : WalkSpeed);
-            planar = doorLocked ? target : Vector3.MoveTowards(planar, target,
-                (target.sqrMagnitude > planar.sqrMagnitude ? Acceleration : Deceleration) * Time.deltaTime);
-            if(FaceView && !doorLocked)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.Euler(0,view.Yaw,0),TurnSpeed*Time.deltaTime);
-            else if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
+            if(alignLeft>0f && !doorLocked)
+            {
+                // Se desliza hasta el punto pedido en AlignSeconds y gira hacia donde se pide.
+                Vector3 gap=alignTarget.position-transform.position;gap.y=0;
+                planar=gap/Mathf.Max(alignLeft,Time.deltaTime);alignLeft-=Time.deltaTime;
+                transform.rotation=Quaternion.RotateTowards(transform.rotation,alignTarget.rotation,TurnSpeed*2f*Time.deltaTime);
+            }
+            else
+            {
+                Vector3 target = doorLocked ? doorDirection : HoldStill ? Vector3.zero : direction * (FaceView ? WalkSpeed * .6f : input.Run ? RunSpeed : WalkSpeed);
+                planar = doorLocked ? target : Vector3.MoveTowards(planar, target,
+                    (target.sqrMagnitude > planar.sqrMagnitude ? Acceleration : Deceleration) * Time.deltaTime);
+                if(FaceView && !doorLocked)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.Euler(0,view.Yaw,0),TurnSpeed*Time.deltaTime);
+                else if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
+            }
             if(controller.isGrounded && vertical<0)vertical=-2;else vertical-=Gravity*Time.deltaTime;
             Physics.SyncTransforms();controller.Move((planar+Vector3.up*vertical)*Time.deltaTime);
             Vector3 p=transform.position;float limit=world.HalfSize;p.x=Mathf.Clamp(p.x,-limit,limit);p.z=Mathf.Clamp(p.z,-limit,limit);

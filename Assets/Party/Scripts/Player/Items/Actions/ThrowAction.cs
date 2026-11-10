@@ -1,5 +1,6 @@
 using UnityEngine;
 using Alarma.Core.Contracts;
+using Alarma.Core.Events;
 
 namespace Alarma.Player.Items
 {
@@ -37,7 +38,7 @@ namespace Alarma.Player.Items
             grenade.AddComponent<FusedCharge>().Arm(fuse, position =>
             {
                 if (blast == BlastKind.Smoke) ItemEffects.Smoke(position, smokeSeconds);
-                else if (blast == BlastKind.Flash) ItemEffects.Flash(position);
+                else if (blast == BlastKind.Flash) { ItemEffects.Flash(position); MakeNoise(position, NoiseKind.Explosion, user); }
                 else ItemEffects.EmpPulse(position);
                 foreach (var near in Physics.OverlapSphere(position, radius, ~0, QueryTriggerInteraction.Collide))
                 {

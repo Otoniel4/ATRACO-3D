@@ -14,13 +14,16 @@ namespace Alarma.AI.CityLife
         public void ConfigureBlocker(Transform value){blocker=value;}
         private PedestrianTraffic traffic;private float elapsed;private bool ready;
         private readonly Dictionary<int,PedestrianMovement> motors=new Dictionary<int,PedestrianMovement>();
+        // Consultas físicas de cada paso, iguales para todos los que planifican en este paso.
         private readonly Dictionary<(int,int),bool> passageCache=new Dictionary<(int,int),bool>();
+        // Desfase de cada local: si todos planifican en el mismo cuadro, sus consultas se suman en un tirón.
+        private static int created;
         private readonly Dictionary<int, Vector3> doorOrigins = new Dictionary<int, Vector3>();
         private readonly Collider[] visitorsAtEnd = new Collider[16];
         private readonly RaycastHit[] visitorsInPath = new RaycastHit[16];
         public TrafficGraph Graph=>graph;
         public void Configure(TrafficGraph value,float seconds){graph=value;stepSeconds=seconds;traffic=new PedestrianTraffic(graph);}
-        private void Awake(){if(graph!=null)traffic=new PedestrianTraffic(graph);}
+        private void Awake(){if(graph!=null)traffic=new PedestrianTraffic(graph);elapsed=stepSeconds*Mathf.Repeat(created++*.618034f,1f);}
         public bool Register(int id,PedestrianMovement motor,Vector3 position)
         {
             if(traffic==null)return false;
@@ -47,17 +50,28 @@ namespace Alarma.AI.CityLife
             ready=elapsed>=stepSeconds;
             foreach(var motor in motors.Values)motor.Interpolate(Mathf.Min(1,elapsed/stepSeconds),Time.deltaTime);
         }
-        private bool CanTraverse(int from,int to)
+        private bool CanTraverse(int from,int to,int mine)
         {
+            if(DoorBodyBlocks(from,to,mine))return false;
             if(passageCache.TryGetValue((from,to),out bool value))return value;
             value=CheckPassage(from,to);passageCache[(from,to)]=value;return value;
         }
+        // Solo quien tiene el cuerpo adelantado en una puerta ve el grafo distinto; los demás planifican con la misma clave.
+        private int PlannerKey(int cell)=>doorOrigins.ContainsKey(cell)?cell:-1;
+        private Vector3 Origin(int from)=>doorOrigins.TryGetValue(from,out var actual)?actual:graph.Cells[from].Position;
+        // mine: clave de quien planifica. El cuerpo adelantado de quien empuja una puerta tapa el paso a los demás, pero
+        // no a él mismo: antes, al abrirse la puerta, su propio cuerpo le tapaba el camino recto y rodeaba.
+        private bool DoorBodyBlocks(int from,int to,int mine)
+        {
+            if(doorOrigins.Count==0)return false;
+            Vector3 a=Origin(from),b=graph.Cells[to].Position;
+            foreach (var other in doorOrigins)
+                if (other.Key != from && other.Key != mine && CloseToSegment(other.Value, a, b, .49f)) return true;
+            return false;
+        }
         private bool CheckPassage(int from,int to)
         {
-            Vector3 a = doorOrigins.TryGetValue(from, out var actual) ? actual : graph.Cells[from].Position;
-            Vector3 b = graph.Cells[to].Position;
-            foreach (var other in doorOrigins)
-                if (other.Key != from && CloseToSegment(other.Value, a, b, .49f)) return false;
+            Vector3 a=Origin(from),b=graph.Cells[to].Position;
             if(blocker!=null && Mathf.Abs(blocker.position.y-a.y)<1.8f){Vector3 p=blocker.position;float t=Vector3.Dot(p-a,b-a)/Mathf.Max(.0001f,(b-a).sqrMagnitude);Vector3 closest=Vector3.Lerp(a,b,Mathf.Clamp01(t));p.y=closest.y;if((p-closest).sqrMagnitude<.58f*.58f)return false;}
             Vector3 direction=b-a;float distance=direction.magnitude;int mask=~((1<<29)|(1<<30)|(1<<31));
             return !Physics.CheckCapsule(b+Vector3.up*.5f,b+Vector3.up*1.45f,.23f,mask,QueryTriggerInteraction.Ignore) &&
@@ -110,7 +124,7 @@ namespace Alarma.AI.CityLife
             foreach (var pair in motors)
                 if (pair.Value.HasDoorOffset && traffic.Get(pair.Key) is TrafficResident actor)
                     doorOrigins[actor.Cell] = pair.Value.transform.position;
-            Physics.SyncTransforms();var steps=traffic.Step(CanTraverse);
+            Physics.SyncTransforms();var steps=traffic.StepAvoidingOthers(CanTraverse,PlannerKey);
             foreach(var pair in steps)motors[pair.Key].SetStep(graph.Cells[pair.Value].Position);
         }
     }

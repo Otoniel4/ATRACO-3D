@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
+using Alarma.Core.Editor;
 
 namespace Alarma.AI.CityLife.Editor
 {
@@ -14,7 +15,7 @@ namespace Alarma.AI.CityLife.Editor
             string modelPath=folder+"/Art/Characters/"+data.id+".fbx";GameObject model=AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
             var root=new GameObject("Pedestrian_"+data.id);var visual=(GameObject)PrefabUtility.InstantiatePrefab(model);visual.transform.SetParent(root.transform,false);
             Animator animator=visual.GetComponentInChildren<Animator>();if(animator==null)animator=visual.AddComponent<Animator>();
-            animator.runtimeAnimatorController=CityLifeAnimatorFactory.Create(folder+"/Controllers/"+data.id+".controller",modelPath);animator.applyRootMotion=false;animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;
+            animator.runtimeAnimatorController=CityLifeAnimatorFactory.Create(folder+"/Controllers/"+data.id+".controller",modelPath,LocomotionClips.For(animator,folder+"/Controllers/Locomocion/"+data.id));animator.applyRootMotion=false;animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;
             foreach(var skin in visual.GetComponentsInChildren<SkinnedMeshRenderer>(true))skin.updateWhenOffscreen=true;
             var actor=root.AddComponent<PedestrianActor>();root.GetComponent<NavMeshAgent>().enabled=false;
             root.layer=29;var bodyCollider=root.AddComponent<CapsuleCollider>();bodyCollider.height=1.7f;bodyCollider.radius=.23f;bodyCollider.center=new Vector3(0,.85f,0);

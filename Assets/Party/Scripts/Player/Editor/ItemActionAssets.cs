@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using Alarma.Core.Editor;
 using Alarma.Player.Items;
 
 namespace Alarma.Player.Editor
@@ -60,6 +61,7 @@ namespace Alarma.Player.Editor
             action.ConfigureMotion(entry.duration, entry.trigger, entry.repeat, entry.curves.ToMotion(), entry.shake, entry.spin, entry.spinSpeed, entry.blink, version);
             // Clip de cuerpo (build_action_clips.py → capa Acciones del Animator, ItemActionAnimatorAssets).
             action.ConfigureBody(entry.clip ? entry.animationId : 0, entry.fullBody);
+            action.ConfigureNoise(EventAssets.Noise(), entry.noise);
             switch (action)
             {
                 case FirearmAction gun:
@@ -87,7 +89,7 @@ namespace Alarma.Player.Editor
         private sealed class ActionEntry
         {
             public string id, type, spin, blink;
-            public float duration, trigger, shake, spinSpeed;
+            public float duration, trigger, shake, spinSpeed, noise;
             public bool repeat, clip, fullBody;
             public int animationId;
             public CurveData curves = new CurveData();

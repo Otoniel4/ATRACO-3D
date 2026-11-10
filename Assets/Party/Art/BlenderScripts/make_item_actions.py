@@ -11,7 +11,7 @@ Uso: python make_item_actions.py
 import json
 from pathlib import Path
 
-VERSION = 5
+VERSION = 6
 OUT = Path(__file__).resolve().parents[2] / 'Data' / 'Items' / 'item_actions.json'
 ACTIONS = []
 
@@ -21,9 +21,10 @@ def K(*points):
 
 
 def add(id, type, duration, trigger, curves, repeat=False, shake=0.0, spin='', spinSpeed=0.0, blink='', clip=False,
-        fullBody=False, **data):
+        fullBody=False, noise=0.0, **data):
+    # noise: hasta dónde se oye, en metros (lo escuchan los civiles por el canal Data/Events/Ruido.asset).
     entry = dict(id=id, type=type, duration=duration, trigger=trigger, repeat=repeat, shake=shake,
-                 spin=spin, spinSpeed=spinSpeed, blink=blink, clip=clip, fullBody=fullBody, curves=curves)
+                 spin=spin, spinSpeed=spinSpeed, blink=blink, clip=clip, fullBody=fullBody, noise=noise, curves=curves)
     entry.update(data)
     ACTIONS.append(entry)
 
@@ -48,10 +49,10 @@ def tool(reach, nothing, consume=False, rope=False, requireTarget=False):
     return dict(range=reach, consume=consume, rope=rope, nothing=nothing, requireTarget=requireTarget)
 
 
-add('pistola', 'firearm', .25, 0, recoil(.05, .022, 16, .55, 2), firearm=firearm(25, 60, 1, 4, .6))
-add('taser', 'firearm', 1.2, 0, recoil(.025, .012, 6, .3, 1), firearm=firearm(0, 9, 1, 3, .8, stun=True, flash=BLUE, tracer=BLUE))
-add('escopeta', 'firearm', 1.0, 0, recoil(.1, .06, 26, .35, 4), firearm=firearm(64, 35, 8, 7, 4.5, pump='Pump'))
-add('rifle', 'firearm', .1, 0, recoil(.028, .01, 5, .9, .8), repeat=True, firearm=firearm(18, 90, 1, 3, .4))
+add('pistola', 'firearm', .25, 0, recoil(.05, .022, 16, .55, 2), noise=35, firearm=firearm(25, 60, 1, 4, .6))
+add('taser', 'firearm', 1.2, 0, recoil(.025, .012, 6, .3, 1), noise=4, firearm=firearm(0, 9, 1, 3, .8, stun=True, flash=BLUE, tracer=BLUE))
+add('escopeta', 'firearm', 1.0, 0, recoil(.1, .06, 26, .35, 4), noise=45, firearm=firearm(64, 35, 8, 7, 4.5, pump='Pump'))
+add('rifle', 'firearm', .1, 0, recoil(.028, .01, 5, .9, .8), repeat=True, noise=40, firearm=firearm(18, 90, 1, 3, .4))
 
 # Herramientas, granadas y termita usan clip de cuerpo (build_action_clips.py): clip=True. fullBody=True usa todo el
 # cuerpo (rodillas y cadera) y deja al jugador quieto mientras dura; si no, solo el torso y se puede caminar.
@@ -168,7 +169,7 @@ def grenade(id, kind):
         leftUp=K((0, 0), (.32, .04), (.55, .06), (.65, -.3), (1, -.42)),
         leftForward=K((0, .2), (.32, .42), (.55, .45), (.65, .05), (1, .08)),
         leftHand=K((0, 0), (.1, 1), (.22, 1), (.32, 0), (1, 0))),
-        clip=True, thrown=dict(kind=kind, speed=13, fuse=1.6 if kind == 'Smoke' else 1.2, radius=8 if kind == 'Emp' else 6))
+        clip=True, noise=30 if kind == 'Flash' else 0, thrown=dict(kind=kind, speed=13, fuse=1.6 if kind == 'Smoke' else 1.2, radius=8 if kind == 'Emp' else 6))
 
 
 grenade('humo', 'Smoke')

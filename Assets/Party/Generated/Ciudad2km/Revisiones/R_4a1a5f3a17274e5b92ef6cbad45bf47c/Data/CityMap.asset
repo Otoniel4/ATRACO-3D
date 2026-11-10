@@ -1,0 +1,191 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b03e02350ab7ba4c9672bdd3d8e8362, type: 3}
+  m_Name: CityMap
+  m_EditorClassIdentifier: Alarma.UI::Alarma.UI.Map.CityMapDefinition
+  Title: "Villa Alarma \xB7 ciudad 2 \xD7 2 km"
+  Background: {fileID: 2800000, guid: f514d290456848b4eada29494d41dad5, type: 3}
+  PlayerIcon: {fileID: 2800000, guid: 5c4a03aaa3b34994ba86e5e1f0f1535e, type: 3}
+  WorldMin: {x: -1000, y: -1000}
+  WorldMax: {x: 1000, y: 1000}
+  Categories:
+  - Id: banco
+    Label: Banco
+    Group: ROBOS
+    Color: {r: 0.18039216, g: 0.8, b: 0.44313726, a: 1}
+    Icon: {fileID: 2800000, guid: 359346066d330024787b3f40bc081c5c, type: 3}
+  - Id: joyeria
+    Label: "Joyer\xEDa"
+    Group: ROBOS
+    Color: {r: 0.16078432, g: 0.77254903, b: 0.9647059, a: 1}
+    Icon: {fileID: 2800000, guid: a9058006380aa4740a4ca74fe54ef6ce, type: 3}
+  - Id: supermercado
+    Label: Supermercado
+    Group: ROBOS
+    Color: {r: 0.9529412, g: 0.6117647, b: 0.07058824, a: 1}
+    Icon: {fileID: 2800000, guid: 027318e55db2ff6408c9a116283e2078, type: 3}
+  - Id: minimarket
+    Label: Minimarket
+    Group: ROBOS
+    Color: {r: 0.94509804, g: 0.76862746, b: 0.05882353, a: 1}
+    Icon: {fileID: 2800000, guid: 30a1f1465b53ad140a06212c9b23c8e0, type: 3}
+  - Id: comida
+    Label: "Comida (distrae a la polic\xEDa)"
+    Group: SERVICIOS
+    Color: {r: 1, g: 0.43529412, b: 0.65882355, a: 1}
+    Icon: {fileID: 2800000, guid: abe3fe6dc7783ce4fad8a4d61db142ab, type: 3}
+  - Id: ropa
+    Label: Ropa (cambia de aspecto)
+    Group: SERVICIOS
+    Color: {r: 0.60784316, g: 0.34901962, b: 0.7137255, a: 1}
+    Icon: {fileID: 2800000, guid: 36fc451b0ade53f4f85e7bccdeb2e4d1, type: 3}
+  - Id: taller
+    Label: Taller y garaje
+    Group: SERVICIOS
+    Color: {r: 0.9019608, g: 0.49411765, b: 0.13333334, a: 1}
+    Icon: {fileID: 2800000, guid: a23f1353c87b2a6478e658824a294bca, type: 3}
+  - Id: estacionamiento
+    Label: Estacionamiento
+    Group: SERVICIOS
+    Color: {r: 0.20392157, g: 0.59607846, b: 0.85882354, a: 1}
+    Icon: {fileID: 2800000, guid: 49fb423ac0e397a4e9511005be47efe4, type: 3}
+  - Id: gasolinera
+    Label: Gasolinera
+    Group: SERVICIOS
+    Color: {r: 0.90588236, g: 0.29803923, b: 0.23529412, a: 1}
+    Icon: {fileID: 2800000, guid: d365914e07f3d624abfaa300fcb4a3fd, type: 3}
+  - Id: reducidor
+    Label: "Reducidor (vende el bot\xEDn)"
+    Group: SERVICIOS
+    Color: {r: 0.08627451, g: 0.627451, b: 0.52156866, a: 1}
+    Icon: {fileID: 2800000, guid: 52f7905b1b5d2d74d9e1a492ce845fea, type: 3}
+  - Id: escondite
+    Label: Escondite
+    Group: REFUGIO
+    Color: {r: 1, g: 0.8235294, b: 0.24705882, a: 1}
+    Icon: {fileID: 2800000, guid: e4f36db45bf491945af75427a393c624, type: 3}
+  - Id: alcantarilla
+    Label: Alcantarilla (escape)
+    Group: REFUGIO
+    Color: {r: 0.49803922, g: 0.54901963, b: 0.5529412, a: 1}
+    Icon: {fileID: 2800000, guid: 5d13d434d391c164180c7b32c3201d8e, type: 3}
+  - Id: comisaria
+    Label: "Comisar\xEDa"
+    Group: "POLIC\xCDA"
+    Color: {r: 0.18431373, g: 0.35686275, b: 0.827451, a: 1}
+    Icon: {fileID: 2800000, guid: 677074f2cdcc9974182d9661114c682d, type: 3}
+  Places:
+  - Category: escondite
+    Name: El escondite
+    Position: {x: -528, y: 0, z: 135.9}
+  - Category: banco
+    Name: Banco Central
+    Position: {x: 87.2, y: 0, z: 27.2}
+  - Category: banco
+    Name: Banco Sin Prisa
+    Position: {x: -175.2, y: 0, z: 225.2}
+  - Category: banco
+    Name: Banco del Puerto
+    Position: {x: 289, y: 0, z: -243.9}
+  - Category: joyeria
+    Name: "Brilla Joyer\xEDa"
+    Position: {x: -87.2, y: 0, z: -163.2}
+  - Category: joyeria
+    Name: Oro Fino
+    Position: {x: 255.2, y: 0, z: 142.4}
+  - Category: joyeria
+    Name: Diamante Azul
+    Position: {x: -214, y: 0, z: -16.3}
+  - Category: supermercado
+    Name: "S\xFAper Ahorro"
+    Position: {x: -236.2, y: 0, z: -236.1}
+  - Category: supermercado
+    Name: Mercado Grande
+    Position: {x: 226, y: 0, z: 335.7}
+  - Category: supermercado
+    Name: "S\xFAper Barrio"
+    Position: {x: -707.5, y: 0, z: 490}
+  - Category: supermercado
+    Name: Hiper Sur
+    Position: {x: -220, y: 0, z: -675.5}
+  - Category: minimarket
+    Name: Mini Todo
+    Position: {x: 123.1, y: 0, z: -250.5}
+  - Category: minimarket
+    Name: Minimarket 24h
+    Position: {x: -302.3, y: 0, z: -245.8}
+  - Category: minimarket
+    Name: La Esquina
+    Position: {x: 329.7, y: 0, z: 148}
+  - Category: minimarket
+    Name: Abarrotes Lomas
+    Position: {x: -134, y: 0, z: 335.7}
+  - Category: comida
+    Name: Donas El Patrullero
+    Position: {x: 58, y: 0, z: 335.7}
+  - Category: comida
+    Name: Donas El Patrullero
+    Position: {x: 329.7, y: 0, z: -208}
+  - Category: comida
+    Name: Burger Bandido
+    Position: {x: -327.7, y: 0, z: 150}
+  - Category: comida
+    Name: "Pizzer\xEDa Fuga"
+    Position: {x: 149.6, y: 0, z: -16.3}
+  - Category: comida
+    Name: "Caf\xE9 P\xE1nico"
+    Position: {x: -152, y: 0, z: 173.2}
+  - Category: comida
+    Name: Tacos La Sirena
+    Position: {x: 360.3, y: 0, z: -544}
+  - Category: ropa
+    Name: Buena Pinta
+    Position: {x: -255.2, y: 0, z: 147.2}
+  - Category: ropa
+    Name: "Moda R\xE1pida"
+    Position: {x: 231.6, y: 0, z: -16.3}
+  - Category: estacionamiento
+    Name: Parking Bajo Perfil
+    Position: {x: 136, y: 0, z: 196.5}
+  - Category: estacionamiento
+    Name: Parking Ribera
+    Position: {x: -406.4, y: 0, z: -333.6}
+  - Category: taller
+    Name: Taller de pintura
+    Position: {x: 526, y: 0, z: -636.5}
+  - Category: taller
+    Name: Garaje Express
+    Position: {x: -590, y: 0, z: -724}
+  - Category: reducidor
+    Name: Don Trueque
+    Position: {x: 720.5, y: 0, z: -775.6}
+  - Category: comisaria
+    Name: "Comisar\xEDa Centro"
+    Position: {x: -360, y: 0, z: 60}
+  - Category: comisaria
+    Name: "Comisar\xEDa Este"
+    Position: {x: 474.5, y: 0, z: -63.6}
+  - Category: gasolinera
+    Name: Gasolinera Norte
+    Position: {x: 18, y: 0, z: 815.6}
+  - Category: gasolinera
+    Name: Gasolinera Oeste
+    Position: {x: -806, y: 0, z: 18}
+  - Category: gasolinera
+    Name: Gasolinera Este
+    Position: {x: 820.5, y: 0, z: 289.2}
+  - Category: alcantarilla
+    Name: Alcantarilla Centro
+    Position: {x: -88.2, y: 0, z: -347.2}
+  - Category: alcantarilla
+    Name: Alcantarilla Sur
+    Position: {x: 522, y: 0, z: -668.5}

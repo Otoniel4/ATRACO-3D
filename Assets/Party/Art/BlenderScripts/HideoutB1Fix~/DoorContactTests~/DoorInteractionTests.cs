@@ -12,6 +12,7 @@ namespace UnityEngine
     public sealed class SerializeField : Attribute {}
     public class MonoBehaviour {}
     public static class Time { public static float time, deltaTime; }
+    public static class Debug { public static readonly List<string> Warnings = new List<string>(); public static void LogWarning(string value) => Warnings.Add(value); }
     public struct Vector3
     {
         public float x, y, z;
@@ -41,11 +42,12 @@ namespace Alarma.AI.CityLife
         private readonly Transform contact = new Transform();
         public bool CanPass;
         public int Pushes;
+        public string BlockingObstacle => "ninguno";
         public bool InReach(Vector3 point) => (Gateway.position - point).sqrMagnitude < 1.6f * 1.6f;
         public bool TryGetPushContact(Vector3 point, float radius, out Transform palm, out Vector3 stand, out Vector3 face)
         {
             palm = contact;
-            face = new Vector3(0, 0, 1);
+            face = new Vector3(0, 0, point.z <= Gateway.position.z ? 1 : -1);
             stand = Gateway.position - face * .4f;
             return true;
         }
@@ -54,9 +56,14 @@ namespace Alarma.AI.CityLife
     public sealed class PedestrianReach
     {
         public bool HasContact, Reachable = true;
+        public bool SurfaceReachable = true;
+        public float ShoulderStandX;
+        public Vector3 PalmPosition => Vector3.zero;
         public int Requests, Releases;
         public void ReachSurface(Transform target) => Requests++;
         public bool CanReach(Vector3 point, float tolerance = .04f) => Reachable;
+        public bool CanReachSurface(Transform point, float tolerance = .005f) => SurfaceReachable;
+        public Vector3 AlignSurfaceStand(Vector3 contact, Vector3 stand, Vector3 forward) => new Vector3(ShoulderStandX, stand.y, stand.z);
         public void Release(Transform target) => Releases++;
     }
 }
@@ -183,6 +190,55 @@ internal static class DoorInteractionTests
         slider.Slider.Gateway.position = new Vector3(0, 0, -.35f);
         slider.Tick(true);
         Check(slider.Slider.Pushes == 1 && slider.Motor.Begins == 0, "portón corredizo más cercano recibe E solo");
+
+        var waiting = new Fixture();
+        waiting.Tick();
+        Check(waiting.Near.Pushes == 0 && waiting.Motor.Begins == 0, "estar quieto junto al local no inicia el empuje");
+
+        var shoulder = new Fixture();
+        shoulder.View.CurrentReach.ShoulderStandX = -.23f;
+        shoulder.Tick(true);
+        shoulder.Tick();
+        Check(MathF.Abs(shoulder.Player.position.x + .23f) < .001f,
+            "E alinea el hombro real del jugador antes de empujar");
+
+        var shortPalm = new Fixture(-.47f);
+        shortPalm.View.CurrentReach.Reachable = true;
+        shortPalm.View.CurrentReach.SurfaceReachable = false;
+        shortPalm.Tick(true);
+        for (int i = 0; i < 8; i++) shortPalm.Tick();
+        Check(shortPalm.Player.position.z > -.37f && shortPalm.Near.Pushes == 0,
+            "La palma vertical corta sigue acercándose aunque el agarre de objetos dé alcance válido");
+        shortPalm.View.CurrentReach.HasContact = true;
+        shortPalm.Tick();
+        Check(shortPalm.Near.Pushes == 1, "E abre después de completar el ajuste de muñeca");
+        shortPalm.Near.CanPass = true;
+        shortPalm.Tick();
+        Check(!shortPalm.Motor.DoorInteractionActive, "Cruce libre devuelve el control para salir");
+
+        var inside = new Fixture(.4f);
+        inside.Player.forward = new Vector3(0, 0, -1);
+        inside.View.CurrentReach.HasContact = true;
+        inside.Tick(true);
+        Check(inside.Near.Pushes == 1 && inside.Player.forward.z < 0, "E abre también desde dentro de la guarida");
+
+        var retreat = new Fixture();
+        retreat.Tick(true);
+        retreat.Motor.MoveDirection = new Vector3(0, 0, -1);
+        retreat.Tick();
+        Check(!retreat.Motor.DoorInteractionActive && retreat.Near.Pushes == 0,
+            "Retroceder cancela de inmediato el contacto sin abrir la hoja");
+
+        var unreachable = new Fixture();
+        unreachable.View.CurrentReach.SurfaceReachable = false;
+        unreachable.Motor.Blocked = true;
+        int warnings = Debug.Warnings.Count;
+        unreachable.Tick(true);
+        for (int i = 0; i < 40; i++) unreachable.Tick();
+        Check(!unreachable.Motor.DoorInteractionActive && unreachable.Near.Pushes == 0,
+            "Contacto imposible libera movimiento sin atravesar la puerta");
+        Check(Debug.Warnings.Count == warnings + 1 && Debug.Warnings[Debug.Warnings.Count - 1].Contains("Contact"),
+            "Un fallo informa su fase una vez sin inundar Console");
 
         Console.WriteLine("DOOR_INTERACTION_TESTS_PASSED " + passed);
         return 0;

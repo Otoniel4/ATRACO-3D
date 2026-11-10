@@ -48,9 +48,16 @@ namespace Alarma.City.Playtest
             }
             if (activeDoor != null)
             {
+                // Retroceder cancela el gesto sin esperar al temporizador.
+                if (motor != null && Vector3.Dot(motor.MoveDirection, facing) < -.35f)
+                {
+                    EndGesture();
+                    return;
+                }
                 AdvanceGesture();
                 return;
             }
+            if (palmTarget != null || arm != null) EndGesture();
             Vector3 position = player.position;
             Vector3 move = motor != null ? motor.MoveDirection : Vector3.zero;
             if (move.sqrMagnitude < .1f || lastAdvanceDoor != null && !lastAdvanceDoor.InReach(position)) lastAdvanceDoor = null;
@@ -108,17 +115,33 @@ namespace Alarma.City.Playtest
         {
             if (arm == null || view == null || view.CurrentReach != arm || palmTarget == null
                 || motor == null || !motor.DoorInteractionActive || !activeDoor.InReach(player.position)
-                || Time.time > deadline || activeDoor.CanPass)
+                || activeDoor.CanPass)
             {
+                EndGesture();
+                return;
+            }
+            if (Time.time > deadline)
+            {
+                float error = (float)Math.Sqrt((arm.PalmPosition - palmTarget.position).sqrMagnitude);
+                Debug.LogWarning($"Alarma: gesto de puerta cancelado en {phase}; distancia palma {error:F3} m; "
+                    + $"obstáculo de hoja: {activeDoor.BlockingObstacle}. Movimiento liberado.");
                 EndGesture();
                 return;
             }
             if (phase == Phase.Approach)
             {
-                Vector3 delta = Flat(stand - player.position);
+                // Orientar primero permite calcular el hombro en el marco real del personaje.
+                if (Vector3.Dot(player.forward, facing) < .98f)
+                {
+                    motor.GuideDoorInteraction(Vector3.zero, facing);
+                    return;
+                }
+                Vector3 aligned = arm.AlignSurfaceStand(palmTarget.position, stand, facing);
+                Vector3 delta = Flat(aligned - player.position);
                 motor.GuideDoorInteraction(delta, facing);
-                if (delta.sqrMagnitude > .075f * .075f || Vector3.Dot(player.forward, facing) < .82f) return;
+                if (delta.sqrMagnitude > .025f * .025f) return;
                 phase = Phase.Contact;
+                deadline = Time.time + 1.4f;
             }
             motor.GuideDoorInteraction(Vector3.zero, facing);
             if (phase == Phase.Contact)
@@ -126,9 +149,11 @@ namespace Alarma.City.Playtest
                 arm.ReachSurface(palmTarget);
                 if (!arm.HasContact)
                 {
-                    // Si la estatura deja la palma corta, acercar la cápsula sin atravesar la hoja.
-                    if (!arm.CanReach(palmTarget.position, .02f))
-                        motor.GuideDoorInteraction(facing * (.30f * Time.deltaTime), facing);
+                    // Seguir corrigiendo la muñeca real: el agarre de objetos podía dar alcance válido
+                    // mientras la palma vertical seguía separada de la puerta.
+                    Vector3 correction = Flat(arm.AlignSurfaceStand(palmTarget.position, player.position, facing) - player.position);
+                    if (!arm.CanReachSurface(palmTarget)) correction += facing * (.30f * Time.deltaTime);
+                    motor.GuideDoorInteraction(correction, facing);
                     return;
                 }
                 // El giro comienza después de que la palma llegue a la superficie.
@@ -138,7 +163,7 @@ namespace Alarma.City.Playtest
                 deadline = Time.time + 1.35f;
                 return;
             }
-            if (Time.time - pushStarted < .24f && arm.CanReach(palmTarget.position)) arm.ReachSurface(palmTarget);
+            if (Time.time - pushStarted < .34f && arm.CanReachSurface(palmTarget, .015f)) arm.ReachSurface(palmTarget);
             else arm.Release(palmTarget);
         }
 

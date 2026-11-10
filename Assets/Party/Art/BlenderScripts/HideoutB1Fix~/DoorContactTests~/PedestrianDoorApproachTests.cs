@@ -115,6 +115,7 @@ internal static class PedestrianDoorApproachTests
     private static void Main()
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+        CheckClosedDoorRouting();
         var traffic = MakeTraffic(Cell(0, 1), Cell(.60f, 0), Cell(1.50f, 3), Cell(.75f, 2));
         var actor = Place(traffic, 1, 0f);
         var nearby = Place(traffic, 2, 1.50f);
@@ -136,13 +137,13 @@ internal static class PedestrianDoorApproachTests
             "Ignora su propia cápsula y limita la velocidad de acercamiento");
         Physics.CastBlocker = null;
         for (int i = 0; i < 6; i++) actor.ApproachDoor(Point(2f));
-        Expect(actor.AtStepEnd && actor.HasDoorOffset && Near(actor.transform.position.z, .32f),
-            "El acercamiento no supera 32 cm desde la celda reservada");
+        Expect(actor.AtStepEnd && actor.HasDoorOffset && Near(actor.transform.position.z, .48f),
+            "El acercamiento no supera 48 cm desde la celda reservada");
         actor.Pin(true);
         nearby.MoveTo(Goal(.75f));
         Tick(traffic);
         Tick(traffic);
-        Expect(Near(actor.transform.position.z, .32f) && actor.AtStepEnd,
+        Expect(Near(actor.transform.position.z, .48f) && actor.AtStepEnd,
             "Repetir la reserva conserva el desplazamiento");
         Expect(Near(nearby.transform.position.z, 1.5f),
             "La reserva de otro peatón respeta el cuerpo desplazado");
@@ -150,9 +151,9 @@ internal static class PedestrianDoorApproachTests
         actor.MoveTo(Goal(.60f));
         Physics.TrafficCastOrigins.Clear();
         Tick(traffic);
-        Expect(Physics.TrafficCastOrigins.Exists(origin => Near(origin.z, .32f)),
+        Expect(Physics.TrafficCastOrigins.Exists(origin => Near(origin.z, .48f)),
             "El barrido del próximo paso comienza en los pies reales");
-        Expect(!actor.HasDoorOffset && !actor.AtStepEnd && Near(actor.transform.position.z, .32f),
+        Expect(!actor.HasDoorOffset && !actor.AtStepEnd && Near(actor.transform.position.z, .48f),
             "Reservar otra celda mantiene continuidad sin regresar al centro");
         Expect(!actor.ApproachDoor(Point(.5f)), "No se inicia acercamiento en un paso sin terminar");
         Tick(traffic);
@@ -166,5 +167,56 @@ internal static class PedestrianDoorApproachTests
         Expect((bool)passage.Invoke(traffic, new object[]{0, 1}), "La reserva local sigue controlando sus propios residentes");
         Physics.LandingBlocker = null;
         Console.WriteLine("PEDESTRIAN_DOOR_APPROACH_TESTS_PASSED " + passed);
+    }
+
+    private static void CheckClosedDoorRouting()
+    {
+        var graph = new TrafficGraph { Cells = new[] {
+            Cell(0, 1), Cell(.5f, 0, 2), Cell(1f, 1, 3), Cell(1.5f, 2, 4), Cell(2f, 3)
+        }};
+        var traffic = new PedestrianTraffic(graph);
+        traffic.TryAdd(1, 0);
+        traffic.SetGoal(1, 4);
+        bool open = false;
+        bool Pass(int a, int b) => open || !(a == 2 && b == 3 || a == 3 && b == 2);
+        traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 1, "Con la puerta cerrada inicia la marcha hacia el negocio");
+        traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 2, "Llega a la última celda libre para poder alcanzar la manija");
+        for (int i = 0; i < 12; i++) traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 2, "No atraviesa la puerta cerrada ni oscila entre celdas");
+        traffic.Get(1).Pinned = true;
+        traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 2, "Reserva sus pies mientras realiza el gesto");
+        open = true;
+        traffic.Get(1).Pinned = false;
+        traffic.Step(Pass); traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 4, "Retoma la ruta al quedar libre la puerta sin una orden del jugador");
+        open = false;
+        traffic.SetGoal(1, 0);
+        for (int i = 0; i < 12; i++) traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 3, "También se acerca desde dentro cuando la puerta vuelve a cerrarse");
+        open = true;
+        for (int i = 0; i < 4; i++) traffic.Step(Pass);
+        Expect(traffic.Get(1).Cell == 0, "Puede volver a la acera después de abrir hacia fuera");
+
+        // Si existe un camino libre más largo, conserva la preferencia por el desvío.
+        var detour = new PedestrianTraffic(new TrafficGraph { Cells = new[] {
+            Cell(0, 1, 3), Cell(.5f, 0, 2), Cell(1f, 1, 5),
+            Cell(2f, 0, 4), Cell(2.5f, 3, 5), Cell(3f, 4, 2)
+        }});
+        detour.TryAdd(1,0); detour.SetGoal(1,2);
+        detour.Step((a,b) => !(a==1 && b==2 || a==2 && b==1));
+        Expect(detour.Get(1).Cell == 3, "Prefiere una ruta libre cuando existe un desvío completo");
+        traffic.TryAdd(2, 4);
+        traffic.SetGoal(1,4); traffic.SetGoal(2,0);
+        open = false;
+        for (int i = 0; i < 10; i++)
+        {
+            traffic.Step(Pass);
+            if (traffic.Get(1).Cell == traffic.Get(2).Cell) throw new Exception("Reserva duplicada");
+        }
+        Expect(traffic.Get(1).Cell == 2 && traffic.Get(2).Cell == 3,
+            "Dos clientes se acercan por lados opuestos sin compartir celda ni atravesar la hoja");
     }
 }

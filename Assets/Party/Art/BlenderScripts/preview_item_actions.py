@@ -231,6 +231,7 @@ def place_body(arm, motion, feet, seconds):
     mw = arm.matrix_world
     crouch, kneel, step = motion['crouch'], motion['kneel'], motion['step']
     both = motion.get('both', False)  # las dos rodillas al piso (rehén)
+    tuck = motion.get('tuck', 0.0)  # los dos pies adelante (sentado en el suelo)
     back = crouch * .5 + math.sin(math.radians(max(0.0, motion['lean'].x))) * .12
     sway = .008 * math.sin(seconds * 2 * math.pi / 2.3) if seconds is not None else 0.0  # el peso pasa de un pie al otro
     body = arm.pose.bones['Body']
@@ -238,7 +239,7 @@ def place_body(arm, motion, feet, seconds):
     bpy.context.view_layer.update()
     for side, planted in feet.items():
         foot = arm.pose.bones['Foot.' + side]
-        spot = planted.to_translation().copy()
+        spot = planted.to_translation().copy() + Vector((0, -tuck, 0))
         turn = Matrix.Identity(4)
         if side == 'L' and not both:
             spot += Vector((0, -(step + kneel * .24), 0))  # adelante es -Y

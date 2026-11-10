@@ -15,9 +15,14 @@ namespace Alarma.AI.CityLife
         private ShoppingPresentation shopping;
         [SerializeField] private Transform grip;
         private PedestrianReach reach;
-        private Transform doorTouch, pocket;
-        private Vector3 doorFacing;
-        private float doorWait;
+        private readonly CommerceHandMotion purchaseHand = new CommerceHandMotion();
+        private Transform doorTouch, pocket, streetReturn;
+        private Vector3 doorFacing, doorStand;
+        private float doorWait, blockedEntry;
+        private float contactWait;
+        private const float PalmOnPlate = .03f;
+        private readonly DoorCrossing crossing = new DoorCrossing();
+        private bool doorReported;
         [SerializeField] private PedestrianState visibleState;
         [SerializeField] private int walletCents;
         public void ConfigureGrip(Transform hand){grip=hand;}
@@ -34,8 +39,8 @@ namespace Alarma.AI.CityLife
             if(targetShop==null || !targetShop.IsConfigured || traffic==null)return false;
             if (movement == null) Awake();
             if (!movement.Place(id, position, traffic)) return false;
-            Prepare(targetShop);
-            routine = new PedestrianRoutine(id, movement, shop.Queue, shop.CreatePlan(settings, shopper, routeStart, oneVisit, wallet, id),shop.Service);
+            Prepare(targetShop, routeStart);
+            routine = new PedestrianRoutine(id, movement, shop.Lanes, shop.CreatePlan(settings, shopper, routeStart, oneVisit, wallet, id),shop.Service);
             routine.Start(); return !Failed;
         }
 
@@ -44,8 +49,8 @@ namespace Alarma.AI.CityLife
         {
             if (targetShop == null || !targetShop.IsConfigured || traffic == null) return false;
             if (movement == null) Awake();
-            Prepare(targetShop);
-            routine = new PedestrianRoutine(id, movement, shop.Queue, shop.CreatePlan(settings, true, routeStart, true, wallet, id), shop.Service);
+            Prepare(targetShop, routeStart);
+            routine = new PedestrianRoutine(id, movement, shop.Lanes, shop.CreatePlan(settings, true, routeStart, true, wallet, id), shop.Service);
             int station = routine.BeginInside();
             if (station < 0 || !movement.Place(id, shop.BrowsePoint(station).position, traffic))
             {
@@ -56,30 +61,65 @@ namespace Alarma.AI.CityLife
             return !Failed;
         }
 
-        private void Prepare(ShopActivity targetShop)
+        private void Prepare(ShopActivity targetShop, int routeStart)
         {
             shop = targetShop; presentation.ResetView();
-            shopping=GetComponent<ShoppingPresentation>();if(shopping==null)shopping=gameObject.AddComponent<ShoppingPresentation>();shopping.Configure(shop,grip);
+            streetReturn = shop.WalkRoute.Length > 0 ? shop.WalkRoute[routeStart % shop.WalkRoute.Length] : null;
             reach=GetComponent<PedestrianReach>();if(reach==null)reach=gameObject.AddComponent<PedestrianReach>();reach.Configure(grip);
+            shopping=GetComponent<ShoppingPresentation>();if(shopping==null)shopping=gameObject.AddComponent<ShoppingPresentation>();shopping.Configure(shop,reach.PurchaseGrip);
         }
         private void Update()
         {
             if (routine == null) return;
+            CheckEntryProgress();
             if (WaitAtDoor())
             {
                 doorWait += Time.deltaTime;
                 if (doorWait < 5f) return;
             }
             else doorWait = 0f;
-            routine.Tick(Time.deltaTime);movement.Pin(routine.Interaction);
+            contactWait = shopping.WaitingForContact ? contactWait + Time.deltaTime : 0f;
+            if (contactWait > 10f)
+            {
+                Debug.LogWarning($"Contacto bloqueado en {shop.Tasks.ShopId}, caja {routine.Lane}, estado {routine.State}. Se cancela la visita sin dejar la fila bloqueada.", this);
+                routine.CancelInteraction();
+                shopping.ResetView();
+                contactWait = 0f;
+            }
+            routine.Tick(shopping.WaitingForContact ? 0f : Time.deltaTime);movement.Pin(routine.Interaction);
             visibleState=routine.State;walletCents=routine.Session?.WalletCents??0;
-            var exchange = shop.Exchange;
+            var exchange = shop.ExchangeFor(routine.Lane);
             var frame = exchange.Frame(routine);
             LookAtTask(exchange);
             // En el mostrador da medio paso adelante para alcanzar sin estirarse de más.
-            if (frame.CustomerApproach) movement.ApproachDoor(exchange.LeanPoint(transform.position));
-            if (routine.Interaction) exchange.Drive(routine, frame, reach, Pocket);
+            if (frame.CustomerApproach) movement.ApproachDoor(exchange.LeanPoint(reach));
+            else if (routine.State == PedestrianState.PickingUp && routine.Session != null)
+            {
+                Vector3 product = shop.ProductPoint(routine.Session.Station).position;
+                Vector3 toward = Vector3.ProjectOnPlane(product - transform.position, Vector3.up).normalized;
+                Vector3 stand = product - toward * .55f;
+                stand.y = transform.position.y;
+                movement.ApproachDoor(reach.AlignSurfaceStand(product, stand, toward));
+            }
+            if (routine.Interaction) exchange.Drive(routine, frame, reach, Pocket, purchaseHand, shopping.CustomerContact, shopping.CashierContact, shopping.ProductGripHeight);
+            else if (routine.Carrying && !routine.HoldingBag)
+                purchaseHand.Follow(reach, transform.TransformPoint(new Vector3(.24f, 1.22f, .28f)), 1.2f, .12f, !shop.Tasks.IsWithdrawal);
+            else purchaseHand.Release();
             presentation.Refresh(routine, movement.Speed);shopping.Refresh(routine, frame);
+        }
+
+        private void CheckEntryProgress()
+        {
+            var door = shop.Entrance;
+            if (streetReturn == null || door == null || !door.InReach(transform.position) || routine.State != PedestrianState.Entering
+                || movement.Speed > .08f
+                || !door.OnSameSide(transform.position, streetReturn.position))
+            {
+                blockedEntry = 0f;
+                return;
+            }
+            blockedEntry += Time.deltaTime;
+            if (blockedEntry >= 8f) routine.ReturnFromEntrance();
         }
 
         // Mira el producto que está viendo o tomando, y en el mostrador mira la caja.
@@ -90,7 +130,7 @@ namespace Alarma.AI.CityLife
             else if (routine.State == PedestrianState.PickingUp && routine.Session != null)
                 movement.Face(shop.ProductPoint(routine.Session.Station).position);
             else if (routine.Interaction)
-                movement.Face(exchange.FacingPoint);
+                movement.Face(transform.position + exchange.CustomerForward);
         }
 
         // Lado derecho de la cadera: de ahí sale y ahí vuelve el dinero.
@@ -107,44 +147,90 @@ namespace Alarma.AI.CityLife
         }
 
         // La reserva sigue en su celda hasta que el paso esté libre. El cajero conserva su propia rutina.
+        // Frente a la puerta cerrada, DoorCrossing decide cada cuadro: girar, acercarse a la placa, extender la mano y
+        // empujar (con tiempo límite en cada fase, así nunca se traba); este método solo ejecuta lo que pide.
         private bool WaitAtDoor()
         {
             var door = shop.Entrance;
-            bool crossing = routine.State == PedestrianState.Entering || routine.State == PedestrianState.Leaving;
-            if (!crossing || door == null || door.Gateway == null || door.CanPass || !movement.AtStepEnd)
+            bool atDoor = AtDoorFront(door);
+            if (atDoor && doorTouch == null) AcquireContact(door);
+            float facing = doorTouch != null ? Vector3.Dot(transform.forward, doorFacing) : 0f;
+            Vector3 stand = doorTouch != null ? reach.AlignSurfaceStand(doorTouch.position, doorStand, doorFacing) : transform.position;
+            Vector3 toStand = stand - transform.position;
+            toStand.y = 0f;
+            var action = crossing.Tick(Time.deltaTime, atDoor && doorTouch != null, OpenEnough(door), facing,
+                toStand.sqrMagnitude < .05f * .05f, Touching());
+            if (crossing.Phase == DoorPhase.Idle)
             {
-                if (doorTouch != null) { reach.Release(doorTouch); doorTouch = null; }
+                ReleaseDoor();
                 return false;
             }
-            Vector3 distance = door.Gateway.position - transform.position;
-            distance.y = 0;
-            if (distance.sqrMagnitude > .74f * .74f) return false;
-            if (doorTouch == null)
-            {
-                if (!door.TryGetPushContact(transform.position, .24f, out var point, out var stand, out var facing)) return false;
-                movement.Face(transform.position + facing);
-                if (!reach.CanReach(point.position))
-                {
-                    if (!movement.ApproachDoor(stand)) return false;
-                    movement.Pin(true);
-                    presentation.Refresh(routine, movement.Speed);
-                    return true;
-                }
-                doorTouch = point;
-                doorFacing = facing;
-            }
-            movement.Face(transform.position + doorFacing);
             movement.Pin(true);
-            reach.ReachSurface(doorTouch);
-            if (reach.HasContact) shop.PushDoor(transform.position);
-            presentation.Refresh(routine, 0f);
+            if (action.Face) movement.Face(transform.position + doorFacing);
+            bool stepping = action.Step && facing >= .9f && movement.ApproachDoor(stand);
+            if (action.Reach) reach.ReachSurface(doorTouch);
+            if (action.Push) shop.PushDoor(transform.position);
+            ReportBlockedDoor(door);
+            presentation.Refresh(routine, stepping ? movement.Speed : 0f);
             return true;
         }
-        public void Suspend()
+
+        // Le toca empujar: cruzando, con la puerta cerrada a su alcance, todavía de su lado, ya detenido (o trabado a
+        // mitad de paso) y sin otro cliente entre él y la puerta (ese empuja primero).
+        private bool AtDoorFront(ShopDoor door)
+        {
+            bool crossingState = routine.State == PedestrianState.Entering || routine.State == PedestrianState.Leaving;
+            if (!crossingState || door == null || !door.InReach(transform.position) || OpenEnough(door)) return false;
+            if (streetReturn != null && door.OnSameSide(transform.position, streetReturn.position) != (routine.State == PedestrianState.Entering)) return false;
+            if (!movement.AtStepEnd && movement.Speed > .05f) return false;
+            Vector3 toDoor = door.Gateway.position - transform.position;
+            toDoor.y = 0f;
+            return toDoor.sqrMagnitude < .0001f
+                || !Physics.Raycast(transform.position + Vector3.up, toDoor.normalized, toDoor.magnitude, 1 << 29, QueryTriggerInteraction.Ignore);
+        }
+
+        // Camina recién con la hoja abierta del todo; si algo la frena a medio abrir, tras dos empujes pasa igual.
+        private bool OpenEnough(ShopDoor door) => door != null && (door.FullyOpen || (door.CanPass && crossing.Pushes >= 2));
+
+        // Placa de empuje de su hoja; si la puerta no la ofrece, empuja en el centro mirando hacia la puerta.
+        private void AcquireContact(ShopDoor door)
+        {
+            if (door.TryGetPushContact(transform.position, .24f, out doorTouch, out doorStand, out doorFacing)) return;
+            doorTouch = door.Handle != null ? door.Handle : door.Gateway;
+            doorStand = transform.position;
+            doorFacing = door.Gateway.position - transform.position;
+            doorFacing.y = 0f;
+            doorFacing = doorFacing.sqrMagnitude > .0001f ? doorFacing.normalized : transform.forward;
+        }
+
+        // Tres empujes seguidos sin que la puerta abra: algo bloquea la hoja (se avisa una vez).
+        private void ReportBlockedDoor(ShopDoor door)
+        {
+            if (crossing.Pushes == 0) doorReported = false;
+            if (crossing.Pushes < 3 || doorReported) return;
+            doorReported = true;
+            Debug.LogWarning($"La puerta de {shop.transform.parent?.name ?? shop.name} no abre tras 3 empujes de {name}: la bloquea «{door.BlockingObstacle}».", this);
+        }
+
+        // La palma está sobre la placa: la exigencia del brazo para superficies (8 mm) casi nunca se cumple y el empuje no
+        // salía; a menos de PalmOnPlate la diferencia no se ve y la puerta se empuja.
+        private bool Touching() => reach.HasContact
+            || (doorTouch != null && (reach.PalmPosition - doorTouch.position).sqrMagnitude < PalmOnPlate * PalmOnPlate);
+
+        private void ReleaseDoor()
         {
             if (reach != null && doorTouch != null) reach.Release(doorTouch);
             doorTouch = null;
+        }
+
+        public void Suspend()
+        {
+            purchaseHand.Release();
+            ReleaseDoor();
             doorWait = 0f;
+            blockedEntry = 0f;
+            contactWait = 0f;
+            streetReturn = null;
             if (routine != null) { routine.Reset(); routine = null; }
             if(shopping!=null)shopping.ResetView();
             if (movement != null) movement.Suspend(); if (presentation != null) presentation.ResetView();

@@ -28,11 +28,16 @@ namespace Alarma.AI.CityLife
         private readonly ITrafficMap map;
         private readonly Dictionary<int, TrafficResident> residents = new Dictionary<int, TrafficResident>();
         private readonly Dictionary<int, int[]> distances = new Dictionary<int, int[]>();
-        private readonly Dictionary<int,int[]> passageDistances=new Dictionary<int,int[]>();
+        private readonly Dictionary<(int goal, int mine), int[]> passageDistances = new Dictionary<(int, int), int[]>();
         private Dictionary<int, int> next;
         private Dictionary<int, int> occupied;
         private int searchBudget;
-        private Func<int,int,bool> canTraverse;
+        // Paso libre de una celda a otra; el tercer valor es la celda de quien planifica: su propio cuerpo (adelantado al
+        // empujar una puerta) no le tapa su camino, aunque sí lo tapa para los demás.
+        private Func<int,int,int,bool> canTraverse;
+        // Clave con la que planifica cada celda: quien no tiene un cuerpo adelantado ve el mismo grafo que los demás y
+        // comparte con ellos rutas y consultas (antes cada cliente repetía todas las consultas físicas del local).
+        private Func<int,int> plannerKey;
         public IEnumerable<TrafficResident> Residents => residents.Values;
         public PedestrianTraffic(ITrafficMap map) { this.map = map ?? throw new ArgumentNullException(nameof(map)); }
         public bool TryAdd(int id, int cell)
@@ -58,8 +63,13 @@ namespace Alarma.AI.CityLife
             distances.Add(goal,result);return result;
         }
         public Dictionary<int,int> Step(Func<int,int,bool> passage=null)
+            => StepAvoidingOthers(passage == null ? null : (from, to, mine) => passage(from, to));
+
+        // plannerKey: celda → clave de quien planifica (por defecto, la propia celda). Dos celdas con la misma clave deben
+        // obtener el mismo resultado de passage.
+        public Dictionary<int,int> StepAvoidingOthers(Func<int,int,int,bool> passage, Func<int,int> plannerKey = null)
         {
-            canTraverse=passage;passageDistances.Clear();occupied=new Dictionary<int,int>();next=new Dictionary<int,int>();
+            canTraverse=passage;this.plannerKey=plannerKey;passageDistances.Clear();occupied=new Dictionary<int,int>();next=new Dictionary<int,int>();
             var order=new List<TrafficResident>(residents.Values);
             foreach(var actor in order) occupied.Add(actor.Cell,actor.Id);
             order.Sort((a,b)=> {int c=b.WaitingSteps.CompareTo(a.WaitingSteps);return c!=0?c:a.Id.CompareTo(b.Id);});
@@ -79,11 +89,15 @@ namespace Alarma.AI.CityLife
             if(--searchBudget<0)return false;
             var actor=residents[id];var candidates=new List<int>();
             if(!actor.Pinned)candidates.AddRange(map.Neighbours(actor.Cell));candidates.Add(actor.Cell);
-            int[] distance=PassageDistance(actor.Goal);
+            int mine=plannerKey!=null?plannerKey(actor.Cell):actor.Cell;
+            int[] distance=PassageDistance(actor.Goal, mine);
+            // Una puerta cerrada desconecta temporalmente el destino. Acercarse por el grafo permite
+            // alcanzarla y empujarla; cada paso sigue sujeto a colisiones y reservas antes de avanzar.
+            if (distance[actor.Cell] == int.MaxValue) distance = Distance(actor.Goal);
             candidates.Sort((a,b)=> {int c=distance[a].CompareTo(distance[b]);if(c!=0)return c;if(a==actor.Cell)return -1;if(b==actor.Cell)return 1;return a.CompareTo(b);});
             foreach(int cell in candidates)
             {
-                if(cell!=actor.Cell && canTraverse!=null && !canTraverse(actor.Cell,cell))continue;
+                if(cell!=actor.Cell && canTraverse!=null && !canTraverse(actor.Cell,cell,mine))continue;
                 if(next.ContainsValue(cell))continue;
                 if(requester>=0 && cell==residents[requester].Cell)continue;
                 if(occupied.TryGetValue(cell,out int other) && other!=id && next.TryGetValue(other,out int destination) && destination==actor.Cell)continue;
@@ -93,15 +107,15 @@ namespace Alarma.AI.CityLife
             }
             return false;
         }
-        private int[] PassageDistance(int goal)
+        private int[] PassageDistance(int goal, int mine)
         {
             if(canTraverse==null)return Distance(goal);
-            if(passageDistances.TryGetValue(goal,out var result))return result;
+            if(passageDistances.TryGetValue((goal, mine),out var result))return result;
             result=new int[map.Count];for(int i=0;i<result.Length;i++)result[i]=int.MaxValue;
             var queue=new Queue<int>();queue.Enqueue(goal);result[goal]=0;
             while(queue.Count>0){int cell=queue.Dequeue();foreach(int neighbour in map.Neighbours(cell))
-                if(result[neighbour]==int.MaxValue && canTraverse(neighbour,cell)){result[neighbour]=result[cell]+1;queue.Enqueue(neighbour);}}
-            passageDistances.Add(goal,result);return result;
+                if(result[neighbour]==int.MaxValue && canTraverse(neighbour,cell,mine)){result[neighbour]=result[cell]+1;queue.Enqueue(neighbour);}}
+            passageDistances.Add((goal, mine),result);return result;
         }
     }
 }

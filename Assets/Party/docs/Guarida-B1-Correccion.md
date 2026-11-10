@@ -561,3 +561,57 @@ Pasaron 63 pruebas. Las nuevas cubren:
 - No se crea un cliente dentro si el local está lleno.
 
 Los cinco ensamblados compilaron contra Unity 6000.3.27f2. El giro de la puerta usa la física de Unity, así que su prueba es la de Play.
+
+## Revisión 30 de accesos comerciales
+
+El borde superior de las hojas comerciales podía tocar el dintel desde el primer grado. El constructor baja el marco móvil 4,5 cm antes de ajustar su collider. Las entradas comerciales ahora abren por proximidad desde ambos lados y se mantienen abiertas mientras el paso está ocupado. El gesto de la guarida sigue a cargo de su controlador de interacción.
+
+Los clientes pueden caminar hacia un local sin detenerse para acertar con la mano. Si uno permanece bloqueado en el exterior del umbral durante ocho segundos, libera su reserva y pide una ruta de regreso a la acera. La espera por un puesto lleno se limita a seis segundos en las visitas de calle.
+
+Archivos de juego modificados en `Scripts/AI/CityLifeR5/` — `ShopDoor.cs`, `PedestrianActor.cs`, `Domain/PedestrianRoutine.cs`. Interacción en `Scripts/City/PlaytestR7/ReviewDoorInteraction.cs`. Constructor en `Scripts/City/Editor/City25/City25Kit.cs` y `City25Builder.cs`. Pruebas y evidencias actualizadas en `Art/BlenderScripts/HideoutB1Fix~/DoorContactTests~` y `SidewalkTests~`.
+
+1. Salir de Play y pulsar **Alarma > Crear y probar juego**. Esperar que la revisión 30 regenere los prefabs.
+2. Usar **M** para ir al supermercado. Acercarse desde fuera y atravesar la puerta. Repetir desde dentro y comprobar el cierre al despejar el umbral.
+3. Observar clientes desde la acera. Comprobar que entren cuando el paso esté libre y que cedan si se bloquea. Repetir en joyería o banco.
+
+Compilaron tres asambleas contra las DLL instaladas de Unity. Pasaron 119 comprobaciones automatizadas de puertas, tráfico y rutinas. Se comprobó la geometría reimportada de las doce hojas comerciales a lo largo de ambos arcos. Falta probar el conjunto en Play.
+
+## Revisión 31 de guardado y limpieza
+
+Alain reportó que Unity ofrecía recargar la escena al usar **Crear y probar juego**. El registro muestra dos importaciones de la escena mientras ya tenía asignada su ruta abierta. Ahora el constructor guarda una copia, la importa antes de abrirla y comprueba que la escena que carga desde disco tenga cámara. Solo entonces actualiza el informe y entra en Play. Se retiró la actualización global al final de ese recorrido.
+
+Con el editor cerrado, se retiró de `Assets` la revisión generada `R_8958378ef3f545dda339aab7b4f8a423`. El rastreo de 359 GUID y rutas encontró cero referencias desde los archivos conservados. La escena publicada pasó la comprobación de GUID sin faltantes. Los 710 archivos, incluidos los metadatos, se cotejaron por SHA-256 antes y después de moverlos a `Library/Alarma/City25Recovery/Retirada_R_8958378ef3f545dda339aab7b4f8a423`. La escena base sigue siendo el respaldo del constructor.
+
+Archivos de código modificados en `Scripts/City/Editor/City25/` — `City25Builder.cs` y `City25BuildRecovery.cs`. Pruebas y evidencias en `Art/BlenderScripts/HideoutB1Fix~/BuildRecoveryTests~/`. Compilaron dos asambleas y pasaron 17 pruebas, entre ellas la importación antes de abrir y el regreso a la ciudad anterior si la copia falla.
+
+1. Abrir Unity y esperar la importación. Pulsar **Alarma > Crear y probar juego** para generar la revisión 31.
+2. Confirmar que Play inicia en la guarida sin la ventana **Reload / Ignore**.
+3. Detener Play y volver a pulsar el menú. Confirmar que la escena se reutiliza y que la consola queda sin errores de referencias. Después probar los accesos comerciales.
+
+## Revisión 32 del gesto de abrir en los negocios
+
+Las puertas comerciales esperan que el jugador o el cliente se acerque y empuje. La animación alinea el cuerpo y lleva la palma hacia la manija. La hoja empieza a girar al confirmar el contacto. El jugador recupera el control cuando el paso tiene espacio suficiente. Los NPC usan su cuadrícula para llegar, un paso corto para ajustar el alcance y luego retoman su ruta. Al salir por el lado contrario, la hoja se mantiene abierta mientras el umbral esté ocupado y cierra al quedar libre.
+
+Los NPC que quedan bloqueados fuera conservan el retorno a la acera de la revisión 30. El cierre conserva el barrido contra obstáculos. Se mantienen la holgura del dintel y la importación de la copia antes de abrir.
+
+Archivos de juego en `Scripts/AI/CityLifeR5/` — `ShopDoor.cs` y `PedestrianActor.cs`. Interacción en `Scripts/City/PlaytestR7/ReviewDoorInteraction.cs`. Preparación en `Scripts/City/Editor/City25/City25Builder.cs` y `City25Kit.cs`. Regresiones en `Art/BlenderScripts/HideoutB1Fix~/DoorContactTests~/`.
+
+1. Salir de Play y pulsar **Alarma > Crear y probar juego** para preparar la revisión 32.
+2. En el supermercado, acercarse con **W** o pulsar **E** cerca de la manija. Observar el contacto, cruzar y mirar el cierre. Detenerse en el umbral para comprobar que permanezca abierto.
+3. Repetir desde dentro. Seguir a un cliente de calle en un negocio y comprobar que empuje, cruce y continúe su visita.
+
+La compilación y las regresiones se ejecutan fuera de Play. La alineación visual de cada personaje y el paso por los colliders deben confirmarse en Unity.
+
+## Revisión 33 de traspasos y marcos comerciales
+
+Los objetos conservan su posición y giro al empezar cada traspaso. Se acercan al nuevo apoyo de forma gradual y se fijan después de resolver la pose de la mano. El punto de apoyo usa la base visible del objeto para colocarlo en la palma o sobre el mostrador. La mano del cajero recorre tres puntos continuos, desde donde toma el producto, por encima del lector y hasta la zona donde lo recoge el cliente.
+
+Se rediseñaron los accesos de supermercado, minimarket, joyería, banco, comida y ropa en Blender. Cada hoja queda dentro del vano y tiene marco completo, bisagras y placas con tiradores en ambas caras. El empuje conserva el contacto inicial durante más tiempo cuando la mano todavía alcanza la placa. Se comprobaron 24 arcos de 85 grados en los FBX reimportados. La comparación de mallas y materiales conservó los interiores y el resto de la fachada.
+
+Archivos de juego en `Scripts/AI/CityLifeR5/` — `ShoppingPresentation.cs`, `CounterExchange.cs`, `PedestrianReach.cs` y `Domain/CounterChoreography.cs`. Interacción en `Scripts/City/PlaytestR7/ReviewDoorInteraction.cs`. Constructor en `Scripts/City/Editor/City25/City25Builder.cs`. Arte en seis `Art/City/Shops/Local_*.fbx`, `Art/BlenderSources~/Alarma_Shops_Puertas33.blend` y `Art/BlenderScripts/build_shops.py`. Receta de sustitución y capturas en `Art/BlenderScripts/HideoutB1Fix~/ShopPolish33~`. Pruebas actualizadas en `SidewalkTests~` y `DoorContactTests~`.
+
+1. Abrir Unity, esperar la importación y pulsar **Alarma > Crear y probar juego** para preparar la revisión 33.
+2. Ir al supermercado con **M**. Seguir una compra desde el estante y observar el apoyo en la palma, la llegada al mostrador, el recorrido por el lector y la recogida.
+3. Probar la entrada con **W** o **E** desde ambos lados. Observar el empuje y el cierre. Repetir con un NPC y comprobar el encaje de las hojas al quedar cerradas.
+
+Compilaron tres asambleas y pasaron 67 pruebas de calle y caja. Los seis FBX conservan sus metadatos. La animación y las colisiones quedan pendientes de confirmación en Play.

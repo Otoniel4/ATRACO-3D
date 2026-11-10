@@ -120,12 +120,19 @@ def house(root):
         wall_x('Detail_Foundation', depth - .015, x0, x1, 0, .16, 'Trim', .055, shell)
     for sx in (-1, 1):
         wall_y('Detail_FoundationSide', sx * (W / 2 + .015), GARAGE_REAR if sx > 0 else F, BK, 0, .16, 'Trim', .055, shell)
-        B('Detail_DoorJamb', (sx * 1.025, F - .02, 1.27), (.075, .085, 2.28), 'Trim', .008, parent=shell)
-    B('Detail_DoorLintel', (0, F - .02, 2.44), (2.13, .085, .08), 'Trim', .008, parent=shell)
+    entrance_door(root, shell)
+
+
+def entrance_door(root, shell):
+    # Marco profundo: ocupa el hueco hasta la hoja sin invadir su barrido en ambos sentidos.
+    for sx in (-1, 1):
+        B('EntranceJamb', (sx * .985, F + WALL / 2, 1.25), (.09, .26, 2.2), 'Trim', 0, parent=shell)
+        C('EntrancePivotHousing', (sx * .9, F + WALL / 2, 1.25), .040, 2.2, 'Trim', 24, parent=shell)
+    B('EntranceLintel', (0, F + WALL / 2, 2.397), (2.08, .26, .086), 'Trim', 0, parent=shell)
     # Puerta doble con el origen en la bisagra (la abre Unity con E, igual que los locales).
     for side, sx in (('L', 1), ('R', -1)):
         hinge = a.empty('DoorLeaf_' + side, (sx * .9, F + WALL / 2, .15), parent=root)
-        B('DoorPanel_' + side, (-sx * .45, 0, 1.10), (.88, .06, 2.2), 'Trim', .005, parent=hinge)
+        B('DoorPanel_' + side, (-sx * .4695, 0, 1.10), (.849, .06, 2.2), 'Trim', .002, parent=hinge)
         B('DoorWindow_' + side, (-sx * .45, -.035, 1.6), (.5, .01, .8), 'Glass', 0, parent=hinge)
         B('DoorHandle_' + side, (-sx * .8, -.07, 1.05), (.04, .04, .3), 'Steel', .005, parent=hinge)
         B('Detail_DoorPushPlate', (-sx * .72, .026, 1.05), (.16, .010, .25), 'Steel', .004, parent=hinge)

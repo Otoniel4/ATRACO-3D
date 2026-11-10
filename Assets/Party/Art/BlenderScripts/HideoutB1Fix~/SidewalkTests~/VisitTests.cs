@@ -45,7 +45,8 @@ internal static class VisitTests
     private sealed class Motor : IPedestrianMotor
     {
         public bool HasArrived { get; set; } = true;
-        public bool MoveTo(CityPoint destination) => true;
+        public CityPoint Destination { get; private set; }
+        public bool MoveTo(CityPoint destination) { Destination = destination; return true; }
         public void Stop() { }
     }
 
@@ -88,6 +89,24 @@ internal static class VisitTests
         CheckCustomers(graph, walkable, check, tick);
         CheckTransaction(false, check);
         CheckTransaction(true, check);
+        var queue = new ShopQueue(1);
+        var service = new ShopService("Mercado", queue, 1, 2, 700);
+        var motor = new Motor();
+        CityPoint[] outside = { new CityPoint(0, 0, 4) }, inside = { new CityPoint(0, 0, -4) };
+        var plan = new PedestrianPlan
+        {
+            Walk = outside, Entry = inside, BrowseStations = inside, Queue = inside,
+            Exit = new[] { inside[0], outside[0] }, OneVisit = true, WalletCents = 1500
+        };
+        var blocked = new PedestrianRoutine(14, motor, queue, plan, service);
+        blocked.Start();
+        blocked.Tick(.1f);
+        blocked.Tick(.1f);
+        blocked.ReturnFromEntrance();
+        check(blocked.State == PedestrianState.Leaving && motor.Destination.Z == outside[0].Z && service.Find(14) == null,
+            "si la entrada se bloquea libera su reserva y regresa directamente a la acera");
+        blocked.Tick(.1f);
+        check(blocked.State == PedestrianState.Completed && service.PurchaseCount == 0, "la salida sin entrar completa la visita sin cobro");
     }
 
     // Revisión 23: varios clientes por local, clientes enviados por la población y arranque en la puerta.

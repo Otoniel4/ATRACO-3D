@@ -105,6 +105,55 @@ def unity(x, y):
     return [round(-x, 3), round(-y, 3)]
 
 
+def store_doors(y, door_w, door_h, trim, glass, metal):
+    """Marco continuo, hojas dentro del vano y placas de empuje por ambas caras."""
+    floor = .1
+    axis = door_w / 2 - .04
+    near, far = .045, axis - .006
+    leaf_width = far - near
+    bottom, top = .018, door_h - floor - .024
+    stile, bottom_rail, top_rail = .065, .12, .075
+    # Perfil de pivote continuo: junta de 5 mm, con espacio radial para giro en ambos sentidos.
+    for side in (-1, 1):
+        use(a.box("DoorRevealJamb", (side * (axis + .08), y, (door_h + floor) / 2),
+                  (.08, .27, door_h - floor), "Navy", 0), trim)
+        use(a.cyl("DoorPivotHousing", (side * axis, y, floor + (bottom + top) / 2),
+                  .040, top - bottom, "Navy", 24), trim)
+    use(a.box("DoorRevealLintel", (0, y, door_h + .04), (door_w, .27, .12), "Navy", 0), trim)
+    for face in (-1, 1):
+        plane = y + face * .085
+        for side in (-1, 1):
+            use(a.box("Detail_DoorJamb", (side * (door_w / 2 + .025), plane, (door_h + floor) / 2),
+                      (.065, .055, door_h - floor), "Navy", .007), trim)
+        use(a.box("Detail_DoorLintel", (0, plane, door_h + .014), (door_w + .11, .055, .06), "Navy", .007), trim)
+    for side, sx in (("L", 1), ("R", -1)):
+        hinge = a.empty("DoorLeaf_" + side, (sx * axis, y, floor))
+        x = -sx * (near + far) / 2
+        use(a.box("DoorRailTop_" + side, (x, 0, top - top_rail / 2), (leaf_width, .07, top_rail),
+                  "Navy", .006, parent=hinge), trim)
+        use(a.box("DoorRailBottom_" + side, (x, 0, bottom + bottom_rail / 2), (leaf_width, .07, bottom_rail),
+                  "Navy", .006, parent=hinge), trim)
+        stile_low, stile_high = bottom + bottom_rail, top - top_rail
+        for edge in (near + stile / 2, far - stile / 2):
+            use(a.box("DoorStile_" + side, (-sx * edge, 0, (stile_low + stile_high) / 2), (stile, .07, stile_high - stile_low),
+                      "Navy", .006, parent=hinge), trim)
+        glass_low, glass_high = bottom + bottom_rail - .003, top - top_rail + .003
+        use(a.box("DoorGlass_" + side, (x, 0, (glass_low + glass_high) / 2),
+                  (leaf_width - 2 * stile + .006, .025, glass_high - glass_low), "Navy", 0, parent=hinge), glass)
+        push_x = -sx * (far - .15)
+        a.empty("DoorBar_" + side, (push_x, 0, 1.04), parent=hinge)
+        for face in (-1, 1):
+            use(a.box("Detail_DoorPushPlate", (push_x, face * .038, 1.04), (.16, .018, .29),
+                      "Navy", .007, parent=hinge), metal)
+            use(a.box("Detail_DoorPull", (push_x - sx * .055, face * .082, 1.04), (.035, .038, .22),
+                      "Navy", .006, parent=hinge), metal)
+            for z in (.95, 1.13):
+                use(a.box("Detail_DoorPullMount", (push_x - sx * .055, face * .056, z), (.035, .045, .033),
+                          "Navy", .005, parent=hinge), metal)
+        for z in (.29, top - .24):
+            use(a.cyl("Detail_DoorHinge", (0, 0, z), .023, .15, "Navy", 10, parent=hinge), metal)
+
+
 def shell(W, D, H, wall, floor_mat, wall_mat, trim, glass, door_w=2.2, door_h=2.5):
     f, b = -D / 2, D / 2
     use(a.box("Floor", (0, 0, .05), (W, D, .1), "Navy", 0), floor_mat)
@@ -124,16 +173,7 @@ def shell(W, D, H, wall, floor_mat, wall_mat, trim, glass, door_w=2.2, door_h=2.
         use(a.box("StoreBase", (center, f + wall / 2, .12), (pane, wall, .24), "Navy", 0), trim)
         use(a.box("StoreTop", (center, f + wall / 2, (2.85 + H) / 2), (pane, wall, H - 2.85), "Navy", 0), wall_mat)
     use(a.box("DoorHeader", (0, f + wall / 2, (door_h + H) / 2), (door_w, wall, H - door_h), "Navy", 0), wall_mat)
-    # Puerta de dos hojas con el origen en la bisagra: Unity las gira para abrir.
-    leaves = []
-    for side, sx in (("L", 1), ("R", -1)):
-        hinge = a.empty("DoorLeaf_" + side, (sx * door_w / 2, f + wall / 2, .1))
-        use(a.box("DoorGlass_" + side, (-sx * door_w / 4, 0, door_h / 2 - .05), (door_w / 2 - .08, .03, door_h - .2), "Navy", 0, parent=hinge), glass)
-        use(a.box("DoorFrame_" + side, (-sx * door_w / 4, 0, door_h - .12), (door_w / 2, .06, .08), "Navy", .005, parent=hinge), trim)
-        use(a.box("DoorFrameLow_" + side, (-sx * door_w / 4, 0, .06), (door_w / 2, .06, .12), "Navy", .005, parent=hinge), trim)
-        use(a.box("DoorBar_" + side, (-sx * (door_w / 2 - .15), -.05, 1.05), (.04, .04, .5), "Navy", .005, parent=hinge), material("Chrome", "C9D2D6"))
-        leaves.append(hinge)
-    return leaves
+    store_doors(f + wall / 2, door_w, door_h, trim, glass, material("Chrome", "C9D2D6"))
 
 
 def lights(W, D, H, rows, cols):
@@ -1008,7 +1048,7 @@ def build_local(kind):
                   walkable=[min(inner[0][0], inner[1][0]), min(inner[0][1], inner[1][1]), max(inner[0][0], inner[1][0]), max(inner[0][1], inner[1][1])],
                   obstacles=lay.obstacles, stations=lay.stations, products=lay.products,
                   sidewalk=[unity(-4.0, F - 2.4), unity(4.0, F - 2.4)],  # frente a la puerta, sin pasar por mesas ni bancas
-                  entry=[unity(0, F - 1.6), unity(0, F + .2), unity(0, F + 1.4)], exit=[unity(1.2, F + 1.4), unity(1.0, F + .2), unity(1.4, F - 1.6)],
+                  entry=[unity(0, F - 1.6), unity(0, F + .2), unity(0, F + 1.4)], exit=[unity(.6, F + 1.4), unity(.45, F + .2), unity(.5, F - 1.6)],  # sale recto: la hoja abierta queda al costado
                   staff=lay.staff, **till)
     return root, layout
 

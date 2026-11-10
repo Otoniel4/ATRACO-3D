@@ -19,7 +19,7 @@ namespace Alarma.AI.CityLife
     public sealed class ShopService
     {
         private readonly string shopId;
-        private readonly ShopQueue queue;
+        private readonly CheckoutLanes lanes;
         private readonly int stationCount,price;
         private readonly Dictionary<int,ShoppingSession> sessions=new Dictionary<int,ShoppingSession>();
         private int sequence;
@@ -29,10 +29,10 @@ namespace Alarma.AI.CityLife
         public int WithdrawalCount { get; private set; }
         public bool IsWithdrawal { get; }
         public event Action<ShoppingSession,ShopAction> Changed;
-        public ShopService(string shopId,ShopQueue queue,int stations,int stock,int priceCents,bool withdrawal=false)
+        public ShopService(string shopId,CheckoutLanes lanes,int stations,int stock,int priceCents,bool withdrawal=false)
         {
             if(stations<1 || stock<0 || priceCents<1)throw new ArgumentOutOfRangeException(nameof(stations));
-            this.shopId=shopId;this.queue=queue??throw new ArgumentNullException(nameof(queue));stationCount=stations;Stock=stock;price=priceCents;
+            this.shopId=shopId;this.lanes=lanes??throw new ArgumentNullException(nameof(lanes));stationCount=stations;Stock=stock;price=priceCents;
             IsWithdrawal = withdrawal;
             if (withdrawal) TillCents = checked(stock * priceCents);
         }
@@ -50,7 +50,7 @@ namespace Alarma.AI.CityLife
         }
         private bool Change(int id,ShoppingStage before,ShoppingStage after,ShopAction action,bool counter=false)
         {
-            var s=Find(id);if(s==null || s.Stage!=before || (counter && queue.IndexOf(id)!=0))return false;
+            var s=Find(id);if(s==null || s.Stage!=before || (counter && !lanes.IsFront(id)))return false;
             s.Stage=after;Changed?.Invoke(s,action);return true;
         }
         public bool PickUp(int id)=>Change(id,ShoppingStage.Reserved,ShoppingStage.InHand,ShopAction.PickedUp);
@@ -58,7 +58,7 @@ namespace Alarma.AI.CityLife
         public bool Scan(int id)=>Change(id,ShoppingStage.OnCounter,ShoppingStage.Scanned,ShopAction.Scanned,true);
         public bool Pay(int id)
         {
-            var s=Find(id);if(s==null || s.Stage!=ShoppingStage.Scanned || queue.IndexOf(id)!=0 || !CanTransact(s.WalletCents) || Stock<1)return false;
+            var s=Find(id);if(s==null || s.Stage!=ShoppingStage.Scanned || !lanes.IsFront(id) || !CanTransact(s.WalletCents) || Stock<1)return false;
             if (IsWithdrawal) { s.WalletCents += price; TillCents -= price; WithdrawalCount++; }
             else { s.WalletCents -= price; TillCents += price; PurchaseCount++; }
             Stock--;
@@ -67,12 +67,25 @@ namespace Alarma.AI.CityLife
         }
         private bool CanTransact(int wallet) => IsWithdrawal ? wallet <= int.MaxValue - price : wallet >= price;
         public bool Collect(int id)=>Change(id,ShoppingStage.Paid,ShoppingStage.Collected,ShopAction.Collected,true);
+        public void CancelUncollected(int id)
+        {
+            var s = Find(id);
+            if (s == null || s.Stage == ShoppingStage.Collected || s.Stage == ShoppingStage.Cancelled) return;
+            if (s.Stage == ShoppingStage.Paid)
+            {
+                if (IsWithdrawal) { s.WalletCents -= price; TillCents += price; WithdrawalCount--; }
+                else { s.WalletCents += price; TillCents -= price; PurchaseCount--; }
+                Stock++;
+            }
+            s.Stage = ShoppingStage.Cancelled;
+            Changed?.Invoke(s, ShopAction.Cancelled);
+        }
         public void Release(int id)
         {
             var s=Find(id);if(s==null)return;
             if(s.Stage<ShoppingStage.Paid){s.Stage=ShoppingStage.Cancelled;Changed?.Invoke(s,ShopAction.Cancelled);}
             sessions.Remove(id);
         }
-        public void Clear(){foreach(int id in new List<int>(sessions.Keys))Release(id);queue.Clear();}
+        public void Clear(){foreach(int id in new List<int>(sessions.Keys))Release(id);lanes.Clear();}
     }
 }

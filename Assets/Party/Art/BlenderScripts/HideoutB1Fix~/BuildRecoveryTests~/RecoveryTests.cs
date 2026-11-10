@@ -113,6 +113,31 @@ namespace Alarma.City.Editor
                 Check(stage == SceneManager.GetActiveScene() && stage.isLoaded, "La etapa no quedó activa");
                 Check(!SceneManager.SetActiveScene(stage), "El sustituto debe rechazar la activación redundante");
             });
+            Test("importa la copia con la etapa original activa y abre el archivo guardado antes de publicar", () =>
+            {
+                var expected = OldOutput();
+                var attempt = new City25BuildRecovery(City25Paths.Scene);
+                var stage = attempt.OpenStage();
+                attempt.SaveAndOpenStage(stage);
+                Same(expected);
+                Check(stage.path == "" && SceneManager.GetActiveScene().path == attempt.ScenePath,
+                    "Guardar la copia cambió la ruta de la etapa o dejó activa una escena distinta");
+                Check(AssetDatabase.Events.Contains("Import:" + attempt.ScenePath) && !attempt.Published,
+                    "Se omitió la importación o se publicó antes de abrir");
+            });
+            Test("si no abre la copia recupera la ciudad anterior sin publicar", () =>
+            {
+                var expected = OldOutput();
+                var attempt = new City25BuildRecovery(City25Paths.Scene);
+                var stage = attempt.OpenStage();
+                EditorSceneManager.FailOpen = true;
+                Throws<IOException>(() => attempt.SaveAndOpenStage(stage));
+                EditorSceneManager.FailOpen = false;
+                attempt.Restore();
+                Same(expected);
+                Check(!attempt.Published && SceneManager.GetActiveScene().path == City25Paths.Scene,
+                    "La copia fallida desplazó a la ciudad anterior");
+            });
             Test("borrado parcial de la etapa preserva la ciudad y vuelve a abrirla", () =>
             {
                 var expected = OldOutput();

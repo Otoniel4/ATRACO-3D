@@ -112,7 +112,12 @@ namespace Alarma.City.Editor
             {
                 if (filter.sharedMesh == null || filter.name.StartsWith("Detail_", StringComparison.Ordinal)
                     || filter.name.Contains("Handle") || filter.name.StartsWith("DoorBar_", StringComparison.Ordinal)) continue;
-                legacyFrame |= filter.name.StartsWith("DoorFrame_", StringComparison.Ordinal);
+                if (filter.name.StartsWith("DoorFrame_", StringComparison.Ordinal))
+                {
+                    // El borde superior importado rebasa el dintel por 2 cm.
+                    filter.transform.position -= Vector3.up * .045f;
+                    legacyFrame = true;
+                }
                 var mesh = filter.sharedMesh.bounds;
                 for (int corner = 0; corner < 8; corner++)
                 {

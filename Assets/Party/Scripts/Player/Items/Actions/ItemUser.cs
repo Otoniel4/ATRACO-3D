@@ -8,15 +8,15 @@ namespace Alarma.Player.Items
     // clic izquierdo dispara o usa la herramienta. Reproduce la acción del objeto (ItemAction) cuadro a cuadro: su
     // animación se suma a la pose de HeldItemView y su efecto ocurre en el momento indicado. Corre antes que HeldItemView.
     [DefaultExecutionOrder(80)]
-    public sealed class ItemUser : MonoBehaviour
+    public sealed class ItemUser : MonoBehaviour, IArmed
     {
         private const float AimSpeed = 7f;
         [SerializeField] private PlayerInventory owner;
         [SerializeField] private HeldItemView view;
         [SerializeField, Tooltip("Componente que implementa IItemControls.")] private MonoBehaviour controlsSource;
         [SerializeField, Tooltip("Cámara: de ahí sale la mira.")] private Transform aimSource;
-        [SerializeField, Tooltip("Capas que reciben disparos y herramientas (sin el jugador ni los personajes de prueba).")]
-        private LayerMask hitMask = ~((1 << 29) | (1 << 30) | (1 << 31));
+        [SerializeField, Tooltip("Capas que reciben disparos y herramientas: todo menos el jugador (30) y la interfaz (31). Los NPC (29) sí.")]
+        private LayerMask hitMask = ~((1 << 30) | (1 << 31));
         private IItemControls controls;
         private ItemActionContext context;
         private GameObject contextModel;
@@ -30,7 +30,11 @@ namespace Alarma.Player.Items
         public event Action<ItemAction> ActionChanged;
         // Mientras dura una acción de cuerpo completo (palanca, ganzúa, termita…) el jugador no camina.
         public bool HoldsStill => running != null && running.FullBody;
+        // El objetivo pidió dónde pararse antes de usarlo (bridas): lo atiende quien mueve al jugador.
+        public event Action<Pose> PlacementRequested;
         public bool HoldingFirearm => view != null && view.Ready && view.HeldItem.Action != null && view.HeldItem.Action.CanAim;
+        // Arma a la vista: los civiles rendidos esperan más para escapar mientras siga en la mano.
+        public bool WeaponDrawn => HoldingFirearm;
         public event Action<string> Feedback;
 
         public void Configure(PlayerInventory playerInventory, HeldItemView heldView, IItemControls input, Transform camera)
@@ -101,6 +105,7 @@ namespace Alarma.Player.Items
             Consume = () => owner.Inventory.ConsumeActive(),
             Feedback = message => { if (!string.IsNullOrEmpty(message)) Feedback?.Invoke(message); },
             HideModel = view.HideModel,
+            PlaceUser = pose => PlacementRequested?.Invoke(pose),
         };
 
         private Ray AimRay()

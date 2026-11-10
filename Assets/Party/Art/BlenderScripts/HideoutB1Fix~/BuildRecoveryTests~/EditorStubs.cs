@@ -6,6 +6,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
+    public class Camera { }
+    public class GameObject
+    {
+        public T GetComponentInChildren<T>() where T : class => new Camera() as T;
+    }
     public static class Debug
     {
         public static void Log(object value) { }
@@ -22,6 +27,8 @@ namespace UnityEngine.SceneManagement
         public bool IsValid() => SceneManager.Records.ContainsKey(handle);
         public bool isLoaded => IsValid() && SceneManager.Records[handle].loaded;
         public int rootCount => IsValid() ? SceneManager.Records[handle].roots : 0;
+        public UnityEngine.GameObject[] GetRootGameObjects() => rootCount > 0
+            ? new[] { new UnityEngine.GameObject() } : Array.Empty<UnityEngine.GameObject>();
         public string path => IsValid() ? SceneManager.Records[handle].path : "";
         public string name => string.IsNullOrEmpty(path) ? "Untitled" : Path.GetFileNameWithoutExtension(path);
         public bool isDirty => false;
@@ -121,6 +128,8 @@ namespace UnityEditor
         public static void ImportAsset(string path, ImportAssetOptions options = ImportAssetOptions.Default)
         {
             Events.Add("Import:" + path);
+            if (path.EndsWith(".unity") && UnityEngine.SceneManagement.SceneManager.GetActiveScene().path == path)
+                throw new IOException("Importación de la escena abierta");
             if (FailImport) return;
             if (Directory.Exists(path))
             {
@@ -166,6 +175,15 @@ namespace UnityEditor.SceneManagement
     public static class EditorSceneManager
     {
         public static bool FailOpen;
+        public static bool SaveScene(Scene scene, string path, bool saveAsCopy = false)
+        {
+            if (!scene.isLoaded) return false;
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, "Escena guardada");
+            File.WriteAllText(path + ".meta", "guid");
+            if (!saveAsCopy) SceneManager.Records[scene.handle].path = path;
+            return true;
+        }
         public static Scene NewScene(NewSceneSetup setup, NewSceneMode mode) => SceneManager.Add("", mode == NewSceneMode.Single, 0);
         public static Scene OpenScene(string path, OpenSceneMode mode = OpenSceneMode.Single)
         {

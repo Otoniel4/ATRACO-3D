@@ -11,6 +11,7 @@ using Alarma.AI.CityLife.Editor;
 using Alarma.Core.Settings;
 using Alarma.City.Playtest;
 using Alarma.City.Playtest.Editor;
+using Alarma.AI.Editor;
 
 namespace Alarma.City.Editor
 {
@@ -18,7 +19,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-35";
+        private const string Version = "ciudad25-40"; // Puestos alcanzables y traspasos condicionados al contacto real.
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -48,6 +49,8 @@ namespace Alarma.City.Editor
                 var prefabs = City25Kit.Prepare(City25Kit.Manifest(), output);
                 EditorUtility.DisplayProgressBar("Ciudad 2 km", "Protagonistas", .45f);
                 var (roles, walkers, civilians, shoppers, guard, police) = City25Characters.Prepare(output);
+                // Reacciones de los civiles (Task 13): doble de reacción y disparador en cada prefab de civil.
+                NpcReactionAssets.Prepare(output, shoppers.Select(s => s.gameObject));
                 var city = City25Paths.Read<CityObjects>(City25Paths.Plan + "/city_objects.json");
                 var ground = City25Paths.Read<GroundManifest>(City25Paths.Ground + "/ground.json");
                 var world = City25World.Build(prefabs, city, ground);
@@ -77,15 +80,14 @@ namespace Alarma.City.Editor
                 City25Traffic.Build(output, signals, rig.Player.transform, civilians);
                 ReviewPlayerRig.Lighting(180, 430);
                 ReviewPlayerRig.CreateInterface(rig, streamer, doors, map, settings);
+                // Ajustes de dibujo que no cambian la imagen (sondas de luz sin hornear): medidos con PerformanceProbe.
+                City25RenderBudget.Apply(stage, output);
                 string acceptance = City25Acceptance.Validate(stage, world, city, rig.Player);
                 File.WriteAllText(output + "/Acceptance.json", acceptance);
-                if (!EditorSceneManager.SaveScene(stage, recovery.ScenePath)) throw new IOException("No se pudo guardar la escena de la ciudad.");
-                AssetDatabase.ImportAsset(recovery.ScenePath, ImportAssetOptions.ForceSynchronousImport);
+                recovery.SaveAndOpenStage(stage);
                 var record = new City25Record { complete = true, version = Version + "|" + stamp, scene = recovery.ScenePath, objects = world.Placed, sectors = world.Sectors.Length, places = map.Places.Length };
                 recovery.Publish(JsonUtility.ToJson(record, true));
                 SelectBuildScene(recovery.ScenePath);
-                AssetDatabase.Refresh();
-                Selection.activeGameObject = rig.Player.gameObject;
                 Debug.Log($"Alarma: ciudad 2 × 2 km lista con {world.Placed} objetos en {world.Sectors.Length} sectores, {signals.Count} semáforos con ciclo, peatones en las aceras, autos con conductor, {shops.Length} locales con interior, {sentries} guardias y policías y {map.Places.Length} lugares en el mapa. Inicio en el escondite; M: mapa, Esc: menú.");
                 StartPlay();
             }
@@ -173,14 +175,17 @@ namespace Alarma.City.Editor
         {
             City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json",
             "Assets/Party/Data/Items/item_actions.json", // animaciones y datos de uso de los objetos (ItemActionAssets)
-            ActionClips + "/item_action_clips.json"       // clips de cuerpo para usar objetos (ItemActionAnimatorAssets)
+            ActionClips + "/item_action_clips.json",      // clips de cuerpo para usar objetos (ItemActionAnimatorAssets)
+            ActionClips + "/npc_reaction_clips.json"      // clips de reacción de los civiles (NpcReactionAssets)
         }.Select(ContentHash).Concat(Directory.GetFiles(City25Paths.Shops, "Local_*.fbx").Concat(Directory.GetFiles(ActionClips, "*.fbx"))
             .OrderBy(path => path, StringComparer.Ordinal).Select(ModelHash)).Concat(RigScripts.SelectMany(folder => Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
-            .OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash)));
+            .OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash))
+            .Concat(Directory.GetFiles("Assets/Party/Data/ShopAnimations", "*.asset").OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash)));
 
         // El código de los componentes que el constructor arma y guarda en la escena (jugador, inventario e interfaz):
         // si cambia, la escena guardada queda vieja y hay que prepararla otra vez.
-        private static readonly string[] RigScripts = { "Assets/Party/Scripts/Player", "Assets/Party/Scripts/UI", "Assets/Party/Scripts/City/PlaytestR7", "Assets/Party/Scripts/City/Editor/PlaytestR7", "Assets/Party/Scripts/Animation" };
+        private static readonly string[] RigScripts = { "Assets/Party/Scripts/Player", "Assets/Party/Scripts/UI", "Assets/Party/Scripts/City/PlaytestR7", "Assets/Party/Scripts/City/Editor/PlaytestR7", "Assets/Party/Scripts/Animation",
+                                                            "Assets/Party/Scripts/AI/Reactions", "Assets/Party/Scripts/AI/Editor", "Assets/Party/Scripts/AI/CityLifeR5" };
         private const string ActionClips = "Assets/Party/Art/Characters/Animations";
 
         private static string ModelHash(string path)

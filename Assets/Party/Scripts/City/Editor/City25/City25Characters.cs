@@ -7,6 +7,7 @@ using Alarma.AI.CityLife;
 using Alarma.AI.CityLife.Editor;
 using Alarma.AI.Security;
 using Alarma.AI.Street;
+using Alarma.Core.Editor;
 
 namespace Alarma.City.Editor
 {
@@ -64,7 +65,8 @@ namespace Alarma.City.Editor
                 var visual = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(path));
                 visual.transform.SetParent(root.transform, false);
                 var animator = visual.GetComponentInChildren<Animator>() ?? visual.AddComponent<Animator>();
-                animator.runtimeAnimatorController = CityLifeAnimatorFactory.Create(folder + "/Controllers/Puesto_" + id + ".controller", path);
+                animator.runtimeAnimatorController = CityLifeAnimatorFactory.Create(folder + "/Controllers/Puesto_" + id + ".controller", path,
+                    LocomotionClips.For(animator, folder + "/Controllers/Locomocion/" + id));
                 animator.applyRootMotion = false; animator.cullingMode = AnimatorCullingMode.CullCompletely;
                 foreach (var t in visual.GetComponentsInChildren<Transform>(true))
                     if (t.name.StartsWith("ShoppingBag_", StringComparison.Ordinal)) t.gameObject.SetActive(false);

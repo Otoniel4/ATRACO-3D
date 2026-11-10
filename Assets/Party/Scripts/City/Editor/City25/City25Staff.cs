@@ -9,10 +9,12 @@ using Alarma.AI.CityLife.Editor;
 namespace Alarma.City.Editor
 {
     // Personal de los locales: coloca a cada empleado en su puesto (de pie o sentado) y lo viste con el uniforme del local.
-    // El cajero que atiende la caja lo crea City25Shops; aquí solo recibe su uniforme si el local define el puesto «caja».
+    // Los cajeros que atienden las cajas («caja» y «cajero») los crea City25Shops; aquí solo reciben su uniforme.
     internal sealed class City25Staff
     {
         public const string CashierRole = "caja";
+        // Cajeros de las cajas extra (supermercado, banco): los crea City25Shops con su caja, fila y mostrador.
+        public const string LaneCashierRole = "cajero";
         private readonly Dictionary<string, UniformModel> slots;
         private readonly Dictionary<string, Material> uniforms;
 
@@ -41,7 +43,7 @@ namespace Alarma.City.Editor
             for (int k = 0; k < layout.staff.Length; k++)
             {
                 var post = layout.staff[k];
-                if (post.role == CashierRole) continue;
+                if (post.role == CashierRole || post.role == LaneCashierRole) continue;
                 // Paso 3 sobre diez civiles: dentro de un local no se repite la misma persona.
                 var prefab = civilians[(index * 3 + 4 + k * 3) % civilians.Length];
                 var person = UnityEngine.Object.Instantiate(prefab, root);
@@ -106,6 +108,9 @@ namespace Alarma.City.Editor
             var post = layout.staff.FirstOrDefault(p => p.role == CashierRole);
             if (post != null) Dress(cashier, model, post);
         }
+
+        // Uniforme de un puesto concreto (cajeros de las cajas extra).
+        public void DressPost(GameObject person, string model, StaffPost post) => Dress(person, model, post);
 
         private void Dress(GameObject person, string model, StaffPost post)
         {

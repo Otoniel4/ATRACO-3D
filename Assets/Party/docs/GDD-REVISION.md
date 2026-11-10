@@ -44,6 +44,48 @@ La lectura identifica puntos que deberán asignarse a tareas antes de considerar
 
 Estos puntos son revisión de cobertura, no autorización para saltar tareas ni promesa de implementación dentro de la actual Task 00.
 
+## Diseño de escape — propuesto y aceptado por Alain el 2026-11-09
+
+Amplía Tasks 05, 11, 27 y 28. Es diseño, no implementación: cada parte se construye al llegar a su task. Los números son valores de partida y van en ScriptableObjects para ajustarlos jugando.
+
+**Regla central.** La policía busca una **descripción** (ropa y auto) y la **última posición vista**, no al jugador directamente.
+
+**Estados de la búsqueda (host).**
+1. **Visto:** un policía tiene línea de visión. El radar parpadea en rojo. Ningún truco de escape funciona.
+2. **Búsqueda:** se rompió la línea de visión. Círculo en la última posición vista, conos de visión de cada policía y contador.
+3. **Libre:** el contador llega a cero sin ser visto.
+
+**Formas de escapar (solo fuera de la vista).**
+- Salir del círculo evitando los conos.
+- Cambiar de ropa en la tienda de ropa: cuesta dinero, borra la descripción y acelera el contador.
+- Maniquí: pose en la vitrina; si un policía pasa a menos de 2 m hay que mantener una tecla para no moverse.
+- Hacerse pasar por cliente: caminar, hacer fila o sentarse en un local; correr o mostrar el arma delata.
+- Cambiar de auto o guardarlo en el garaje de la guarida.
+- Esconderse en contenedores, callejones o la guarida.
+- Rehén como escudo: la policía no dispara, el jugador camina lento.
+- Señuelo en equipo: un compañero atrae a la policía, otro espera con el auto, otro aturde al policía que está esposando.
+- Cortar el aviso: el testigo que graba tiene una barra de llamada que se interrumpe intimidándolo; romper las cámaras antes del robo retrasa la respuesta.
+- Alcantarillas: **en duda por Alain**. No construir hasta que lo confirme; los callejones y la guarida cubren ese papel.
+
+**Resistencia.** Unos 8 s de carrera, recuperación en unos 4 s caminando, lentitud breve al agotarse. La bolsa de botín la gasta más rápido. Los policías también se cansan.
+
+**Arresto.** Policía a 1,5 m durante 2 s con el jugador aturdido o agotado → esposado. Un compañero puede liberarlo antes de que lo suban a la patrulla; si no, cárcel (Task 20). Los disparos de ambos bandos solo aturden; nadie muere, igual que en el GDD.
+
+**Niveles de búsqueda.**
+
+| Nivel | Qué lo provoca | Respuesta |
+| --- | --- | --- |
+| 1 | Alarma o llamada de testigo | 1 patrulla, 2 policías a pie |
+| 2 | Visto armado o con rehén | 2 patrullas, círculo más grande |
+| 3 | Aturdir a un policía; robo a joyería | 3 patrullas, cierre de calles cercanas |
+| 4 | Robo a banco; huida larga en auto | Patrullas que cortan el paso |
+| 5 | Reincidir sin escapar | Toda la zona; el contador casi no baja sin cambiar ropa o auto |
+
+**Puntos a conciliar con el GDD al llegar a cada task.**
+- El GDD arresta tras 30 s de derribo o por contacto policial; aquí se añade el arresto por agotamiento o aturdimiento. Revisar en Tasks 18 y 19.
+- Task 27 baja el nivel tras 30 s fuera de la vista; aquí el contador depende del nivel y de la descripción. Fijar los tiempos en Task 27.
+- El taller de pintura y los disfraces ya figuran en el GDD como cobertura parcial; este diseño los usa para borrar la descripción.
+
 ## Decisiones técnicas pendientes para las tareas correspondientes
 
 El GDD no fija el comportamiento cuando el host se desconecta, cuando todos son arrestados sin dinero suficiente para pagar fianzas, ni los límites iniciales de NPC y tráfico. Esas decisiones deberán concretarse al abordar red, economía y rendimiento. No se han asumido migración de host, deuda ni cantidades arbitrarias.

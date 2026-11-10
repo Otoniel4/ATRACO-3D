@@ -1,5 +1,6 @@
 using UnityEngine;
 using Alarma.Core.Contracts;
+using Alarma.Core.Events;
 
 namespace Alarma.Player.Items
 {
@@ -58,6 +59,8 @@ namespace Alarma.Player.Items
                     ItemEffects.Impact(hit.point, hit.normal, hit.collider.transform, !person);
                 }
             }
+            // El ruido va después de los impactos: quien lo oye puede cambiar de cuerpo (doble de reacción) y la bala ya llegó.
+            MakeNoise(muzzle, NoiseKind.Gunshot, context.User);
         }
 
         // Corredera de la escopeta: atrás y adelante en la segunda mitad de la animación.

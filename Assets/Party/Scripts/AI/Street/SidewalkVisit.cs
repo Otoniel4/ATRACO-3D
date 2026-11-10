@@ -34,8 +34,10 @@ namespace Alarma.AI.Street
 
         internal bool Available(int wallet, int capacity) => Open && Affords(wallet) && HasRoom(capacity) && Time.time >= availableAt;
 
-        // Nunca más clientes que puestos: el resto esperaría afuera sin poder entrar.
-        internal bool HasRoom(int capacity) => Customers < Math.Min(capacity, Math.Max(1, shop.StationCount));
+        // Nunca más clientes que puestos ni que lugares en las filas de sus cajas (más dos mirando): el resto esperaría
+        // afuera sin poder entrar. Con varias cajas entra más gente.
+        internal bool HasRoom(int capacity)
+            => Customers < Math.Min(capacity, Math.Max(1, Math.Min(shop.StationCount, shop.CheckoutCount * shop.Lanes.Capacity + 2)));
 
         // Cada reserva separa la siguiente llegada para que los clientes no coincidan en la puerta.
         internal void Reserve(SidewalkWalker visitor, float spacing)

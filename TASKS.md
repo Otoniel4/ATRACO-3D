@@ -118,6 +118,7 @@ Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, 
 - **El agente hace:** acciones de Input System; movimiento con autoridad del dueño; cámara Cinemachine solo para el jugador local, con modo apuntar.
 - **Alain hace:** configurar la cámara Cinemachine.
 - **Criterios:** cada jugador controla solo su personaje; movimiento fluido en ambas instancias.
+- **Ampliación 2026-11-09 (Alain):** resistencia al correr. Valores de partida en ScriptableObject: unos 8 s de carrera, recuperación en unos 4 s caminando, lentitud breve al agotarse; la bolsa de botín la gasta más rápido. Detalle en `Assets/Party/docs/GDD-REVISION.md`, «Diseño de escape».
 
 ## [ ] Task 06 — Inventario rápido e inventario completo
 - **Objetivo:** barra de 5 espacios (teclas 1 a 5) y un inventario grande que se abre con Tab.
@@ -162,6 +163,7 @@ Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, 
 - **El agente hace:** prefabs de tienda de ropa (modo maniquí), restaurante con puerta trasera, estacionamiento subterráneo, callejones y entrada al alcantarillado; marcadores de escondite.
 - **Alain hace:** colocarlos repartidos por la ciudad.
 - **Criterios:** hay al menos 5 lugares de escape distribuidos y se puede entrar por un lado y salir por otro.
+- **Ampliación 2026-11-09 (Alain):** en la tienda de ropa, cambiar de ropa (cuesta dinero, borra la descripción) y posar como maniquí (mantener una tecla si un policía pasa a menos de 2 m); hacerse pasar por cliente en cualquier local reutilizando el sistema de clientes. La entrada al alcantarillado queda **en duda por Alain**: no construirla hasta que lo confirme.
 
 # BLOQUE D — Atraco
 
@@ -282,6 +284,7 @@ Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, 
 - **El agente hace:** nivel de búsqueda en el host; zona de búsqueda; bajar el nivel tras 30 s fuera de la vista; escondites y cambio de auto.
 - **Alain hace:** probar rutas de escape.
 - **Criterios:** se puede perder a la policía usando locales de escape o cambiando de auto.
+- **Ampliación 2026-11-09 (Alain):** la policía busca una descripción (ropa y auto) y la última posición vista. Estados Visto → Búsqueda → Libre; los trucos de escape solo sirven fuera de la vista. Cinco niveles con respuesta creciente, rehén como escudo, señuelo en equipo y corte del aviso de testigos y cámaras. Tabla y reglas en `Assets/Party/docs/GDD-REVISION.md`, «Diseño de escape». Los policías también tienen resistencia.
 
 ## [ ] Task 28 — Radar (minimapa) estilo persecución
 - **Objetivo:** minimapa en la pantalla con la policía y su zona de búsqueda.
@@ -289,6 +292,7 @@ Alain aprueba visualmente vegetación R4 y pide ahora NPC paseando y comprando, 
 - **El agente hace:** cámara cenital que dibuja el minimapa; íconos de jugadores, policías, patrullas, locales y escondites; conos de visión de la policía; borde que parpadea rojo y azul durante la persecución; zona de búsqueda visible.
 - **Alain hace:** diseño visual de los íconos.
 - **Criterios:** el radar muestra a la policía y el parpadeo solo cuando hay búsqueda activa.
+- **Ampliación 2026-11-09 (Alain):** el radar distingue Visto (parpadeo rojo) de Búsqueda (círculo en la última posición vista, conos de visión y contador).
 
 **HITO 3:** atraco, huida en auto robado y persecución con radar en una ciudad con tráfico y peatones.
 
@@ -607,6 +611,30 @@ Guion del mostrador compartido por cliente y cajero: producto del estante al mos
 
 Alain reportó que las puertas no abrían, que los clientes esperaban afuera, que al llegar con M no había gente comprando y que la bolsa salía en la espalda. Ahora las personas ya no bloquean el giro de la hoja, las alfombras no tienen collider y el revestimiento se separa de la bisagra (seis locales regenerados con planos idénticos). Al llegar, los locales cercanos ya tienen clientes dentro, uno en la puerta y otro en camino. La bolsa queda fija en la mano. Constructor `ciudad25-29`, 63 pruebas y compilación; Play pendiente.
 
+## Accesos comerciales B1 — revisión 30 (pendiente de prueba)
+
+Alain volvió a observar la puerta cerrada y clientes detenidos afuera. La revisión 30 ajusta el marco móvil para liberar el dintel, abre las puertas comerciales por proximidad y libera la reserva cuando un cliente debe volver a la acera. Prueba en Play pendiente.
+
+## Guardado de la escena B1 — revisión 31 (pendiente de prueba)
+
+El aviso de recarga aparecía al importar la escena abierta durante la publicación. La revisión 31 importa una copia antes de abrirla y comprueba su cámara. Se archivó fuera de Assets una revisión generada con 710 archivos y cero referencias desde el contenido conservado. Pendiente la prueba del menú en Unity.
+
+## Animación de apertura comercial B1 — revisión 32 (pendiente de prueba)
+
+Alain pidió el gesto de empujar en todos los negocios. La revisión 32 coordina el paso de llegada, el contacto de la mano, el giro, el cruce y el cierre. Pendiente la comprobación visual en Play.
+
+## Traspasos y marcos comerciales B1 — revisión 33 (pendiente de prueba)
+
+Alain reportó saltos de objetos en caja y hojas que sobresalían. La revisión 33 interpola los traspasos, sincroniza el recorrido de la mano por el lector y ajusta el marco de los seis tipos de local en Blender. Pendiente la comprobación visual en Play.
+
+## Marco de la guarida B1 — revisión de arte 34 (pendiente de prueba)
+
+Modelo y fuente Blender del escondite actualizados para reducir los huecos de la puerta con jambas profundas y dintel. Reimportación y 342 posiciones de giro comprobadas en Blender. La prueba de apertura y cierre en Unity corresponde a Alain. Guía y archivos en `Assets/Party/docs/Guarida-Marco34.md`. B1 permanece abierta.
+
+## Acceso autónomo NPC B1 — 2026-11-05 (pendiente de prueba)
+
+Corregida la búsqueda que detenía al cliente cuando la puerta cerrada desconectaba el interior. Se acerca para activar su gesto de empuje, conservando colisiones y reservas. Regresión reproducida y corregida; prueba visual de entrada y salida pendiente. Archivos y pasos en `Assets/Party/docs/NPC-Acceso-Autonomo-B1.md`.
+
 ## Task 06, entrega 1: inventario local — 2026-11-05 (confirmada por Alain el 2026-11-06)
 
 - Corrección posterior de brazos/manos solicitada por Alain: conservar el giro importado del FBX, resolver la muñeca sin desplazar el agarre, calibrar la palma con los nudillos y flexionar dedos. Equipar/guardar y cambio de rol ajustados. 14 pruebas matemáticas y compilación de cinco asambleas superadas; ocho poses de pistola revisadas en Blender. Pasos y lista de archivos en `Assets/Party/docs/Task06-Agarre-Corregido.md`. Sigue pendiente Play y aprobación; no cerrar esta tarea.
@@ -654,3 +682,107 @@ Alain reportó que las puertas no abrían, que los clientes esperaban afuera, qu
   - Solo empieza si hay alguien que acepte las bridas al frente (`ToolAction.requireTarget` y `ItemAction.CanBegin`); si no, avisa y no se mueve. Mientras no existan rehenes (Task 13), en el juego solo aparece el aviso.
   - Para Task 13: el rehén amarrable queda arrodillado con las dos rodillas, las manos en la espalda sobre la cintura, y el jugador se coloca 0,62 m detrás, mirando hacia el mismo lado (como en `preview_item_actions.py`, `PARTNER_DISTANCE`).
   - Curvas: el suavizado de Unity (`SmoothTangents`) se pasaba de largo en los tramos quietos; la cadera de la ganzúa, que debía bajar 40 cm, llegaba a 62. Ahora `ItemActionAssets` y la revisión de Blender usan la misma tangente que no se pasa (plana en picos y tramos quietos). Afecta y mejora todas las acciones. Datos versión 5.
+
+## Task 13, entrega 1: miedo, rendición, bridas y caída — 2026-11-06 (confirmada por Alain el 2026-11-09)
+
+- Pedido de Alain: que los civiles reaccionen a los disparos y a que les apunten, que se pueda amarrar con bridas a quien se rinde y que al recibir un disparo caiga aturdido de forma realista y luego se levante y se vaya. Las entregas 2 (celulares, botón de pánico, cámaras y alarma) y 3 (guardias con porra, vida del jugador, policía y arresto) siguen después; la cárcel (Task 20) espera al online.
+- Ruido: canal `Core/Events/NoiseChannel` (Data/Events/Ruido.asset). Las armas avisan su disparo después de los impactos (pistola 35 m, escopeta 45, rifle 40, táser 4) y la aturdidora su estallido (30 m), según `make_item_actions.py` (datos versión 6).
+- Civiles (`Scripts/AI/Reactions`, sin tocar el código de la población):
+  - `NpcReactionTrigger` va en cada prefab de civil; los peatones son variantes de esos prefabs y lo heredan. Al primer motivo (disparo cerca, mira, bala, táser), reemplaza al civil en el mismo lugar y con la misma pose por su doble de reacción.
+  - `NpcReactions` es el cerebro, con una máquina de estados y la valentía en `NpcBravery`:
+    - Un disparo cercano baja la valentía: con poca, se agacha suplicando; si no, huye corriendo.
+    - Si le apuntan de frente, se arrodilla con las manos en la nuca mirando a quien apunta; si está de espaldas, huye. Cuando dejan de apuntarle recupera valentía y al rato puede huir.
+    - Rendido o agachado acepta las bridas: lleva las manos a la espalda y el jugador se coloca solo 0,62 m detrás (`IUseAnchor`, `ReviewPlayerMotor.AlignTo`). La animación de amarre ya hecha lo deja amarrado.
+    - Un disparo o el táser lo tumban con física (`NpcRagdoll`: 15 partes con articulaciones, empujado desde el tirador). Pasado el aturdimiento (6–9 s, táser 4–6 s), se acomoda boca arriba o boca abajo, mezcla a un clip de levantarse y se va caminando. Si estaba amarrado, vuelve a quedar amarrado.
+  - Movimiento sin NavMesh: `NpcFleeMotor` esquiva con rayos y se pega al suelo. `NpcReactionAnimator` es el único que cambia el Animator del doble (parámetro `Reaccion`).
+  - Ajustes en `Data/NPC/ReaccionesCiviles.asset`: valentía, miedo, tiempos, velocidades e impulso.
+- Clips propios con bpy (`build_npc_reaction_clips.py`, mismo esqueleto del pack que el elenco): suplicar, rendirse (manos a la nuca y de rodillas), amarrado (manos a la espalda) y levantarse desde sentado (tras caer boca arriba) y desde cuatro patas (tras caer boca abajo). Revisión con el civil NPC01 desde el FBX exportado: `Art/Previews~/acciones/npc_*.png`.
+- Editor: `NpcReactionAssets` (`Alarma.AI.Editor`) arma `Prefabs/Reaccion_<id>` con su Animator, su cuerpo con física sobre la pose de reposo y su cerebro, y pone el disparador en los prefabs de civiles. `City25Builder` lo llama después de preparar los personajes. `Core.Editor` reúne la copia de clips por personaje (`ClipRemapper`) y los canales de eventos (`EventAssets`), que usan jugador y NPC.
+- Disparos: las balas ya alcanzan la capa de NPC (29); solo excluyen al jugador (30) y la interfaz (31).
+- Corrección 2026-11-09 (Alain, tras tres pruebas): apuntado de frente, el civil se arrodilla con las manos atrás y la cabeza gacha (clip `Rendido` rehecho; antes llevaba las manos a la nuca). `Amarrado` parte de esa misma postura y solo junta las muñecas. Se probaron y descartaron dos variantes: desplomarse con física (postura doblada) y tenderse boca abajo con un clip (pies sueltos y cuerpo hundido en Unity); su código y sus clips se retiraron. Capturas: `docs/Capturas/npc_Rendido.png` y `npc_Amarrado.png`. Hay que regenerar los dobles con «Crear y probar juego». Pendiente de prueba en Unity. Cuarta prueba (Alain: al guardar el arma o alejarse seguía arrodillado): el civil original no avisaba a su doble que dejaron de apuntarle (`NpcReactionTrigger.EndIntimidation` estaba vacío); ahora se lo reenvía. Además el rendido ya no depende de la valentía para irse: escapa a los `SurrenderSeconds` (10 s) de que dejan de apuntarle, o a los `SurrenderSecondsUnarmed` (6 s) si quien le apuntaba guardó el arma (contrato nuevo `IArmed`, que implementa `ItemUser`).
+
+## Task 13, entrega 2a: testigos que graban y llaman — 2026-11-09 (pendiente de prueba)
+
+- Pedido de Alain (jugabilidad): los civiles huyen al ver el arma y los de afuera pueden grabar el atraco y llamar a la policía. Esta parte cubre los celulares; botón de pánico, cámaras y alarma (entrega 2b) dependen del arte de los locales (Tasks 15 y 16).
+- Grito: cuando a un civil le apuntan, avisa por el canal de ruido (`NoiseKind.Scream`, radio `AimAlarmRadius` = 14 m). Los civiles cercanos reaccionan igual que a un disparo, con menos miedo. Atraviesa paredes: la línea de visión real llega con las cámaras y la policía.
+- Testigo: un civil que no se acobarda, está a `WitnessMinDistance` (10 m) o más y saca el azar `WitnessChance` (40 %) pasa al estado `Recording`: mira a la amenaza, levanta el celular (clip propio `Grabar`) y llena la barra de la llamada en `CallSeconds` (8 s). Al completarla avisa por `Core/Events/CrimeReportChannel` (`Data/Events/Denuncias.asset`) y huye. La llamada se corta si le apuntan (se rinde o huye), si la amenaza se acerca a menos de 5 m o si lo aturden.
+- `WitnessPhone` muestra el celular y la barra; los arma `NpcReactionAssets.MakePhone` en cada doble (materiales `Data/NPC/Testigo_*.mat`).
+- `UI/Hud/CrimeAlertView` muestra «¡Un testigo llamó a la policía!»; lo agrega `ReviewPlayerRig`. La policía y el nivel de búsqueda escucharán el mismo canal (Tasks 19, 22 y 27).
+- Captura del clip: `docs/Capturas/npc_Grabar.png`. Hay que ejecutar «Crear y probar juego».
+- Corrección 2026-11-10 (prueba de Alain: al apuntarle a uno, otros se agachaban suplicando o seguían caminando): con el grito nadie se agacha, todos corren o graban de lejos; agacharse suplicando queda solo para disparos. `AimAlarmRadius` sube de 14 a 22 m. Pendiente de prueba.
+- Corrección 2026-11-10 (segunda prueba: apuntar afuera alarmaba a los de adentro del local, y algunos civiles terminaban parados sobre los estantes): `NoiseReach` mide el alcance con una línea hasta el origen; con una pared o vitrina en medio el grito no llega y un disparo llega al 40 %. `NpcFleeMotor` ya no se sube a nada más alto que 0,35 m y tantea también a la altura de la canilla para esquivar muebles bajos. Pendiente de prueba.
+
+## Animaciones de Quaternius UAL para el elenco — 2026-11-09 (capturas aprobadas por Alain; pendiente de prueba en Unity)
+
+- Pedido de Alain: mejorar las animaciones, que se ven básicas. Se eligió la Universal Animation Library de Quaternius (CC0), versión gratuita: 43 clips. No trae rendirse, suplicar ni celular; esos siguen con clips propios hasta conseguirlos (Mixamo).
+- `Art/BlenderScripts/retarget_ual_clips.py` pasa 12 clips al esqueleto del elenco (cada hueso copia el giro de su equivalente respecto del reposo en T; la cadera se escala al largo de pierna del pack; los pies van pegados al final de la pierna). Salida: `Alarma_Locomotion_Men.fbx`, `_Women.fbx` y `locomotion_clips.json`.
+- Capturas: `docs/Capturas/UAL/ual_*.png`, aprobadas por Alain el 2026-11-09.
+- Unity: `Core/Editor/LocomotionClips` entrega a cada personaje los clips adaptados a su esqueleto y con los pies pegados al final de sus piernas. `CityLifeAnimatorFactory.Create` los recibe como opción y los usa en el Blend Tree de locomoción (reposo, caminar a 1,6 m/s y trotar a 3,6 m/s, a velocidad natural); lo usan peatones, clientes, jugador (`PedestrianPrefabFactory`) y guardias de puesto (`City25Characters`). Los dobles de reacción (`NpcReactionAssets`) usan reposo, caminar y correr (sprint) para huir. Si falta `locomotion_clips.json`, todo sigue con los clips del modelo. Comprar, pagar y caminar con bolsa siguen con sus clips anteriores. Agacharse y sentarse están generados pero aún no los usa ningún sistema. Hay que ejecutar «Crear y probar juego».
+
+## Banco, contacto y marcos de todas las puertas B1 — revisión 36 (pendiente)
+
+Alain reportó bloqueo al abrir/salir del banco y huecos laterales persistentes. Ajustados el hombro real, la palma anatómica, la orientación de muñeca y el acercamiento reservado del NPC. Instalados siete FBX con perfiles completos de pivote y fuente `Alarma_Puertas36.blend`; se conservan los GUID. Constructor `ciudad25-36`. Superadas 145 comprobaciones de código, 180 poses de alcance en los diez civiles y 2.394 muestras geométricas de giro; 1.969 mallas ajenas a las puertas conservadas. Compilación aislada de CityLife y Playtest; Unity/Play y aprobación de Alain pendientes. Archivos, capturas y pruebas: `Assets/Party/docs/Puertas-NPC-B1-R36.md`. No cerrar B1 ni hacer commit de cierre todavía.
+
+## Guarida: salida con E B1 — revisión 37 (pendiente)
+
+Alain reportó que E deja al jugador frente a la puerta sin abrir. El acercamiento se detenía pronto y consultaba el marcador de objetos en vez de la muñeca orientada para empujar. Ajustados alineación del hombro, acercamiento con colisiones, consulta de alcance de superficie, tiempos por fase y cancelación al retroceder. Advertencia única con fase, distancia y obstáculo si falla. Superadas 169 comprobaciones de código y compilación aislada de CityLife/Playtest; la prueba detecta de nuevo el fallo al reponer la consulta antigua. Medidas geométricas en 180 poses de los cuatro roles; Play/PhysX y aprobación siguen pendientes. Sin cambios de modelos o escenas en esta corrección. Archivos y prueba manual: `Assets/Party/docs/Guarida-Salida-E-R37.md`. No cerrar B1 ni hacer commit todavía.
+
+## Corrección: clientes que no salían del local — 2026-11-06 (pendiente de prueba)
+
+- Captura de Alain: los clientes entran, compran y quedan parados junto a la puerta de vidrio sin salir.
+- Causa (`AI/CityLifeR5/PedestrianActor.WaitAtDoor`): al cruzar, el cliente solo abría la puerta si su mano tocaba la placa de empuje. Si llegaba en ángulo o por el costado, no encontraba el punto de contacto o el brazo no llegaba, y la puerta nunca se abría.
+- Arreglo: sin punto de contacto, empuja la puerta igual y espera a que abra. Si la mano no alcanza la placa en 1,5 s, también empuja. La animación de empujar con la mano se mantiene cuando sí la alcanza.
+- Segunda prueba de Alain: siguen atrapados. Otra causa probable: si la puerta se cierra a mitad del paso del cliente, solo volvía a empujar al terminar el paso, y no podía terminarlo con la puerta cerrada. Respaldo `KeepDoorOpen`: quieto en la puerta cruzándola con la puerta cerrada, la empuja a los 1,5 s. Si a los 6 s sigue sin pasar, deja un aviso «Cliente atascado en la puerta…» en Console con su estado, si la puerta está abierta, qué bloquea la hoja, si está al final del paso y si tiene la mano en la placa.
+- Tercera prueba de Alain: la puerta se abría sola (sin la mano), los clientes quedaban trancados afuera después de salir y casi nadie entraba.
+  - Se quitaron los empujes sin mano. Si la puerta se cerró a mitad de su paso, el cliente vuelve a hacer el empuje con la mano, igual que al entrar (`retryPush`).
+  - De vuelta a la acera (`AI/Street/SidewalkWalker`), si el paso recto está ocupado (otra persona de frente, un árbol), esquiva hacia los costados. Si sigue bloqueado 2 s, retoma su camino normal por la vereda.
+  - Pocos clientes: quien salía seguía ocupando su lugar en la tienda hasta llegar a la acera; si se trancaba afuera, la tienda parecía llena para siempre. Ahora libera el lugar apenas sale, y el siguiente puede entrar a los 1,5 s.
+- Cuarta prueba: el aviso de Console mostró la causa exacta («estado Leaving, puerta abierta False, obstáculo ninguno, al final del paso True, mano en la placa False»). Al salir, el cliente quedaba a más de 0,74 m de la puerta; el código esperaba que terminara de acercarse antes de poner la mano, y la puerta cerrada no lo dejaba acercarse. Ahora, tras 1,5 s parado, se acerca a la placa con `ApproachDoor` (hasta 0,48 m) y empuja con la mano como al entrar.
+- Quinta prueba: mismo aviso. Causa real, en los datos de los locales: la entrada cruza por el centro de la puerta doble de 2,2 m (x = 0), pero la salida cruzaba a 1,0 m del centro, casi en el marco. El cliente quedaba a más de 0,95 m del centro, la distancia máxima para poner la mano, y nunca empujaba. Ahora la salida cruza a 0,45 m del centro, frente a su hoja y separada una celda del carril de entrada (`build_shops.py` y `shop_layouts.json`). El aviso de Console agrega la distancia al centro de la puerta.
+- Sexta prueba: el aviso mostró «mano en la placa True» a 0,41 m del centro, con la puerta igual cerrada (también al entrar). Causa: un cambio sin commit de la otra herramienta en `PedestrianReach.HasContact` subió la precisión exigida a la palma sobre una superficie de 3,5 cm a 8 mm, y el empuje casi nunca se disparaba. Sin tocar ese archivo, `PedestrianActor` empuja cuando la palma está a menos de 3 cm de la placa (`Touching`). El aviso agrega a cuántos centímetros quedó la palma.
+- Rediseño del cruce de puertas (Alain pidió dejar el ensayo y error): la lógica anterior encadenaba cinco condiciones de precisión sin tiempo límite (0,95 m, giro, paso terminado, palma a milímetros, un solo empuje), y cualquier falla dejaba al cliente esperando para siempre. Ahora la decide `Domain/DoorCrossing` (patrón State, sin Unity): girar (máx. 0,6 s), acercarse a la placa (0,7 s), extender la mano y empujar (0,5 s, o antes si toca), esperar que abra (1,4 s) y repetir si no abrió o se cerró antes de pasar. El empuje siempre lleva la mano y lo dispara el tiempo, como un evento de animación. Solo empuja el primero de la fila. `PedestrianActor.WaitAtDoor` solo ejecuta lo que pide la máquina; se quitaron los parches anteriores. Si la puerta no abre tras 3 empujes, avisa qué bloquea la hoja.
+- Pruebas `Tests/EditMode/CityLife/DoorCrossingTests` (6), corridas fuera de Unity contra la clase real: 6 de 6 correctas.
+- Prueba de Alain: ya abren al salir, pero dan vueltas sin salir. Verificado con un cálculo geométrico: la hoja abierta (1,1 m a 85°, hacia la vereda) quedaba sobre el último tramo de la salida, que iba en diagonal al costado (x = −1,5), con separación 0,00 m. Ahora la salida sigue recta 1,6 m hacia afuera (x = −0,5) y recién ahí gira hacia la vereda: separación 0,43–0,50 m con la hoja, hacia cualquiera de los dos lados de la vereda (`build_shops.py`, `shop_layouts.json`).
+- Prueba de Alain: casi todos salen bien, pero algunos empujan, dan una vuelta y vuelven a empujar. Causa calculada: la puerta cuenta como abierta desde 70°, y hasta 70,4° la hoja todavía roza el camino (0,22 m contra 0,23 m de radio de una persona). Si el paso se planeaba en ese instante, el camino recto salía tapado y el cliente rodeaba. Ahora espera con la mano en la puerta a que la hoja abra del todo (`ShopDoor.FullyOpen`, 83°). Si algo la frena a medio abrir, tras dos empujes pasa igual. Pruebas: 7 de 7 correctas.
+- Prueba de Alain: todavía abren dos veces o dan la vuelta, también al entrar. Causa exacta, en el planificador de la grilla (`CityTrafficController`/`PedestrianTraffic`): para empujar, el cliente se adelanta hasta 0,48 m fuera del centro de su celda. Ese cuerpo adelantado bloquea los pasos a menos de 0,49 m para que nadie pase por encima, con la única excepción del paso que sale de su propia celda. Al abrirse la puerta, el camino recto pasaba cerca de su propio cuerpo, así que el planificador elegía un rodeo, la puerta se cerraba y volvía a empujar. Ahora el planificador sabe quién planifica (`StepAvoidingOthers`), y su propio cuerpo no le tapa el camino; a los demás sí.
+- Prueba `PedestrianTrafficDoorTests` (3). Con la regla anterior, el primer paso iba al costado (celda 0); con la corrección va derecho (celda 4). Pruebas de CityLife: 10 de 10 correctas.
+
+## Corrección: varias cajas por local y cajeros sin animación automática — 2026-11-06 (pendiente de prueba)
+
+- Pedido de Alain: el supermercado tiene 3 cajeros pero solo atendía uno, y los cajeros se movían solos (bug alto).
+- Causas: la lógica de compra existía para una sola caja (una fila, un mostrador, un cajero). Los cajeros 2 y 3 eran empleados decorativos con `StaffWork`, que cada 0,5–2,5 s estira la mano hacia la caja como si escaneara, con o sin cliente. El cajero principal hacía lo mismo entre clientes.
+- Varias cajas (`Domain/CheckoutLanes`): cada caja tiene su fila; el cliente se pone en la que tiene menos gente y cada caja atiende al primero de su fila. `ShopService` y `PedestrianRoutine` usan las cajas; un local con una caja funciona igual que antes. `ShopActivity` suma `CheckoutStation` por caja extra (fila, mostrador, escáner, boleta, caja registradora y mano del cajero), con un `CounterExchange` y un `CashierPresentation` por caja.
+- Constructor (`City25Shops`): crea una caja extra por cada puesto «cajero» de los datos, trasladando la caja principal. Entre las cajas de cobro del supermercado hay pasillos de 0,9 m que la grilla cada 0,5 m no alcanzaba; ahora se abren sus casilleros si quedan a 0,23 m o más de los muebles. Verificado con los datos: el supermercado queda con sus 3 cajas conectadas a la entrada. En el banco, la ventanilla 2 sí entra, pero las 3 y 4 chocan con muebles: quedan con el cajero quieto y un aviso.
+- Cajeros: sin rutina automática; solo se mueven mientras atienden a un cliente de su caja.
+- Más clientes: el tope por local sale de sus cajas (filas × lugares + 2); el máximo general sube de 5 a 11.
+- Pruebas `CheckoutLanesTests` (5): elección de caja, filas llenas, el primero de cada fila, tres clientes que se reparten en las 3 cajas y pagan, y una sola caja como antes. Pruebas de CityLife: 15 de 15 correctas. Versión de la ciudad 37 para que se vuelva a armar.
+- Prueba de Alain: ya van a las 3 cajas, pero producto, billetes y boleta aparecían en la caja 1. Error propio: `ShoppingPresentation` guardaba la caja al empezar la visita, antes de que el cliente la eligiera en la fila. Ahora la sigue en cada cuadro.
+
+## Optimización — 2026-11-06 (en curso)
+
+- Pedido de Alain: el juego se siente lento; optimizar sin cambiar lo hecho. Como pide CLAUDE.md, primero se mide: `PlaytestR7/PerformanceProbe` (solo en editor y builds de desarrollo). Con F9 mide 15 s y guarda `Logs/Rendimiento_<fecha>.txt` con el tiempo por cuadro, el costo de cada script y del motor (física, animación, dibujo, sombras), los contadores de dibujo y memoria, y cuántos objetos y componentes activos hay. Las optimizaciones se eligen con ese informe.
+- Medición (F9, editor, frente al supermercado): promedio 64–80 fps, pero 36–37 tirones de más de 33 ms cada 15 s. En los tirones, el hilo principal espera al de dibujo. Por cuadro: 9.524 llamadas de dibujo, 5,5 M de triángulos, 17.942 objetos dibujados, 5,3 ms calculando sondas de luz (`CalculateLightProbeSamplingCoordinates`). Los scripts (NPC, autos, animación) suman unos 5 ms y no son la causa. Unos 9 ms son del editor (repintar ventanas) y no existen en el juego compilado.
+- Optimizaciones sin cambio visual:
+  - `City25RenderBudget`: la escena no tiene sondas de luz horneadas, así que se pone `LightProbeUsage.Off` en la escena y en los prefabs generados. Unity entrega la misma luz ambiente y se ahorra el cálculo por cuadro. Si algún día se hornean sondas, el paso no hace nada.
+  - URP (`PC_RPAsset`): se activa el descarte por oclusión en GPU del GPU Resident Drawer, que ya estaba activo. Deja de dibujar edificios e interiores tapados por otras paredes.
+  - Versión de la ciudad 38 para que se vuelva a armar. Medido: triángulos de 5,5 M a 2,1 M.
+- Segunda medición con el medidor corregido. Antes, en cada tirón anotaba solo los marcadores contenedores (`PlayerLoop`, `Idle`), así que la causa no aparecía. Ahora los excluye y separa el tiempo de cada hilo. Resultado: el hilo principal limita (12,5 ms); el de dibujo (5 ms) y la GPU (4 ms) van holgados. Las órdenes de dibujo no causan el lag.
+- Causa de los tirones: `CityTrafficController.LateUpdate`, unos 29 ms por tirón en consultas de cápsula (`CheckCapsule`, `CapsuleCast`, `OverlapCapsule`). Cada local planifica su multitud cada 0,42 s (36 veces en 15 s, igual que los tirones).
+  - Regresión del arreglo de puertas: la caché de pasos pasó a guardarse por persona, así que cada cliente repetía todas las consultas físicas del local.
+  - Además, los 17 locales planificaban en el mismo cuadro.
+- Corrección sin cambiar decisiones:
+  - `PedestrianTraffic.StepAvoidingOthers(passage, plannerKey)`: quien no tiene el cuerpo adelantado en una puerta planifica con la clave común y comparte rutas y consultas. Quien empuja conserva su clave propia.
+  - `CityTrafficController`: la consulta física se guarda por (desde, hacia); el cuerpo adelantado se revisa aparte, sin física. Cada local arranca con un desfase (proporción áurea del paso), así que planifican en cuadros distintos.
+  - Pruebas `PedestrianTrafficSharedPlanTests`: los pasos son idénticos con y sin clave común, se consulta más de 3 veces menos, y quien empuja va derecho. 18/18 correctas.
+  - Pendiente: medir de nuevo con F9.
+
+
+## Animaciones de atención en todos los negocios B1 — revisión 39 (2026-11-07, pendiente)
+
+Seis perfiles editables para minimarket, supermercado, joyería, banco, comida y ropa; asignados a todas sus cajas. Trayectorias de mano por persona, palma anatómica con flexión de dedos, conservación de orientación FBX, traspasos suaves y tiempos proporcionales por negocio. Joyería entrega anillo y gema del modelo existente. Constructor ciudad25-39. Cuatro asambleas compiladas; 36 escenarios de tres visitas completos, 8.382 comprobaciones de dominio, 16 de mano de compra y 96 de puerta. Seis vistas Blender revisadas. La auditoría detecta puntos nominales de mostrador fuera de alcance: contacto con muebles y recorrido completo pendientes de prueba en Unity; no declarar resueltos todos los contactos ni cerrar B1. Guía y lista de archivos: Assets/Party/docs/Animaciones-Negocios-B1-R39.md.
+
+## Contactos de mostrador B1 — revisión 40 (2026-11-10, Play pendiente)
+
+Llegada explícita desde la fila hasta la caja; puestos según dimensiones del mueble; agarre superior y postura adaptada al rig. Los objetos esperan el contacto antes de cambiar de dueño. Cristal de joyería, registradora de comida y ventanillas del banco corregidos al construir. Pruebas: 2.160 contactos con el código real de alcance, 288 comprobaciones de traspaso con ShoppingPresentation real, 8.396 de dominio, 16 de agarre y 96 de puertas; cuatro asambleas compiladas. Vistas Blender de los seis locales revisadas. No se abrió Unity: falta verificar ejecución completa, colisiones y fluidez en Play. Guía: Assets/Party/docs/Mostradores-B1-R40.md.
+
+Alain autorizó expresamente commit y push el 2026-11-10 para respaldar el avance sin esperar la prueba manual. Esta autorización no marca B1 ni otras tareas como completadas. El respaldo conserva la escena guardada, sus dependencias y los avances locales; las revisiones generadas antiguas no requeridas permanecen en disco, excluidas por .gitignore.

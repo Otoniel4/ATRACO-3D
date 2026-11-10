@@ -3,6 +3,8 @@ PASS una carpeta con sufijo no satisface el constructor
 PASS dos intentos preparan rutas distintas
 PASS una etapa con prefabs no modifica la ciudad anterior
 PASS acepta una etapa que Unity ya dejó activa
+PASS importa la copia con la etapa original activa y abre el archivo guardado antes de publicar
+PASS si no abre la copia recupera la ciudad anterior sin publicar
 PASS borrado parcial de la etapa preserva la ciudad y vuelve a abrirla
 PASS el fallo anterior a la etapa conserva el montaje abierto
 PASS restaura dos escenas del usuario y la activa
@@ -13,4 +15,4 @@ PASS informe bloqueado deja intactos el puntero y la ciudad anterior
 PASS publica la escena nueva y conserva todos los archivos anteriores salvo el puntero
 PASS la primera publicación funciona sin informe previo
 PASS la compilación apunta a la nueva escena y conserva otros ajustes
-PUBLICATION_TESTS_PASSED 15
+PUBLICATION_TESTS_PASSED 17

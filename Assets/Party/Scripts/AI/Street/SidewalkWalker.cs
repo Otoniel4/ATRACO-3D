@@ -243,6 +243,7 @@ namespace Alarma.AI.Street
                 shopper.Suspend();
                 phase = VisitPhase.Returning;
                 blockedFor = 0f;
+                ReleaseVisit(1.5f); // ya salió: libera su lugar para que entre el siguiente cliente
             }
 
             Vector3 destination = phase == VisitPhase.Approaching ? visit.Approach : graph.Position(current);
@@ -251,11 +252,13 @@ namespace Alarma.AI.Street
             float step = WalkSpeed * Mathf.Min(Time.deltaTime, .1f);
             bool arrived = direction.sqrMagnitude <= step * step;
             Vector3 proposed = arrived ? destination : position + direction.normalized * step;
-            if (!SidewalkClearance.TryMove(position, proposed, transform, out Vector3 moved))
+            if (!SidewalkClearance.TryMove(position, proposed, transform, out Vector3 moved) && !Sidestep(position, direction, step, out moved))
             {
                 blockedFor += Time.deltaTime;
                 Animate(0f);
                 if (phase == VisitPhase.Approaching && blockedFor > 2.5f) { phase = VisitPhase.Returning; blockedFor = 0f; }
+                // De vuelta a la acera y bloqueado (otra persona de frente, un árbol): sigue su camino por otro nodo.
+                if (phase == VisitPhase.Returning && blockedFor > 2f) { blockedFor = 0f; phase = VisitPhase.Walking; ReleaseVisit(3f); ChooseNext(); }
                 return;
             }
             transform.position = moved;
@@ -282,6 +285,19 @@ namespace Alarma.AI.Street
             ChooseNext();
         }
 
+        // Esquiva como una persona: si el paso recto está ocupado, prueba un poco hacia los costados.
+        private bool Sidestep(Vector3 position, Vector3 direction, float step, out Vector3 moved)
+        {
+            moved = position;
+            if (direction.sqrMagnitude < .0001f) return false;
+            foreach (float angle in SidestepAngles)
+            {
+                Vector3 proposed = position + Quaternion.AngleAxis(angle, Vector3.up) * direction.normalized * step;
+                if (SidewalkClearance.TryMove(position, proposed, transform, out moved)) return true;
+            }
+            return false;
+        }
+
         private void ReleaseVisit(float cooldown)
         {
             if (visit == null) return;
@@ -296,6 +312,8 @@ namespace Alarma.AI.Street
             ReleaseVisit(4f);
             graph = null;
         }
+
+        private static readonly float[] SidestepAngles = { 35f, -35f, 70f, -70f };
 
         private void Animate(float speed) { if (animator != null) animator.SetFloat(SpeedParameter, speed); }
         private void Turn(Vector3 direction)

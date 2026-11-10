@@ -68,7 +68,9 @@ assert 'FlatMaterialLibrary.EnsureFolder' in block(builder, 'private static void
 assert 'EnsureFolder(output + "/Art")' in block(kit, 'private static GameObject MakeParked(')
 assert 'EnsureFolder(output + "/Materials")' in block(kit, 'private static Material LightsOff(')
 assert 'AssetDatabase.DeleteAsset' not in builder
-assert builder.index('recovery.Publish(') > builder.index('AssetDatabase.ImportAsset(recovery.ScenePath')
+assert builder.index('recovery.Publish(') > builder.index('recovery.SaveAndOpenStage(stage)')
+save_stage = block(recovery_path.read_text(encoding='utf-8-sig'), 'public void SaveAndOpenStage')
+assert save_stage.index('saveAsCopy: true') < save_stage.index('AssetDatabase.ImportAsset') < save_stage.index('EditorSceneManager.OpenScene')
 assert builder.index('var stage = recovery.OpenStage();') > builder.index('PrepareOutput(output);')
 print('PASS guardas de carpeta y orden de publicación en fuentes reales')
 

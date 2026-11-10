@@ -23,7 +23,7 @@ namespace Alarma.AI.Street
         [SerializeField] private SidewalkVisit[] visits = Array.Empty<SidewalkVisit>();
         [SerializeField] private PedestrianSettings shopSettings;
         [Header("Clientes de los locales")]
-        [SerializeField, Min(1)] private int customersPerShop = 5;
+        [SerializeField, Min(1), Tooltip("Tope de clientes por local; cada local lo baja según sus cajas (SidewalkVisit.HasRoom).")] private int customersPerShop = 11;
         [SerializeField, Min(0f)] private float shopFocusRadius = 100f;
         [SerializeField, Min(10f)] private float customerSpawnRadius = 40f;
         [Tooltip("Un salto mayor entre dos cuadros se trata como viaje con el mapa.")]

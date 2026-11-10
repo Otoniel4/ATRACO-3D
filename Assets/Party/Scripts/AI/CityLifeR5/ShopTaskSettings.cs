@@ -9,6 +9,7 @@ namespace Alarma.AI.CityLife
         [Min(0)] public int InitialStock=60;
         [Min(0)] public int CustomerWalletCents=10000;
         public bool IsWithdrawal;
+        public ShopAnimationProfile Animation;
         public GameObject ProductPrefab;
         public GameObject MoneyPrefab;
         public GameObject ReceiptPrefab;

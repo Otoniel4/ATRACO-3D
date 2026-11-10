@@ -15,6 +15,14 @@ internal static class CounterTests
     public static void Run(Action<bool, string> check)
     {
         var timing = CounterTiming.Standard;
+        check(CounterChoreography.Blend(-.2f) == 0f && CounterChoreography.Blend(1.2f) == 1f
+            && CounterChoreography.Blend(.01f) < .001f && CounterChoreography.Blend(.99f) > .999f,
+            "el traspaso conserva sus extremos y acelera y frena suavemente");
+        var scanTiming = new CounterTiming { Scan = 4f };
+        check(CounterChoreography.Evaluate(PedestrianState.Scanning, 1f, scanTiming, false).Product == ItemPlace.Drop
+            && CounterChoreography.Evaluate(PedestrianState.Scanning, 2.4f, scanTiming, false).Product == ItemPlace.CashierHand
+            && CounterChoreography.Evaluate(PedestrianState.Scanning, 3.8f, scanTiming, false).Product == ItemPlace.Bag,
+            "el producto pasa por el lector antes de llegar a la zona de entrega aunque cambie la duración");
         // Compra: el producto pasa por la mano del cliente, el mostrador, la mano del cajero y queda listo para llevar.
         var places = new List<ItemPlace>();
         foreach (var (state, length) in new[] { (PedestrianState.PickingUp, timing.Pick), (PedestrianState.Placing, timing.Place),

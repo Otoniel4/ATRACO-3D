@@ -7,7 +7,8 @@ PASS puerta doble desde atrás se abre alejándose
 PASS empuje inicia recorrido antes de autorizar paso
 PASS puerta doble desde frente se abre alejándose
 PASS contacto frontal disponible
-PASS contacto frontal sobre la cara de la hoja a altura del marcador
+PASS contacto frontal sobre la cara de la hoja en la parte alta de la placa
+PASS normal de palma apunta fuera de la hoja
 PASS caras independientes conservan el contacto frontal
 PASS posición de empuje deja margen para la cápsula
 PASS ancla sigue la hoja durante el giro
@@ -23,5 +24,10 @@ PASS cierre detenido ante un obstáculo en el barrido
 PASS cierra al quedar libre
 PASS fotograma largo detecta bloqueo intermedio en arco
 PASS saturación de consulta conserva la pose
-PASS 25 comprobaciones con ShopDoor.cs real y física simulada
-ShopDoor.cs SHA-256 1f8a397eb0b793fe35252ed1cf75dd163ea848c1cea38f84c53a035eb76ca2ba
+PASS la presencia sola no abre la puerta comercial
+PASS la palma apunta a la parte alta de la placa comercial
+PASS la puerta comercial queda abierta durante el cruce
+PASS la puerta comercial cierra detrás del peatón
+PASS el portón de la guarida sigue esperando el empuje
+PASS 31 comprobaciones con ShopDoor.cs real y física simulada
+ShopDoor.cs SHA-256 4899d3fb9f9cdf8a4e8b187e75b7769f2de364358c5d9bb3db140424b814e50d

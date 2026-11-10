@@ -9,13 +9,31 @@ PASS obstáculo en acercamiento cancela antes del empuje
 PASS cambiar de rol cancela gesto anterior
 PASS abrir menú libera el bloqueo
 PASS portón corredizo más cercano recibe E solo
-DOOR_INTERACTION_TESTS_PASSED 11
+PASS estar quieto junto al local no inicia el empuje
+PASS E alinea el hombro real del jugador antes de empujar
+PASS La palma vertical corta sigue acercándose aunque el agarre de objetos dé alcance válido
+PASS E abre después de completar el ajuste de muñeca
+PASS Cruce libre devuelve el control para salir
+PASS E abre también desde dentro de la guarida
+PASS Retroceder cancela de inmediato el contacto sin abrir la hoja
+PASS Contacto imposible libera movimiento sin atravesar la puerta
+PASS Un fallo informa su fase una vez sin inundar Console
+DOOR_INTERACTION_TESTS_PASSED 20
 
+PASS Con la puerta cerrada inicia la marcha hacia el negocio
+PASS Llega a la última celda libre para poder alcanzar la manija
+PASS No atraviesa la puerta cerrada ni oscila entre celdas
+PASS Reserva sus pies mientras realiza el gesto
+PASS Retoma la ruta al quedar libre la puerta sin una orden del jugador
+PASS También se acerca desde dentro cuando la puerta vuelve a cerrarse
+PASS Puede volver a la acera después de abrir hacia fuera
+PASS Prefiere una ruta libre cuando existe un desvío completo
+PASS Dos clientes se acercan por lados opuestos sin compartir celda ni atravesar la hoja
 PASS La cáp­sula de otro peatón bloquea el acercamiento
 PASS Un destino ocupado no permite desplazar los pies
 PASS Consulta de física llena conserva la posición
 PASS Ignora su propia cápsula y limita la velocidad de acercamiento
-PASS El acercamiento no supera 32 cm desde la celda reservada
+PASS El acercamiento no supera 48 cm desde la celda reservada
 PASS Repetir la reserva conserva el desplazamiento
 PASS La reserva de otro peatón respeta el cuerpo desplazado
 PASS El barrido del próximo paso comienza en los pies reales
@@ -24,4 +42,4 @@ PASS No se inicia acercamiento en un paso sin terminar
 PASS Tras liberar la puerta continúa la ruta hacia la celda vecina
 PASS El visitante espera si la acera ocupa su siguiente celda
 PASS La reserva local sigue controlando sus propios residentes
-PEDESTRIAN_DOOR_APPROACH_TESTS_PASSED 13
+PEDESTRIAN_DOOR_APPROACH_TESTS_PASSED 22

@@ -43,12 +43,16 @@ PASS elige, paga y completa la compra una vez
 PASS libera caja y sesión al salir de tienda
 PASS retira efectivo del banco y completa la visita una vez
 PASS libera caja y sesión al salir del banco
+PASS si la entrada se bloquea libera su reserva y regresa directamente a la acera
+PASS la salida sin entrar completa la visita sin cobro
 PASS al empezar llena la zona del jugador sin enviar clientes a locales lejanos
 PASS al viajar con M repuebla la zona de llegada en el acto
 PASS al llegar ya hay un cliente comprando dentro, otro en la puerta y otro camina hacia el local
 PASS el cliente de la puerta empieza su rutina dentro
 PASS con el cupo lleno libera un paseante lejano y envía otro cliente
 PASS no supera la capacidad del local
+PASS el traspaso conserva sus extremos y acelera y frena suavemente
+PASS el producto pasa por el lector antes de llegar a la zona de entrega aunque cambie la duración
 PASS el producto va del estante a la mano, al mostrador, al cajero y de vuelta al cliente
 PASS el cliente entrega el dinero en la mano del cajero
 PASS el cajero devuelve el vuelto en la mano y el cliente lo guarda
@@ -61,4 +65,4 @@ PASS el pago dura lo que el guion necesita para pasar dinero y vuelto
 PASS el cliente que ya estaba dentro empieza en su puesto y completa la compra
 PASS no se crea un cliente dentro si el local está lleno
 PASS el cliente que solo mira se va sin comprar y libera su lugar
-STREET_TESTS_PASSED 63
+STREET_TESTS_PASSED 67

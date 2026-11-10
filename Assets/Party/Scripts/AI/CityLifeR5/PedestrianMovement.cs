@@ -49,7 +49,8 @@ namespace Alarma.AI.CityLife
             if (!registered || !AtStepEnd || capsule == null || Time.deltaTime <= 0) return false;
             Vector3 wanted = stand - end;
             wanted.y = 0;
-            wanted = Vector3.ClampMagnitude(wanted, .32f);
+            // Una celda mide 50 cm. El ajuste conserva la reserva y comprueba todo el barrido físico.
+            wanted = Vector3.ClampMagnitude(wanted, .48f);
             Vector3 step = Vector3.ClampMagnitude(wanted - doorOffset, .75f * Time.deltaTime);
             if (step.sqrMagnitude < .000001f) return false;
             Vector3 center = transform.TransformPoint(capsule.center);

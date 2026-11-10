@@ -31,7 +31,7 @@ internal static class Regression
     private static float GetAngle(ShopDoor door) => (float)Angle.GetValue(door);
     private static void SetAngle(ShopDoor door, float value) => Angle.SetValue(door, value);
 
-    private static Transform Leaf(Transform root, float hingeX, float inward, float length, string side)
+    private static Transform Leaf(Transform root, float hingeX, float inward, float length, string side, bool commercial)
     {
         var leaf = new Transform("DoorLeaf_" + side) { localPosition = new Vector3(hingeX, 0, 0) };
         leaf.SetParent(root, false);
@@ -41,20 +41,21 @@ internal static class Regression
             center = new Vector3(inward * length / 2f, 1f, 0),
             size = new Vector3(length, 2f, .10f)
         };
-        var marker = new Transform("PushContact_" + side) { localPosition = new Vector3(inward * length * .8f, 1.2f, 0) };
+        var marker = new Transform((commercial ? "DoorBar_" : "PushContact_") + side)
+            { localPosition = new Vector3(inward * length * .8f, commercial ? 1.05f : 1.2f, 0) };
         marker.SetParent(leaf, false);
         return leaf;
     }
 
-    private static (ShopDoor door, Transform left, Transform right, Vector3 front, Vector3 back, Vector3 normal) Fixture(bool doubleLeaf, float yaw = 0f)
+    private static (ShopDoor door, Transform left, Transform right, Vector3 front, Vector3 back, Vector3 normal) Fixture(bool doubleLeaf, float yaw = 0f, bool commercial = false)
     {
         Time.time = 1f;
         Physics.Reset();
         var root = new Transform("PrefabRoot") { localRotation = Quaternion.AngleAxis(yaw, Vector3.up) };
         var threshold = new Transform("Umbral");
         threshold.SetParent(root, false);
-        var left = Leaf(root, .72f, -1, doubleLeaf ? .71f : 1.4f, "L");
-        var right = doubleLeaf ? Leaf(root, -.72f, 1, .71f, "R") : null;
+        var left = Leaf(root, .72f, -1, doubleLeaf ? .71f : 1.4f, "L", commercial);
+        var right = doubleLeaf ? Leaf(root, -.72f, 1, .71f, "R", commercial) : null;
         var door = new ShopDoor();
         door.Configure(left, right, threshold);
         Vector3 normal = root.rotation * Vector3.forward;
@@ -85,9 +86,10 @@ internal static class Regression
     {
         var f = Fixture(false, 35f);
         Check(f.door.TryGetPushContact(f.front, .27f, out var front, out var stand, out var toward), "contacto frontal disponible");
-        Check(front.parent == f.left && MathF.Abs(front.position.y - 1.2f) < .001f
+        Check(front.parent == f.left && MathF.Abs(front.position.y - 1.34f) < .001f
             && MathF.Abs(Vector3.Dot(front.position, f.normal) - .05f) < .001f,
-            "contacto frontal sobre la cara de la hoja a altura del marcador");
+            "contacto frontal sobre la cara de la hoja en la parte alta de la placa");
+        Check(Vector3.Dot(front.rotation * Vector3.forward, f.normal) > .999f, "normal de palma apunta fuera de la hoja");
         Vector3 initial = front.position;
         Check(f.door.TryGetPushContact(f.back, .27f, out var back, out _, out _)
             && back != front && (front.position-initial).magnitude < .001f
@@ -155,6 +157,22 @@ internal static class Regression
         Anchors();
         PassageThresholds();
         OccupancyAndSweep();
+        var shop = Fixture(true, commercial: true);
+        Physics.Occupant = true;
+        TickMany(shop.door, 50);
+        Check(GetAngle(shop.door) == 0f, "la presencia sola no abre la puerta comercial");
+        Check(shop.door.TryGetPushContact(shop.front, .24f, out var palm, out _, out _)
+            && MathF.Abs(palm.position.y - 1.19f) < .001f, "la palma apunta a la parte alta de la placa comercial");
+        shop.door.PushFrom(shop.front);
+        TickMany(shop.door, 80);
+        Check(shop.door.CanPass, "la puerta comercial queda abierta durante el cruce");
+        Physics.Occupant = false;
+        TickMany(shop.door, 200);
+        Check(GetAngle(shop.door) < .04f, "la puerta comercial cierra detrás del peatón");
+        var manual = Fixture(false);
+        Physics.Occupant = true;
+        TickMany(manual.door, 50);
+        Check(GetAngle(manual.door) == 0f, "el portón de la guarida sigue esperando el empuje");
         Console.WriteLine("PASS " + count + " comprobaciones con ShopDoor.cs real y física simulada");
     }
 }

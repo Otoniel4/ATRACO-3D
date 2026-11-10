@@ -40,6 +40,18 @@ namespace Alarma.City.Editor
             return stage;
         }
 
+        public void SaveAndOpenStage(Scene stage)
+        {
+            // Importar la copia antes de abrirla evita que Unity trate su escritura como una edición externa.
+            if (!EditorSceneManager.SaveScene(stage, ScenePath, saveAsCopy: true))
+                throw new IOException("No se pudo guardar la escena de la ciudad.");
+            AssetDatabase.ImportAsset(ScenePath, ImportAssetOptions.ForceSynchronousImport);
+            var saved = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!saved.IsValid() || !saved.isLoaded || saved.path != ScenePath
+                || !saved.GetRootGameObjects().Any(root => root.GetComponentInChildren<Camera>() != null))
+                throw new IOException("La copia guardada no cargó una escena con cámara.");
+        }
+
         public void Publish(string report)
         {
             if (!stageStarted || !File.Exists(ScenePath) || !File.Exists(ScenePath + ".meta"))

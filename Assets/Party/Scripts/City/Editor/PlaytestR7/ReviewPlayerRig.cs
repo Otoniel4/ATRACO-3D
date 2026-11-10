@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Alarma.Animation;
 using Alarma.Core.Contracts;
+using Alarma.Core.Editor;
 using Alarma.Core.Settings;
 using Alarma.Player.Editor;
 using Alarma.Player.Items;
@@ -45,6 +46,8 @@ namespace Alarma.City.Playtest.Editor
             var items=new GameObject("Inventario");
             var hotbar=items.AddComponent<HotbarView>();hotbar.Configure(rig.Inventory,rig.Items);
             items.AddComponent<CrosshairView>().Configure(rig.Items);
+            // Aviso en pantalla cuando un testigo termina de llamar a la policía.
+            items.AddComponent<CrimeAlertView>().Configure(EventAssets.CrimeReports());
             var backpack=items.AddComponent<InventoryScreen>();backpack.Configure(rig.Inventory);
             var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause,backpack,hotbar);
             return ui;

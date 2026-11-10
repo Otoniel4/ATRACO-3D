@@ -342,3 +342,31 @@ Supermercado aprobado visualmente por Alain. Minimarket, comida y ropa regenerad
 ## Puertas, locales en marcha y bolsa B1 — revisión 29 (pendiente)
 
 `ShopDoor` barre la hoja solo contra estática (sin capas 28 a 31) para evitar bloqueos con multitudes. `City25Kit` excluye alfombras de colisión. El revestimiento junto a la puerta va a ±1,42 m. `VisitStart.Inside` y `BeginInside` crean clientes ya comprando al llegar con M. `PedestrianPresentation` fija la bolsa con `bagRest`. Constructor `ciudad25-29`.
+
+## Accesos comerciales B1 — revisión 30 (pendiente)
+
+Constructor `ciudad25-30`. Holgura del dintel corregida al preparar las hojas de los seis tipos de local. Apertura comercial por proximidad y retorno de clientes con el acceso bloqueado. Pasos de prueba en `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Guardado de la escena B1 — revisión 31 (pendiente)
+
+Constructor `ciudad25-31`. Guarda como copia, importa antes de abrir y comprueba que la escena cargada tenga cámara antes de publicar. Revisión generada sin referencias archivada de forma recuperable fuera de Assets. Pasos en `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Animación de apertura comercial B1 — revisión 32 (pendiente)
+
+Constructor `ciudad25-32`. Jugador y clientes empujan tras confirmar contacto con la manija. El cierre espera a que el umbral se libere. Se conserva el retorno del cliente bloqueado. Pendiente verificar la animación y el cruce en Unity.
+
+## Traspasos y marcos comerciales B1 — revisión 33 (pendiente)
+
+Constructor `ciudad25-33`. Caja con traspasos suaves después de resolver la pose, mano del cajero sobre el lector y seis marcos comerciales nuevos verificados en ambos sentidos. Fuente Blender en `Art/BlenderSources~/Alarma_Shops_Puertas33.blend`. Pasos en `Assets/Party/docs/Guarida-B1-Correccion.md`.
+
+## Marco de la guarida B1 — revisión de arte 34 (pendiente)
+
+Alain señaló huecos laterales en la puerta del escondite. Modelo activo y fuente `.blend` actualizados con jambas profundas, dintel y hojas ajustadas. 342 barridos de cajas comprobados en Blender; 412 mallas ajenas al acceso conservadas tras reimportación. El constructor existente detecta el cambio mediante la huella del FBX. Prueba de Unity y aprobación pendientes. Guía `Assets/Party/docs/Guarida-Marco34.md`.
+
+## Acceso autónomo NPC B1 — 2026-11-05 (pendiente)
+
+Alain reportó que los NPC esperan a que el jugador abra. La búsqueda física dejaba desconectado el destino interior y priorizaba quedarse quieto. `PedestrianTraffic` ahora se acerca por el grafo si no hay ruta libre completa, validando colisiones y reservas en cada paso. Reutiliza el gesto de contacto existente. Regresión anterior reproducida, pruebas analíticas y compilación CityLife superadas. Play pendiente. Guía `Assets/Party/docs/NPC-Acceso-Autonomo-B1.md`. No cerrar B1 ni hacer commit hasta confirmación.
+
+## Corrección de agarre Task 06 — 2026-11-05 (pendiente)
+
+Véase `Assets/Party/docs/Task06-Agarre-Corregido.md`: conservación de orientación FBX, muñeca antes del contacto, anclas de palma calibradas, flexión de dedos, transición de equipamiento y recalibración por rol. 14 pruebas matemáticas, cinco asambleas compiladas y ocho poses de pistola en Blender verificadas. Prueba de movimiento en Unity y aprobación pendientes; no cerrar ni hacer commit de la tarea.

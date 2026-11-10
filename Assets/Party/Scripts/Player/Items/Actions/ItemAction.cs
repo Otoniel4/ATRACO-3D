@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Alarma.Core.Contracts;
+using Alarma.Core.Events;
 
 namespace Alarma.Player.Items
 {
@@ -47,6 +48,7 @@ namespace Alarma.Player.Items
         public Func<bool> Consume;     // gasta una unidad del objeto en la mano
         public Action<string> Feedback;
         public Action<bool> HideModel; // la granada sale de la mano al lanzarla
+        public Action<Pose> PlaceUser; // el objetivo pide dónde pararse (bridas: detrás de la persona)
 
         public Transform Part(string name)
         {
@@ -108,6 +110,8 @@ namespace Alarma.Player.Items
         [SerializeField, Tooltip("Piezas que parpadean durante el uso (por ejemplo, Code de la tablet).")] private string blinkPart = "";
         [SerializeField, Tooltip("Número del clip de cuerpo en el parámetro «Accion» del Animator (0 = sin clip).")] private int animationId;
         [SerializeField, Tooltip("El clip usa todo el cuerpo (rodillas y cadera): el jugador se queda quieto mientras dura.")] private bool fullBody;
+        [SerializeField, Tooltip("Canal donde avisa su ruido (disparos, estallidos): lo oyen los civiles.")] private NoiseChannel noise;
+        [SerializeField, Min(0), Tooltip("Hasta dónde se oye, en metros (0 = silencioso).")] private float noiseRadius;
         [SerializeField, HideInInspector] private int dataVersion;
 
         public float Duration => duration;
@@ -177,5 +181,13 @@ namespace Alarma.Player.Items
         }
 
         public void ConfigureBody(int clip, bool wholeBody) { animationId = Mathf.Max(0, clip); fullBody = wholeBody && clip > 0; }
+
+        public void ConfigureNoise(NoiseChannel channel, float radius) { noise = channel; noiseRadius = Mathf.Max(0f, radius); }
+
+        // Avisa el ruido de la acción (si tiene) a quien escuche el canal.
+        protected void MakeNoise(Vector3 position, NoiseKind kind, GameObject source)
+        {
+            if (noise != null) noise.Raise(position, noiseRadius, kind, source);
+        }
     }
 }

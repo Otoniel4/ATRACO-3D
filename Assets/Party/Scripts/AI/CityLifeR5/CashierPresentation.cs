@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Alarma.AI.CityLife
 {
-    // Cajero del local: lo mueve el guion del mostrador mientras atiende y, entre clientes, sigue con su trabajo.
+    // Cajero de una caja: lo mueve el guion del mostrador solo mientras atiende a un cliente; sin cliente espera quieto.
     public sealed class CashierPresentation : MonoBehaviour
     {
         private static readonly int Pay = Animator.StringToHash("Pay");
@@ -10,26 +10,25 @@ namespace Alarma.AI.CityLife
         [SerializeField] private Animator animator;
         // Se configura en el editor; sin serializar llegaba vacío a Play y cortaba la compra con NullReference.
         [SerializeField] private PedestrianReach reach;
-        [SerializeField] private StaffWork work;
+        [SerializeField, Tooltip("Caja que atiende (0 = la principal).")] private int lane;
 
-        public void Configure(ShopActivity target, Animator model, StaffWork routine = null)
+        public void Configure(ShopActivity target, Animator model, int checkout = 0)
         {
-            shop = target; animator = model; work = routine;
+            shop = target; animator = model; lane = checkout;
             reach = GetComponent<PedestrianReach>();
             if (reach == null) reach = gameObject.AddComponent<PedestrianReach>();
-            reach.Configure(shop.CashierGrip);
+            reach.Configure(shop.Checkout(lane).cashierGrip);
         }
 
         private void Start()
         {
             if (reach == null) reach = GetComponent<PedestrianReach>();
-            if (shop != null) shop.Exchange.BindCashier(transform, reach);
+            if (shop != null) shop.ExchangeFor(lane).BindCashier(transform, reach);
         }
 
         private void Update()
         {
-            bool busy = shop != null && shop.Exchange.CashierBusy;
-            if (work != null) work.Paused = busy;
+            bool busy = shop != null && shop.ExchangeFor(lane).CashierBusy;
             if (animator != null) animator.SetBool(Pay, busy);
         }
     }

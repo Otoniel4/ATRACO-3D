@@ -1,4 +1,5 @@
 using UnityEngine;
+using Alarma.Core.Contracts;
 
 namespace Alarma.Player.Items
 {
@@ -22,9 +23,11 @@ namespace Alarma.Player.Items
 
         public override bool CanBegin(ItemActionContext context)
         {
-            if (!requireTarget || context.FindTarget(range, out _) != null) return true;
-            context.Feedback?.Invoke(nothingMessage);
-            return false;
+            var target = context.FindTarget(range, out _);
+            if (target == null && requireTarget) { context.Feedback?.Invoke(nothingMessage); return false; }
+            // El objetivo puede pedir dónde pararse (bridas: detrás de la persona) y prepararse para recibirla.
+            if (target is IUseAnchor anchor && anchor.PrepareUse(context.Item.Id, context.User, out var standAt)) context.PlaceUser?.Invoke(standAt);
+            return true;
         }
 
         public override void Trigger(ItemActionContext context)
