@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Alarma.Core.Contracts;
 using Alarma.Core.Events;
+using Alarma.AI.CityLife;
 
 namespace Alarma.AI.Reactions
 {
@@ -16,6 +17,8 @@ namespace Alarma.AI.Reactions
     // - Arrodillado o agachado acepta las bridas: junta las muñecas en la espalda, quien lo amarra se pone detrás y
     //   queda amarrado.
     // - Un disparo o el táser lo tumban con física (NpcRagdoll); aturdido un rato, se levanta y se va.
+    // - Huir: si está dentro de un local sigue un camino por sus pasillos hasta la puerta y la calle, rodeando a la
+    //   amenaza (ShopEscape), y recién ahí se aleja; si la amenaza tapa la salida, se aleja por dentro.
     // Percepción (ruido, mira, golpes), decisión (aquí), movimiento (NpcFleeMotor), postura (NpcReactionAnimator) y
     // caída (NpcRagdoll) están separados.
     public sealed class NpcReactions : MonoBehaviour, IIntimidatable, IDamageable, IItemTarget, IUseAnchor
@@ -36,6 +39,7 @@ namespace Alarma.AI.Reactions
         private float timer, call;
         private bool reported;
         private IArmed armedThreat;
+        private ShopDoor exitDoor;
         private bool tiedBeforeFall;
 
         public ReactionState State { get; private set; } = ReactionState.Leaving;
@@ -152,6 +156,18 @@ namespace Alarma.AI.Reactions
             timer = Random.Range(seconds.x, seconds.y);
         }
 
+        // Empieza a correr: dentro de un local, primero por un camino hasta la calle que no pase junto a la amenaza.
+        private void RunAway()
+        {
+            exitDoor = null;
+            if (ShopEscape.TryFind(transform.position, ThreatPosition, out var route, out var door))
+            {
+                exitDoor = door;
+                motor.MoveThrough(route, ThreatPosition, settings.RunSpeed);
+            }
+            else motor.MoveAwayFrom(ThreatPosition, settings.RunSpeed);
+        }
+
         private void Face(Vector3 point, float dt)
         {
             Vector3 to = point - transform.position;
@@ -178,7 +194,7 @@ namespace Alarma.AI.Reactions
                     motor.Stop(); body.Show(ReactionPose.Amarrado); timer = OfferSeconds;
                     break;
                 case ReactionState.Fleeing:
-                    motor.MoveAwayFrom(ThreatPosition, settings.RunSpeed); body.Show(ReactionPose.Correr); timer = settings.FleeSeconds;
+                    RunAway(); body.Show(ReactionPose.Correr); timer = settings.FleeSeconds;
                     break;
                 case ReactionState.Recording:
                     motor.Stop(); body.Show(ReactionPose.Grabar); call = 0f; timer = float.PositiveInfinity;
@@ -212,6 +228,7 @@ namespace Alarma.AI.Reactions
                     break;
                 case ReactionState.Fleeing:
                     motor.MoveAwayFrom(ThreatPosition, settings.RunSpeed);
+                    if (exitDoor != null) exitDoor.PushFrom(transform.position); // abre la puerta al llegar
                     if (timer <= 0f) Enter(ReactionState.Leaving);
                     break;
                 case ReactionState.Recording:
@@ -234,6 +251,7 @@ namespace Alarma.AI.Reactions
                     if (timer <= 0f) Enter(tiedBeforeFall ? ReactionState.Tied : ReactionState.Leaving);
                     break;
                 case ReactionState.Leaving:
+                    if (exitDoor != null) exitDoor.PushFrom(transform.position);
                     if (timer <= 0f || !Near(settings.DespawnDistance)) Destroy(gameObject);
                     break;
                 case ReactionState.Tied:

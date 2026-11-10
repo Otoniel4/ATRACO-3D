@@ -74,6 +74,8 @@ namespace Alarma.AI.CityLife
         public GameObject ClaimProduct(ShoppingSession session){var display=GetComponent<ShopStockDisplay>();if(display==null){display=gameObject.AddComponent<ShopStockDisplay>();display.Configure(this);}return display.Claim(session);}
         public bool IsConfigured=>tasks!=null && browsePoints.Length>0 && productPoints.Length==browsePoints.Length && counterPoint!=null && scanPoint!=null;
         public Transform[] WalkRoute=>walkRoute;
+        // De adentro de la puerta a la acera: también es por donde escapan los civiles asustados.
+        public Transform[] ExitRoute=>exitRoute;
         public Transform Scan=>scanPoint;
         public int PurchaseCount=>service?.PurchaseCount??0;
         public event Action<int> PurchaseCompleted;
