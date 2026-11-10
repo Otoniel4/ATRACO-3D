@@ -42,6 +42,8 @@ namespace Alarma.AI.Reactions
             var reaction = Instantiate(doublePrefab, transform.position, transform.rotation);
             reaction.name = doublePrefab.name + " (reacción)";
             if (visual != null) reaction.CopyPose(visual);
+            // El personal está en su puesto: no corre, se agacha ahí mismo.
+            if (GetComponent<Alarma.AI.CityLife.StaffWork>() != null) reaction.MarkStaff();
             gameObject.SetActive(false);
             spawned = reaction;
             return reaction;

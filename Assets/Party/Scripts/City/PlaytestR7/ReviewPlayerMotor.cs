@@ -24,6 +24,8 @@ namespace Alarma.City.Playtest
         public bool FaceView{get;set;}
         // Quieto mientras dura una acción de cuerpo completo (forzar con la palanca, abrir con la ganzúa, colocar la termita).
         public bool HoldStill{get;set;}
+        // Derribado o arrestado (ReviewPlayerLife): no camina ni gira hasta quedar libre.
+        public bool Blocked{get;set;}
         private const float AlignSeconds=.3f;
         private Pose alignTarget;private float alignLeft;
         // Lo pide un objeto que necesita que el jugador se pare en un lugar (bridas: detrás de la persona arrodillada).
@@ -75,7 +77,7 @@ namespace Alarma.City.Playtest
                 controller.enabled=false;transform.position=grounded;controller.enabled=true;spawn=grounded;vertical=0;
                 needsGround=false;
             }
-            Vector3 direction = doorLocked ? doorFacing : input.Active ? MoveDirection : Vector3.zero;
+            Vector3 direction = doorLocked ? doorFacing : input.Active && !Blocked ? MoveDirection : Vector3.zero;
             // Arranque y frenado graduales: sin saltos de velocidad ni pies que patinan al soltar las teclas.
             if(alignLeft>0f && !doorLocked)
             {
@@ -86,10 +88,10 @@ namespace Alarma.City.Playtest
             }
             else
             {
-                Vector3 target = doorLocked ? doorDirection : HoldStill ? Vector3.zero : direction * (FaceView ? WalkSpeed * .6f : input.Run ? RunSpeed : WalkSpeed);
+                Vector3 target = doorLocked ? doorDirection : HoldStill || Blocked ? Vector3.zero : direction * (FaceView ? WalkSpeed * .6f : input.Run ? RunSpeed : WalkSpeed);
                 planar = doorLocked ? target : Vector3.MoveTowards(planar, target,
                     (target.sqrMagnitude > planar.sqrMagnitude ? Acceleration : Deceleration) * Time.deltaTime);
-                if(FaceView && !doorLocked)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.Euler(0,view.Yaw,0),TurnSpeed*Time.deltaTime);
+                if(FaceView && !doorLocked && !Blocked)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.Euler(0,view.Yaw,0),TurnSpeed*Time.deltaTime);
                 else if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),TurnSpeed*Time.deltaTime);
             }
             if(controller.isGrounded && vertical<0)vertical=-2;else vertical-=Gravity*Time.deltaTime;

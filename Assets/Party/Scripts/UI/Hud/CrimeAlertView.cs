@@ -5,8 +5,8 @@ using Alarma.UI.Map;
 
 namespace Alarma.UI.Hud
 {
-    // Aviso arriba al centro cuando un testigo termina de llamar a la policía. Solo escucha el canal de denuncias: no
-    // conoce a los testigos ni a la policía.
+    // Aviso arriba al centro cuando alguien avisa a la policía (testigo, cámara o guardia). Solo escucha el canal de
+    // denuncias: no conoce a quien avisa ni a la policía.
     public sealed class CrimeAlertView : MonoBehaviour
     {
         private const float Seconds = 5f;
@@ -28,7 +28,8 @@ namespace Alarma.UI.Hud
 
         private void OnReport(CrimeReport report)
         {
-            label.text = "¡Un testigo llamó a la policía!";
+            label.text = report.Source == CrimeReportSource.Camera ? "¡Una cámara te vio: avisó a la policía!"
+                       : report.Source == CrimeReportSource.Guard ? "¡Guardia caído: su radio avisó a la policía!" : "¡Un testigo llamó a la policía!";
             until = Time.unscaledTime + Seconds;
         }
 

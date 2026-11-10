@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using Alarma.AI.CityLife;
 using Alarma.AI.CityLife.Editor;
+using Alarma.AI.Editor;
 using Alarma.AI.Security;
 using Alarma.AI.Street;
 using Alarma.Core.Editor;
@@ -36,7 +37,8 @@ namespace Alarma.City.Editor
             // Los mismos civiles compran en los locales (con su lógica de compra) y atienden la caja.
             var shoppers = manifest.characters.Where(c => civilians.Contains(c.id)).Select(c => PedestrianPrefabFactory.MakePrefab(folder, c)).ToArray();
             return (roles, shoppers.Select((actor, index) => Walker(folder, civilians[index], actor)).ToArray(), civilians.Select(id => AssetDatabase.LoadAssetAtPath<GameObject>(Model(folder, id))).ToArray(), shoppers,
-                    Sentry(folder, Sentries[0]), Sentry(folder, Sentries[1]));
+                    // El guardia defiende su local (Task 14); si faltan sus clips queda de adorno. El policía de la comisaría es de puesto fijo.
+                    GuardAssets.MakeGuard(folder, Sentries[0]) ?? Sentry(folder, Sentries[0]), Sentry(folder, Sentries[1]));
         }
 
         private static string Model(string folder, string id) => folder + "/Art/Characters/" + id + ".fbx";

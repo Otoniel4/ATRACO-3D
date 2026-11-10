@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Alarma.AI.Reactions
 {
     // Posturas del doble de reacción; cada una es un estado del Animator con el mismo nombre (NpcReactionAssets).
-    public enum ReactionPose { Quieto = 0, Correr = 1, Caminar = 2, Suplicar = 3, Rendido = 4, Amarrado = 5, LevantarseEspalda = 6, LevantarseBoca = 7, Grabar = 8 }
+    public enum ReactionPose { Quieto = 0, Correr = 1, Caminar = 2, Suplicar = 3, Rendido = 4, Amarrado = 5, LevantarseEspalda = 6, LevantarseBoca = 7, Grabar = 8, Llamar = 9, Sorprendido = 10, GrabarAgachado = 11 }
 
     // Único componente que cambia el Animator del doble: pide la postura con el parámetro «Reaccion». Así NetworkAnimator
     // podrá sincronizarla cuando llegue la red.

@@ -1,3 +1,5 @@
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Alarma.Animation;
@@ -5,6 +7,7 @@ using Alarma.Core.Contracts;
 using Alarma.Core.Editor;
 using Alarma.Core.Settings;
 using Alarma.Player.Editor;
+using Alarma.Player.Health;
 using Alarma.Player.Items;
 using Alarma.UI.Hud;
 using Alarma.UI.Map;
@@ -14,7 +17,7 @@ namespace Alarma.City.Playtest.Editor
     // Arma el jugador de prueba sobre cualquier ciudad que cumpla IPlayableWorld: controles, cuerpo, cámara, roles, inventario, mapa, menú e interfaz.
     public static class ReviewPlayerRig
     {
-        public sealed class Parts{public ReviewInput Input;public ReviewPlayerMotor Player;public ReviewCamera Camera;public ReviewCharacterView Character;public PlayerInventory Inventory;public ItemUser Items;}
+        public sealed class Parts{public ReviewInput Input;public ReviewPlayerMotor Player;public ReviewCamera Camera;public ReviewCharacterView Character;public PlayerInventory Inventory;public ItemUser Items;public PlayerHealth Health;}
         public static Parts Create(IPlayableWorld world,Vector3 spawn,GameObject[] roles,float farClip,GameSettings settings)
         {
             var input=new GameObject("Controles de la prueba").AddComponent<ReviewInput>();
@@ -34,7 +37,18 @@ namespace Alarma.City.Playtest.Editor
             var user=playerObject.AddComponent<ItemUser>();user.Configure(inventory,held,input,cameraObject.transform);
             playerObject.AddComponent<ItemActionAnimator>().Configure(user,character);
             playerObject.AddComponent<ReviewInventoryControls>().Configure(input,inventory,user,cameraRig,player);
-            return new Parts{Input=input,Player=player,Camera=cameraRig,Character=character,Inventory=inventory,Items=user};
+            // Vida (Task 18 y 19): la policía lo encuentra por el conjunto de sospechosos; derribado o arrestado no se mueve.
+            var chest=new GameObject("Punto de detección").transform;chest.SetParent(playerObject.transform,false);chest.localPosition=new Vector3(0,1.25f,0);
+            var health=playerObject.AddComponent<PlayerHealth>();health.Configure(HealthAssets.Settings(),EventAssets.Suspects(),chest);
+            playerObject.AddComponent<ReviewPlayerLife>().Configure(health,player,user,character,roles.Select(DownClip).ToArray(),spawn);
+            return new Parts{Input=input,Player=player,Camera=cameraRig,Character=character,Inventory=inventory,Items=user,Health=health};
+        }
+        // Clip de caída («Death») del modelo de un rol; null si no lo trae (entonces queda quieto sin caer).
+        private static AnimationClip DownClip(GameObject role)
+        {
+            var skin=role!=null?role.GetComponentInChildren<SkinnedMeshRenderer>(true):null;
+            string model=skin!=null && skin.sharedMesh!=null?AssetDatabase.GetAssetPath(skin.sharedMesh):null;
+            return string.IsNullOrEmpty(model)?null:AssetDatabase.LoadAllAssetsAtPath(model).OfType<AnimationClip>().FirstOrDefault(c=>c.name=="Death" || c.name.EndsWith("|Death",System.StringComparison.Ordinal));
         }
         public static ReviewInterface CreateInterface(Parts rig,IPlayableWorld world,ReviewDoorInteraction doors,CityMapDefinition map,GameSettings settings)
         {
@@ -48,6 +62,9 @@ namespace Alarma.City.Playtest.Editor
             items.AddComponent<CrosshairView>().Configure(rig.Items);
             // Aviso en pantalla cuando un testigo termina de llamar a la policía.
             items.AddComponent<CrimeAlertView>().Configure(EventAssets.CrimeReports());
+            // Vida del jugador y avisos de la policía (cuenta regresiva, llegada y retirada).
+            items.AddComponent<HealthView>().Configure(rig.Health);
+            items.AddComponent<PoliceAlertView>().Configure(EventAssets.PoliceResponse());
             var backpack=items.AddComponent<InventoryScreen>();backpack.Configure(rig.Inventory);
             var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause,backpack,hotbar);
             return ui;

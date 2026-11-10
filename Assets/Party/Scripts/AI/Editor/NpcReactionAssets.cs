@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
 using Alarma.AI.Reactions;
 using Alarma.Core.Editor;
@@ -21,6 +20,12 @@ namespace Alarma.AI.Editor
         private const string ManifestPath = Folder + "/npc_reaction_clips.json";
         private const string SettingsPath = "Assets/Party/Data/NPC/ReaccionesCiviles.asset";
         private const int NpcLayer = 29;
+        private const string PhoneFolder = "Assets/Party/Art/Props";
+        // Agarres del celular (mismos valores que GRIPS en build_npc_reaction_clips.py): centro desde la muñeca hacia los
+        // dedos, fuera de la palma y hacia el índice. Al grabar va de pie entre los dedos y el pulgar; al hablar, a lo
+        // largo de la palma. Las manos del elenco son grandes: se agranda un poco.
+        private static readonly Vector3 FilmGrip = new Vector3(.128f, .055f, .045f), CallGrip = new Vector3(.13f, .028f, .03f);
+        private const float PhoneScale = 1.15f;
 
         public static void Prepare(string output, IEnumerable<GameObject> civilianPrefabs)
         {
@@ -107,7 +112,9 @@ namespace Alarma.AI.Editor
                     var clip = packClips.TryGetValue(entry.id, out var found) ? found : throw new InvalidOperationException("Falta el clip " + entry.id + " en " + source);
                     motions[pose] = ClipRemapper.Remap(clip, animator.transform, rootBone, folder + "/" + entry.id + ".anim", entry.loop);
                 }
-                animator.runtimeAnimatorController = Controller(folder + "/Reaccion_" + id + ".controller", motions);
+                // Levantarse entra sin transición: la mezcla desde la caída la hace NpcRagdoll.
+                animator.runtimeAnimatorController = PoseController.Create(folder + "/Reaccion_" + id + ".controller", NpcReactionAnimator.Parameter, motions,
+                    ReactionPose.Quieto, pose => pose == ReactionPose.LevantarseEspalda || pose == ReactionPose.LevantarseBoca);
                 // Cuerpo con física armado sobre el reposo: las articulaciones nacen con el cuerpo de pie y los brazos abajo.
                 Own("Idle").SampleAnimation(animator.gameObject, 0f);
                 var ragdoll = root.AddComponent<NpcRagdoll>();
@@ -116,21 +123,58 @@ namespace Alarma.AI.Editor
                 poses.Configure(animator);
                 var motor = root.AddComponent<NpcFleeMotor>();
                 var reactions = root.AddComponent<NpcReactions>();
-                reactions.Configure(settings, noise, poses, motor, ragdoll, reports, MakePhone(root, animator, rootBone));
+                reactions.Configure(settings, noise, poses, motor, ragdoll, reports, MakePhone(root, animator, rootBone, id));
                 return PrefabUtility.SaveAsPrefabAsset(root, output + "/Prefabs/Reaccion_" + id + ".prefab").GetComponent<NpcReactions>();
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
-        // Celular en la mano derecha y barra de la llamada sobre la cabeza del testigo, apagados hasta que grabe
-        // (WitnessPhone). Se arma con el cuerpo en reposo: el celular queda a lo largo de la mano.
-        private static WitnessPhone MakePhone(GameObject root, Animator animator, Transform rootBone)
+        // Celular en la mano derecha (modelo de build_npc_phone.py, con la funda de un color por personaje) y barra de la
+        // llamada sobre la cabeza del testigo, apagados hasta que grabe (WitnessPhone). Sus dos agarres siguen la misma
+        // regla que los clips Grabar y Llamar (build_npc_reaction_clips.py): los ejes de la mano salen de la muñeca y los
+        // nudillos, y los dedos de los clips cierran alrededor de ese lugar.
+        private static WitnessPhone MakePhone(GameObject root, Animator animator, Transform rootBone, string id)
         {
             Transform Bone(string name) => rootBone.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == name)
                                            ?? throw new InvalidOperationException("Falta el hueso " + name + " en " + animator.name);
-            GameObject Shape(PrimitiveType type, string name, Material material)
+            Transform wrist = Bone("Wrist.R");
+            // Los huesos «2» de cada dedo nacen en los nudillos.
+            Vector3 along = (Bone("Middle2.R").position - wrist.position).normalized;
+            Vector3 across = (Bone("Index2.R").position - Bone("Pinky2.R").position).normalized;
+            Vector3 palm = Vector3.Cross(along, across).normalized;
+            if (Vector3.Dot(palm, -animator.transform.right) < 0f) palm = -palm; // en reposo la palma derecha mira al cuerpo
+            var manifest = JsonUtility.FromJson<PhoneManifest>(File.ReadAllText(PhoneFolder + "/Prop_NpcPhone.json"));
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(PhoneFolder + "/" + manifest.model) ?? throw new FileNotFoundException("Falta el celular (build_npc_phone.py)", manifest.model);
+            var phone = new GameObject("Celular") { layer = NpcLayer };
+            phone.transform.SetParent(wrist, true);
+            // Lugar del celular respecto de la muñeca: pantalla (+Z del modelo) hacia «screen» y borde de arriba (+Y) hacia «up».
+            Pose Grip(Vector3 offset, Vector3 screen, Vector3 up)
             {
-                var shape = GameObject.CreatePrimitive(type);
+                phone.transform.SetPositionAndRotation(wrist.position + along * offset.x + palm * offset.y + across * offset.z, Quaternion.LookRotation(screen, up));
+                return new Pose(phone.transform.localPosition, phone.transform.localRotation);
+            }
+            Pose call = Grip(CallGrip, palm, along);    // hablar: sobre la palma, a lo largo de la mano
+            Pose film = Grip(FilmGrip, -along, across); // grabar: de pie, pantalla hacia la muñeca, arriba hacia el índice
+            Vector3 scale = wrist.lossyScale;
+            phone.transform.localScale = new Vector3(PhoneScale / scale.x, PhoneScale / scale.y, PhoneScale / scale.z);
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            model.transform.SetParent(phone.transform, false);
+            int tint = (id.Aggregate(17, (hash, letter) => unchecked(hash * 31 + letter)) & int.MaxValue) % Math.Max(1, manifest.cases.Length);
+            foreach (var renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                renderer.gameObject.layer = NpcLayer;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.sharedMaterials = renderer.sharedMaterials.Select(source =>
+                {
+                    var entry = manifest.materials.FirstOrDefault(m => source != null && m.name == source.name);
+                    if (entry == null) return source;
+                    bool isCase = entry.name == manifest.caseMaterial && manifest.cases.Length > 0;
+                    return Flat(isCase ? entry.name + "_" + tint : entry.name, Hex(isCase ? manifest.cases[tint] : entry.color), entry.unlit);
+                }).ToArray();
+            }
+            GameObject Quad(string name, Material material)
+            {
+                var shape = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 shape.name = name;
                 UnityEngine.Object.DestroyImmediate(shape.GetComponent<Collider>());
                 var renderer = shape.GetComponent<MeshRenderer>();
@@ -138,63 +182,43 @@ namespace Alarma.AI.Editor
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 return shape;
             }
-            Transform wrist = Bone("Wrist.R"), forearm = Bone("LowerArm.R");
-            Vector3 along = (wrist.position - forearm.position).normalized;
-            var dark = Flat("Testigo_Celular", new Color(.08f, .09f, .11f));
-            var phone = Shape(PrimitiveType.Cube, "Celular", dark);
-            phone.layer = NpcLayer;
-            phone.transform.SetPositionAndRotation(wrist.position + along * .1f, Quaternion.LookRotation(animator.transform.right, along));
-            phone.transform.SetParent(wrist, true);
-            Vector3 scale = wrist.lossyScale;
-            phone.transform.localScale = new Vector3(.075f / scale.x, .15f / scale.y, .012f / scale.z);
             const float width = .5f;
             var bar = new GameObject("Llamada");
             bar.transform.SetParent(root.transform, false);
             bar.transform.localPosition = new Vector3(0f, 2.05f, 0f);
-            var back = Shape(PrimitiveType.Quad, "Fondo", dark);
+            var back = Quad("Fondo", Flat("Testigo_Celular", new Color(.08f, .09f, .11f)));
             back.transform.SetParent(bar.transform, false);
             back.transform.localScale = new Vector3(width + .04f, .09f, 1f);
-            var fill = Shape(PrimitiveType.Quad, "Avance", Flat("Testigo_Barra", new Color(.95f, .2f, .15f)));
+            var fill = Quad("Avance", Flat("Testigo_Barra", new Color(.95f, .2f, .15f)));
             fill.transform.SetParent(bar.transform, false);
             fill.transform.localScale = new Vector3(0f, .055f, 1f);
             phone.SetActive(false);
             bar.SetActive(false);
             var view = root.AddComponent<WitnessPhone>();
-            view.Configure(phone, bar.transform, fill.transform, width);
+            view.Configure(phone, bar.transform, fill.transform, width, film, call);
             return view;
         }
 
-        // Material de color plano sin luz (Data/NPC): se crea una vez y lo comparten todos los dobles.
-        private static Material Flat(string name, Color color)
+        private static Color Hex(string value) => ColorUtility.TryParseHtmlString("#" + value, out var color) ? color : Color.magenta;
+
+        // Material de color plano (Data/NPC), sin luz o con ella: se crea una vez y lo comparten todos los dobles.
+        private static Material Flat(string name, Color color, bool unlit = true)
         {
             string path = "Assets/Party/Data/NPC/" + name + ".mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null) return material;
-            material = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { color = color };
-            AssetDatabase.CreateAsset(material, path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find(unlit ? "Universal Render Pipeline/Unlit" : "Universal Render Pipeline/Lit"));
+                if (!unlit) material.SetFloat("_Smoothness", .25f);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            if (material.color != color) { material.color = color; EditorUtility.SetDirty(material); } // sigue al json del modelo
             return material;
         }
 
-        // Un estado por postura (mismo nombre que ReactionPose); entra cuando «Reaccion» vale su número. Levantarse entra
-        // sin transición: la mezcla desde la caída la hace NpcRagdoll.
-        private static AnimatorController Controller(string path, Dictionary<ReactionPose, Motion> motions)
-        {
-            var controller = AnimatorController.CreateAnimatorControllerAtPath(path);
-            controller.AddParameter(NpcReactionAnimator.Parameter, AnimatorControllerParameterType.Int);
-            var machine = controller.layers[0].stateMachine;
-            foreach (ReactionPose pose in Enum.GetValues(typeof(ReactionPose)))
-            {
-                if (!motions.TryGetValue(pose, out var motion)) throw new InvalidOperationException("Falta el clip de la postura " + pose);
-                var state = machine.AddState(pose.ToString());
-                state.motion = motion;
-                if (pose == ReactionPose.Quieto) machine.defaultState = state;
-                bool getUp = pose == ReactionPose.LevantarseEspalda || pose == ReactionPose.LevantarseBoca;
-                var enter = machine.AddAnyStateTransition(state);
-                enter.hasExitTime = false; enter.duration = getUp ? 0f : .2f; enter.canTransitionToSelf = false;
-                enter.AddCondition(AnimatorConditionMode.Equals, (int)pose, NpcReactionAnimator.Parameter);
-            }
-            return controller;
-        }
+        // Forma de Prop_NpcPhone.json.
+        [Serializable] private sealed class PhoneManifest { public string model = "", caseMaterial = ""; public string[] cases = Array.Empty<string>(); public PhoneMaterial[] materials = Array.Empty<PhoneMaterial>(); }
+        [Serializable] private sealed class PhoneMaterial { public string name = "", color = ""; public bool unlit; }
 
         // Forma de npc_reaction_clips.json.
         [Serializable] private sealed class ClipManifest { public FileEntry[] files = Array.Empty<FileEntry>(); public RoleEntry[] roles = Array.Empty<RoleEntry>(); public ClipEntry[] clips = Array.Empty<ClipEntry>(); }

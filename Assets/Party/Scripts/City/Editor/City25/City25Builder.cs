@@ -12,6 +12,7 @@ using Alarma.Core.Settings;
 using Alarma.City.Playtest;
 using Alarma.City.Playtest.Editor;
 using Alarma.AI.Editor;
+using Alarma.Police.Editor;
 
 namespace Alarma.City.Editor
 {
@@ -19,7 +20,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-40"; // Puestos alcanzables y traspasos condicionados al contacto real.
+        private const string Version = "ciudad25-43"; // NPC que rodean los objetos (buscador de caminos) y cámaras de seguridad.
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -74,6 +75,10 @@ namespace Alarma.City.Editor
                 doors.Configure(rig.Input, rig.Player.transform, hinged, sliding);
                 foreach (var shop in shops) shop.Traffic.ConfigureBlocker(rig.Player.transform);
                 int sentries = City25Security.Place(world, guard, police);
+                // Policía a pie (Task 19): prefab del agente y central que responde a las denuncias.
+                PoliceAssets.Install(output);
+                // Cámaras de seguridad en los locales (Task 15): ven a quien lleva un arma en la mano y avisan.
+                int cameras = City25Cameras.Place(world);
                 var life = City25Paths.Read<CityLife>(City25Paths.Plan + "/city_life.json");
                 var signals = City25Life.Signals(life, world.Signals);
                 City25Life.Pedestrians(output, life, signals, walkers, rig.Player.transform, shops, ShopperSettings());
@@ -88,7 +93,7 @@ namespace Alarma.City.Editor
                 var record = new City25Record { complete = true, version = Version + "|" + stamp, scene = recovery.ScenePath, objects = world.Placed, sectors = world.Sectors.Length, places = map.Places.Length };
                 recovery.Publish(JsonUtility.ToJson(record, true));
                 SelectBuildScene(recovery.ScenePath);
-                Debug.Log($"Alarma: ciudad 2 × 2 km lista con {world.Placed} objetos en {world.Sectors.Length} sectores, {signals.Count} semáforos con ciclo, peatones en las aceras, autos con conductor, {shops.Length} locales con interior, {sentries} guardias y policías y {map.Places.Length} lugares en el mapa. Inicio en el escondite; M: mapa, Esc: menú.");
+                Debug.Log($"Alarma: ciudad 2 × 2 km lista con {world.Placed} objetos en {world.Sectors.Length} sectores, {signals.Count} semáforos con ciclo, peatones en las aceras, autos con conductor, {shops.Length} locales con interior, {sentries} guardias y policías, {cameras} cámaras y {map.Places.Length} lugares en el mapa. Inicio en el escondite; M: mapa, Esc: menú.");
                 StartPlay();
             }
             catch (Exception error)
@@ -185,7 +190,7 @@ namespace Alarma.City.Editor
         // El código de los componentes que el constructor arma y guarda en la escena (jugador, inventario e interfaz):
         // si cambia, la escena guardada queda vieja y hay que prepararla otra vez.
         private static readonly string[] RigScripts = { "Assets/Party/Scripts/Player", "Assets/Party/Scripts/UI", "Assets/Party/Scripts/City/PlaytestR7", "Assets/Party/Scripts/City/Editor/PlaytestR7", "Assets/Party/Scripts/Animation",
-                                                            "Assets/Party/Scripts/AI/Reactions", "Assets/Party/Scripts/AI/Editor", "Assets/Party/Scripts/AI/CityLifeR5" };
+                                                            "Assets/Party/Scripts/AI/Reactions", "Assets/Party/Scripts/AI/Editor", "Assets/Party/Scripts/AI/CityLifeR5", "Assets/Party/Scripts/AI/Security", "Assets/Party/Scripts/AI/Pathing", "Assets/Party/Scripts/Police" };
         private const string ActionClips = "Assets/Party/Art/Characters/Animations";
 
         private static string ModelHash(string path)

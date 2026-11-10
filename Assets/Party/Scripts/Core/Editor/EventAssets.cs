@@ -2,35 +2,36 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 using Alarma.Core.Events;
+using Alarma.Core.Sets;
 
 namespace Alarma.Core.Editor
 {
-    // Canales de eventos compartidos (Data/Events): los crea una vez y todos los sistemas usan el mismo asset.
+    // Canales de eventos y conjuntos compartidos (Data/Events): los crea una vez y todos los sistemas usan el mismo asset.
     public static class EventAssets
     {
-        private const string NoisePath = "Assets/Party/Data/Events/Ruido.asset";
-        private const string ReportsPath = "Assets/Party/Data/Events/Denuncias.asset";
+        private const string Folder = "Assets/Party/Data/Events/";
 
-        // Denuncias de los testigos: las oye el aviso en pantalla (y más adelante la policía y el nivel de búsqueda).
-        public static CrimeReportChannel CrimeReports()
-        {
-            var channel = AssetDatabase.LoadAssetAtPath<CrimeReportChannel>(ReportsPath);
-            if (channel != null) return channel;
-            Directory.CreateDirectory(Path.GetDirectoryName(ReportsPath));
-            channel = ScriptableObject.CreateInstance<CrimeReportChannel>();
-            AssetDatabase.CreateAsset(channel, ReportsPath);
-            return channel;
-        }
+        // Denuncias de los testigos: las oyen el aviso en pantalla y la central de policía.
+        public static CrimeReportChannel CrimeReports() => LoadOrCreate<CrimeReportChannel>("Denuncias");
 
         // Ruido de disparos y estallidos: lo avisan las armas y lo oyen los civiles (y más adelante guardias y alerta).
-        public static NoiseChannel Noise()
+        public static NoiseChannel Noise() => LoadOrCreate<NoiseChannel>("Ruido");
+
+        // Respuesta policial: cuenta regresiva, llegada y retirada.
+        public static PoliceResponseChannel PoliceResponse() => LoadOrCreate<PoliceResponseChannel>("RespuestaPolicial");
+
+        // A quiénes puede buscar la policía (los jugadores se anotan solos).
+        public static SuspectSet Suspects() => LoadOrCreate<SuspectSet>("Sospechosos");
+
+        private static T LoadOrCreate<T>(string name) where T : ScriptableObject
         {
-            var channel = AssetDatabase.LoadAssetAtPath<NoiseChannel>(NoisePath);
-            if (channel != null) return channel;
-            Directory.CreateDirectory(Path.GetDirectoryName(NoisePath));
-            channel = ScriptableObject.CreateInstance<NoiseChannel>();
-            AssetDatabase.CreateAsset(channel, NoisePath);
-            return channel;
+            string path = Folder + name + ".asset";
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset != null) return asset;
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            asset = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            return asset;
         }
     }
 }

@@ -21,12 +21,28 @@ namespace Alarma.AI.Reactions
         public float FrontAngle { get; private set; } = 70f;
         [field: SerializeField, Tooltip("Hasta dónde se oye el grito de alguien a quien le apuntan: los civiles cercanos reaccionan.")]
         public float AimAlarmRadius { get; private set; } = 22f;
-        [field: SerializeField, Range(0f, 1f), Tooltip("Probabilidad de que un civil que no se acobarda grabe y llame a la policía en vez de huir.")]
-        public float WitnessChance { get; private set; } = .4f;
+        [field: SerializeField, Range(0f, 1f), Tooltip("Probabilidad de que un civil que está en la calle y no se acobarda grabe y llame a la policía en vez de huir.")]
+        public float WitnessChance { get; private set; } = .7f;
+        [field: SerializeField, Range(0f, 1f), Tooltip("Lo mismo para quien está dentro de un local: el cliente sale corriendo y graba ya afuera; el agachado (personal) graba a escondidas cuando no lo miran.")]
+        public float IndoorWitnessChance { get; private set; } = .3f;
+        [field: SerializeField, Tooltip("Segundos de sorpresa mirando el atraco antes de grabar o huir.")]
+        public float StartleSeconds { get; private set; } = 1.2f;
+        [field: SerializeField, Tooltip("Segundos seguidos sin que la amenaza lo mire para animarse a sacar el celular estando agachado.")]
+        public float DistractedSeconds { get; private set; } = 2.5f;
+        [field: SerializeField, Tooltip("Ángulo desde el frente de la amenaza a partir del cual ya no lo está mirando.")]
+        public float DistractedAngle { get; private set; } = 70f;
+        [field: SerializeField, Tooltip("El personal sigue agachado en su puesto mientras la amenaza esté a menos de esta distancia.")]
+        public float StaffStayDistance { get; private set; } = 15f;
         [field: SerializeField, Tooltip("Distancia mínima a la amenaza para animarse a grabar; si la amenaza se acerca a la mitad, corta y huye.")]
-        public float WitnessMinDistance { get; private set; } = 10f;
+        public float WitnessMinDistance { get; private set; } = 7f;
         [field: SerializeField, Tooltip("Segundos que tarda la llamada a la policía (la barra sobre el testigo).")]
         public float CallSeconds { get; private set; } = 8f;
+        [field: SerializeField, Range(0f, 1f), Tooltip("Parte de la llamada que pasa grabando con el celular en alto; el resto lo tiene en la oreja.")]
+        public float FilmShare { get; private set; } = .45f;
+        [field: SerializeField, Tooltip("Dentro de un local, si el camino a la salida mide más que esto (está al fondo), no corre: se queda agachado.")]
+        public float MaxEscapePath { get; private set; } = 30f;
+        [field: SerializeField, Tooltip("Tampoco corre si ese camino pasa a menos de esta distancia de la amenaza (le tapa la salida).")]
+        public float ExitClearance { get; private set; } = 2f;
         [field: SerializeField] public float RunSpeed { get; private set; } = 4.6f;
         [field: SerializeField] public float WalkSpeed { get; private set; } = 1.5f;
         [field: SerializeField, Tooltip("Segundos corriendo antes de seguir caminando lejos.")]
