@@ -6,12 +6,13 @@ namespace Alarma.AI.Reactions
 {
     // Por dónde se escapa de un local. Si el civil está dentro de uno (pisa su suelo o está bajo su techo), busca un
     // camino por la red de pasillos que el local ya usa para sus clientes (TrafficGraph, casillas de medio metro) desde
-    // donde está hasta la acera, pasando por la puerta y rodeando a la amenaza. Si la amenaza tapa todos los caminos,
-    // no hay salida y el civil se aleja por dentro. No busca locales por la escena: se lo pregunta al suelo que pisa.
+    // donde está hasta la acera, pasando por la puerta. Prefiere un camino que rodee a la amenaza; si la amenaza tapa
+    // todos (está parada en la puerta), sale igual por el más corto: quedarse encerrado adentro es peor. No busca
+    // locales por la escena: se lo pregunta al suelo que pisa.
     internal static class ShopEscape
     {
         private const int Structure = ~((1 << 28) | (1 << 29) | (1 << 30) | (1 << 31)); // sin autos, personajes ni interfaz
-        private const float JoinDistance = 2.5f; // hasta dónde busca la casilla de pasillo más cercana
+        private const float JoinDistance = 4f; // hasta dónde busca la casilla de pasillo más cercana
         private const float ThreatClearance = 3f; // casillas que evita alrededor de la amenaza
 
         public static bool TryFind(Vector3 position, Vector3 threat, out Vector3[] route, out ShopDoor door)
@@ -26,7 +27,7 @@ namespace Alarma.AI.Reactions
             int start = graph.Nearest(position, JoinDistance);
             int goal = graph.Nearest(shop.ExitRoute[shop.ExitRoute.Length - 1].position, JoinDistance);
             if (start < 0 || goal < 0) return false;
-            route = Path(graph, start, goal, threat);
+            route = Path(graph, start, goal, threat, ThreatClearance) ?? Path(graph, start, goal, threat, 0f);
             door = shop.Entrance;
             return route != null;
         }
@@ -40,8 +41,8 @@ namespace Alarma.AI.Reactions
             return null;
         }
 
-        // Camino más corto en casillas (búsqueda en anchura) sin pisar las que rodean a la amenaza.
-        private static Vector3[] Path(TrafficGraph graph, int start, int goal, Vector3 threat)
+        // Camino más corto en casillas (búsqueda en anchura) sin pisar las que están a menos de «clearance» de la amenaza.
+        private static Vector3[] Path(TrafficGraph graph, int start, int goal, Vector3 threat, float clearance)
         {
             var cameFrom = new int[graph.Count];
             for (int i = 0; i < cameFrom.Length; i++) cameFrom[i] = -1;
@@ -56,7 +57,7 @@ namespace Alarma.AI.Reactions
                     if (cameFrom[next] >= 0) continue;
                     Vector3 away = graph.Cells[next].Position - threat;
                     away.y = 0f;
-                    if (away.sqrMagnitude < ThreatClearance * ThreatClearance) continue;
+                    if (away.sqrMagnitude < clearance * clearance) continue;
                     cameFrom[next] = cell;
                     pending.Enqueue(next);
                 }

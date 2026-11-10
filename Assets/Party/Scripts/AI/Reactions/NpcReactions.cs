@@ -18,7 +18,7 @@ namespace Alarma.AI.Reactions
     //   queda amarrado.
     // - Un disparo o el táser lo tumban con física (NpcRagdoll); aturdido un rato, se levanta y se va.
     // - Huir: si está dentro de un local sigue un camino por sus pasillos hasta la puerta y la calle, rodeando a la
-    //   amenaza (ShopEscape), y recién ahí se aleja; si la amenaza tapa la salida, se aleja por dentro.
+    //   amenaza si puede (ShopEscape), y recién ahí se aleja.
     // Percepción (ruido, mira, golpes), decisión (aquí), movimiento (NpcFleeMotor), postura (NpcReactionAnimator) y
     // caída (NpcRagdoll) están separados.
     public sealed class NpcReactions : MonoBehaviour, IIntimidatable, IDamageable, IItemTarget, IUseAnchor
@@ -156,7 +156,7 @@ namespace Alarma.AI.Reactions
             timer = Random.Range(seconds.x, seconds.y);
         }
 
-        // Empieza a correr: dentro de un local, primero por un camino hasta la calle que no pase junto a la amenaza.
+        // Empieza a correr: dentro de un local, primero por un camino hasta la calle.
         private void RunAway()
         {
             exitDoor = null;
