@@ -47,7 +47,7 @@ namespace Alarma.Police
 
         [field: Header("Caída")]
         [field: SerializeField, Tooltip("Segundos en el suelo tras recibir un disparo (al azar entre los dos).")]
-        public Vector2 StunSeconds { get; private set; } = new Vector2(7f, 10f);
+        public Vector2 StunSeconds { get; private set; } = new Vector2(10f, 10f);
         [field: SerializeField, Tooltip("Empujón del disparo (impulso, kg·m/s): exagerado a propósito, la caída es cómica.")]
         public float HitImpulse { get; private set; } = 150f;
         [field: SerializeField, Tooltip("Cuánto del empujón va hacia arriba.")]

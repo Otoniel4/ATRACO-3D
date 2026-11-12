@@ -9,7 +9,7 @@ namespace Alarma.Player.Health
     {
         [field: SerializeField, Min(1f)] public float MaxHealth { get; private set; } = 100f;
         [field: SerializeField, Tooltip("Segundos derribado antes de levantarse solo si nadie lo arresta (el rescate de un compañero llega con la red).")]
-        public float DownedSeconds { get; private set; } = 30f;
+        public float DownedSeconds { get; private set; } = 10f;
         [field: SerializeField, Tooltip("Vida con que se levanta después de estar derribado.")]
         public float RecoverHealth { get; private set; } = 25f;
         [field: SerializeField, Tooltip("Segundos detenido antes de volver al escondite (la cárcel y la fianza son de Task 20).")]

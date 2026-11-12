@@ -27,7 +27,9 @@ namespace Alarma.AI.CityLife.Editor
                 var state=graph.AddState(name);state.motion=Clip(name);
                 if(name=="CarryWalk")
                 {
-                    var holding=new BlendTree{name="Quieto o caminar con compra",blendType=BlendTreeType.Simple1D,blendParameter="Speed",useAutomaticThresholds=false};AssetDatabase.AddObjectToAsset(holding,controller);holding.AddChild(Clip("Idle"),0);holding.AddChild(Clip("CarryWalk"),1.6f);var motions=holding.children;motions[1].timeScale=1.6f;holding.children=motions;state.motion=holding;
+                    var holding=new BlendTree{name="Quieto o caminar con compra",blendType=BlendTreeType.Simple1D,blendParameter="Speed",useAutomaticThresholds=false};AssetDatabase.AddObjectToAsset(holding,controller);holding.AddChild(Clip("Idle"),0);
+                    // Con la biblioteca de locomoción, llevar la bolsa usa su caminar real; el clip propio da zancadas de un metro.
+                    bool real=better?.Invoke("Walk")!=null;holding.AddChild(Clip(real?"Walk":"CarryWalk"),1.6f);var motions=holding.children;motions[1].timeScale=real?1f:1.6f;holding.children=motions;state.motion=holding;
                 }
                 var transition=graph.AddAnyStateTransition(state);transition.hasExitTime=false;transition.duration=.12f;transition.canTransitionToSelf=false;
                 if(name=="Pay"){transition.AddCondition(AnimatorConditionMode.If,0,"Pay");continue;}

@@ -17,6 +17,7 @@ namespace Alarma.Player.Items
         {
             Inventory = new Inventory(rules);
             if (loadout != null) loadout.ApplyTo(Inventory);
+            Inventory.Holster(); // la partida empieza con las manos libres: el arma se saca con su tecla
         }
     }
 }

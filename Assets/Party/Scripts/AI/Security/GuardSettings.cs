@@ -32,7 +32,7 @@ namespace Alarma.AI.Security
 
         [field: Header("Caída")]
         [field: SerializeField, Tooltip("Segundos inconsciente tras recibir un disparo (al azar entre los dos).")]
-        public Vector2 StunSeconds { get; private set; } = new Vector2(8f, 12f);
+        public Vector2 StunSeconds { get; private set; } = new Vector2(10f, 10f);
         [field: SerializeField, Tooltip("Empujón del disparo (impulso, kg·m/s).")]
         public float HitImpulse { get; private set; } = 70f;
         [field: SerializeField, Tooltip("Duración del clip de levantarse.")]

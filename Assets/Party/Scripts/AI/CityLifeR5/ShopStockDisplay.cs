@@ -5,7 +5,8 @@ namespace Alarma.AI.CityLife
     public sealed class ShopStockDisplay:MonoBehaviour
     {
         private ShopActivity shop;private GameObject[] displayed;
-        public void Configure(ShopActivity target){shop=target;displayed=new GameObject[shop.StationCount];}
+        private int[] generations;
+        public void Configure(ShopActivity target){shop=target;displayed=new GameObject[shop.StationCount];generations=new int[shop.StationCount];}
         private void Start(){if(shop==null)Configure(GetComponent<ShopActivity>());Refill();}
         public GameObject Claim(ShoppingSession session)
         {
@@ -20,8 +21,11 @@ namespace Alarma.AI.CityLife
         private GameObject MakeProduct(int station)
         {
             var anchor=shop.ProductPoint(station);
-            var item=Instantiate(shop.Tasks.ProductPrefab,anchor);
-            var parts=shop.Tasks.Animation!=null?shop.Tasks.Animation.ProductParts:null;
+            var catalog=shop.Tasks.Products;
+            var definition=catalog!=null && catalog.Length>0 ? catalog[(station+generations[station]++)%catalog.Length] : null;
+            var item=Instantiate(definition!=null?definition.Model:shop.Tasks.ProductPrefab,anchor);
+            if(definition!=null)item.AddComponent<ShopProductInstance>().Definition=definition;
+            var parts=definition==null && shop.Tasks.Animation!=null?shop.Tasks.Animation.ProductParts:null;
             Bounds bounds=default;bool found=false;
             foreach(var renderer in item.GetComponentsInChildren<Renderer>(true))
             {
@@ -31,7 +35,8 @@ namespace Alarma.AI.CityLife
                 if(!selected)continue;
                 if(found)bounds.Encapsulate(renderer.bounds);else {bounds=renderer.bounds;found=true;}
             }
-            if(found)item.transform.position+=anchor.position-new Vector3(bounds.center.x,bounds.min.y,bounds.center.z);
+            if(definition!=null)item.transform.position=anchor.position-anchor.rotation*definition.Support;
+            else if(found)item.transform.position+=anchor.position-new Vector3(bounds.center.x,bounds.min.y,bounds.center.z);
             return item;
         }
         private void LateUpdate()=>Refill();

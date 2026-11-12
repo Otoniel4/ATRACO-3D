@@ -88,6 +88,14 @@ namespace Alarma.Player.Items
             SelectionChanged?.Invoke(slot);
         }
 
+        // Guarda lo que haya en la mano sin cambiar de espacio (así empieza la partida: manos libres).
+        public void Holster()
+        {
+            if (Holstered) return;
+            Holstered = true;
+            SelectionChanged?.Invoke(Selected);
+        }
+
         // Rueda del mouse: pasa al espacio siguiente o anterior, dando la vuelta, y saca lo que haya.
         public void Cycle(int direction)
         {

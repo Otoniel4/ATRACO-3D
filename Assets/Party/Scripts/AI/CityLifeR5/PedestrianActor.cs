@@ -23,6 +23,8 @@ namespace Alarma.AI.CityLife
         private const float PalmOnPlate = .03f;
         private readonly DoorCrossing crossing = new DoorCrossing();
         private bool doorReported;
+        private CommerceSupportHand doorLeft;
+        private bool UsesCatalog => shop != null && shop.Tasks.Products != null && shop.Tasks.Products.Length > 0 && !shop.Tasks.IsWithdrawal;
         [SerializeField] private PedestrianState visibleState;
         [SerializeField] private int walletCents;
         public void ConfigureGrip(Transform hand){grip=hand;}
@@ -81,7 +83,7 @@ namespace Alarma.AI.CityLife
             contactWait = shopping.WaitingForContact ? contactWait + Time.deltaTime : 0f;
             if (contactWait > 10f)
             {
-                Debug.LogWarning($"Contacto bloqueado en {shop.Tasks.ShopId}, caja {routine.Lane}, estado {routine.State}. Se cancela la visita sin dejar la fila bloqueada.", this);
+                Debug.LogWarning($"Contacto bloqueado en {shop.Tasks.ShopId}, caja {routine.Lane}, estado {routine.State}: {shopping.ContactDescription}. Se cancela la visita sin dejar la fila bloqueada.", this);
                 routine.CancelInteraction();
                 shopping.ResetView();
                 contactWait = 0f;
@@ -92,20 +94,26 @@ namespace Alarma.AI.CityLife
             var frame = exchange.Frame(routine);
             LookAtTask(exchange);
             // En el mostrador da medio paso adelante para alcanzar sin estirarse de más.
-            if (frame.CustomerApproach) movement.ApproachDoor(exchange.LeanPoint(reach));
-            else if (routine.State == PedestrianState.PickingUp && routine.Session != null)
+            if (frame.CustomerApproach) movement.ApproachDoor(exchange.LeanPoint(reach, shopping.ProductGripOffset, shopping.TwoHands));
+            else if (routine.State == PedestrianState.PickingUp && routine.Session != null && !shopping.HasPickedUp)
             {
-                Vector3 product = shop.ProductPoint(routine.Session.Station).position;
+                Vector3 product = shopping.PickupContact ?? shop.ProductPoint(routine.Session.Station).position;
                 Vector3 toward = Vector3.ProjectOnPlane(product - transform.position, Vector3.up).normalized;
-                Vector3 stand = product - toward * .55f;
+                Vector3 stand = product - toward * .38f;
                 stand.y = transform.position.y;
-                movement.ApproachDoor(reach.AlignSurfaceStand(product, stand, toward));
+                movement.ApproachDoor(shopping.TwoHands ? stand : reach.AlignSurfaceStand(product, stand, toward));
             }
-            if (routine.Interaction) exchange.Drive(routine, frame, reach, Pocket, purchaseHand, shopping.CustomerContact, shopping.CashierContact, shopping.ProductGripHeight);
-            else if (routine.Carrying && !routine.HoldingBag)
+            if (routine.Interaction) exchange.Drive(routine, frame, reach, Pocket, purchaseHand, shopping.CustomerContact, shopping.CashierContact, shopping.ProductGripHeight, shopping.ProductGripOffset, shopping.CashierGripOffset, shopping.TwoHands);
+            else if (routine.Carrying && UsesCatalog && !shopping.TwoHands)
+            {
+                // Caminando con el producto en una mano: el brazo sigue el clip de caminar y la mano solo lo sujeta.
+                purchaseHand.Release();
+                reach.CarryRelaxed();
+            }
+            else if (routine.Carrying && (!routine.HoldingBag || UsesCatalog))
                 purchaseHand.Follow(reach, transform.TransformPoint(new Vector3(.24f, 1.22f, .28f)), 1.2f, .12f, !shop.Tasks.IsWithdrawal);
             else purchaseHand.Release();
-            presentation.Refresh(routine, movement.Speed);shopping.Refresh(routine, frame);
+            presentation.Refresh(routine, movement.Speed, !UsesCatalog);shopping.Refresh(routine, frame);
         }
 
         private void CheckEntryProgress()
@@ -138,10 +146,13 @@ namespace Alarma.AI.CityLife
         {
             get
             {
-                if (pocket != null) return pocket;
-                pocket = new GameObject("Bolsillo").transform;
-                pocket.SetParent(transform, false);
-                pocket.localPosition = new Vector3(.22f, .95f, .05f);
+                if (pocket == null)
+                {
+                    pocket = new GameObject("Bolsillo").transform;
+                    pocket.SetParent(transform, false);
+                }
+                // Donde la mano de este personaje llega sin doblar el cuerpo.
+                pocket.position = reach.PocketPoint;
                 return pocket;
             }
         }
@@ -168,10 +179,17 @@ namespace Alarma.AI.CityLife
             movement.Pin(true);
             if (action.Face) movement.Face(transform.position + doorFacing);
             bool stepping = action.Step && facing >= .9f && movement.ApproachDoor(stand);
-            if (action.Reach) reach.ReachSurface(doorTouch);
+            if (routine.Carrying && UsesCatalog)
+            {
+                purchaseHand.Follow(reach, transform.TransformPoint(new Vector3(.24f, 1.22f, .28f)), 1.2f, .12f);
+                if (doorLeft == null) doorLeft = GetComponent<CommerceSupportHand>() ?? gameObject.AddComponent<CommerceSupportHand>();
+                if (action.Reach) doorLeft.ReachSurface(doorTouch);
+                shopping.Refresh(routine, shop.ExchangeFor(routine.Lane).Frame(routine));
+            }
+            else if (action.Reach) reach.ReachSurface(doorTouch);
             if (action.Push) shop.PushDoor(transform.position);
             ReportBlockedDoor(door);
-            presentation.Refresh(routine, stepping ? movement.Speed : 0f);
+            presentation.Refresh(routine, stepping ? movement.Speed : 0f, !UsesCatalog);
             return true;
         }
 
@@ -214,7 +232,9 @@ namespace Alarma.AI.CityLife
 
         // La palma está sobre la placa: la exigencia del brazo para superficies (8 mm) casi nunca se cumple y el empuje no
         // salía; a menos de PalmOnPlate la diferencia no se ve y la puerta se empuja.
-        private bool Touching() => reach.HasContact
+        private bool Touching() => routine.Carrying && UsesCatalog
+            ? doorLeft != null && doorTouch != null && doorLeft.Touches(doorTouch.position)
+            : reach.HasContact
             || (doorTouch != null && (reach.PalmPosition - doorTouch.position).sqrMagnitude < PalmOnPlate * PalmOnPlate);
 
         private void ReleaseDoor()

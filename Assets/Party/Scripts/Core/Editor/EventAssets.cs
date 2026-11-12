@@ -20,6 +20,9 @@ namespace Alarma.Core.Editor
         // Respuesta policial: cuenta regresiva, llegada y retirada.
         public static PoliceResponseChannel PoliceResponse() => LoadOrCreate<PoliceResponseChannel>("RespuestaPolicial");
 
+        // Alerta de los locales: nivel y sospecha; la oyen el medidor en pantalla y la alarma.
+        public static AlertChannel Alerts() => LoadOrCreate<AlertChannel>("Alerta");
+
         // A quiénes puede buscar la policía (los jugadores se anotan solos).
         public static SuspectSet Suspects() => LoadOrCreate<SuspectSet>("Sospechosos");
 

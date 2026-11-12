@@ -35,9 +35,10 @@ namespace Alarma.AI.CityLife.Editor
             // Árboles y plantas se mueven con el viento; un solo shader compartido por todos los materiales.
             Shader wind = AssetDatabase.LoadAssetAtPath<Shader>(WindShader) ?? throw new FileNotFoundException("Falta el shader de viento", WindShader);
             var materials = new Dictionary<string, Material>(StringComparer.OrdinalIgnoreCase);
+            var required = only == null ? null : new HashSet<string>(only.Select(n => entries.ContainsKey(n) ? n : BlenderAssetNames.BaseName(n)), StringComparer.OrdinalIgnoreCase);
             foreach (var e in entries.Values)
             {
-                if (only != null && !only.Contains(e.name)) continue;
+                if (required != null && !required.Contains(e.name)) continue;
                 bool plant = e.name.StartsWith("WindTree_", StringComparison.Ordinal) || e.name.StartsWith("WindPlant_", StringComparison.Ordinal);
                 string safe = string.Concat(e.name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
                 string path = folder + "/Materials/" + safe + ".mat";
@@ -60,6 +61,11 @@ namespace Alarma.AI.CityLife.Editor
                 if (created) AssetDatabase.CreateAsset(m, path); else EditorUtility.SetDirty(m);
                 materials[e.name] = m;
             }
+            // Un nombre explícito del manifiesto conserva su color; solo las copias sin entrada usan el original.
+            if (only != null)
+                foreach (string name in only)
+                    if (!materials.ContainsKey(name) && !entries.ContainsKey(name)
+                        && materials.TryGetValue(BlenderAssetNames.BaseName(name), out var original)) materials[name] = original;
             AssetDatabase.SaveAssets();
             return materials;
         }

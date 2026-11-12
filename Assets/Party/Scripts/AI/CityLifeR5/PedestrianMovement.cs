@@ -51,8 +51,9 @@ namespace Alarma.AI.CityLife
             wanted.y = 0;
             // Una celda mide 50 cm. El ajuste conserva la reserva y comprueba todo el barrido físico.
             wanted = Vector3.ClampMagnitude(wanted, .48f);
+            // A menos de 1,5 cm ya llegó: sin este margen, el vaivén del cuerpo en reposo lo hacía dar pasitos sin fin.
+            if ((wanted - doorOffset).sqrMagnitude < .015f * .015f) return false;
             Vector3 step = Vector3.ClampMagnitude(wanted - doorOffset, .75f * Time.deltaTime);
-            if (step.sqrMagnitude < .000001f) return false;
             Vector3 center = transform.TransformPoint(capsule.center);
             float radius = capsule.radius;
             float axis = Mathf.Max(0, capsule.height * .5f - radius);

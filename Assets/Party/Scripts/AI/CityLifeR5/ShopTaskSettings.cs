@@ -11,6 +11,7 @@ namespace Alarma.AI.CityLife
         public bool IsWithdrawal;
         public ShopAnimationProfile Animation;
         public GameObject ProductPrefab;
+        public ShopProductDefinition[] Products;
         public GameObject MoneyPrefab;
         public GameObject ReceiptPrefab;
     }

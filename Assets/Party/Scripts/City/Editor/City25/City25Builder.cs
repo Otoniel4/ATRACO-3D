@@ -20,7 +20,7 @@ namespace Alarma.City.Editor
     // Si nada cambió desde la última preparación, abre la escena guardada directamente.
     public static class City25Builder
     {
-        private const string Version = "ciudad25-43"; // NPC que rodean los objetos (buscador de caminos) y cámaras de seguridad.
+        private const string Version = "ciudad25-48"; // Palma hacia el objeto y poses de dedos por tipo de objeto.
         private const float ActiveRadius = 420f, FarClip = 450f;
         private static bool building;
 
@@ -79,6 +79,8 @@ namespace Alarma.City.Editor
                 PoliceAssets.Install(output);
                 // Cámaras de seguridad en los locales (Task 15): ven a quien lleva un arma en la mano y avisan.
                 int cameras = City25Cameras.Place(world);
+                // Alerta de cada local con cámaras: sigilo, sospecha, alarma, policía en camino y asalto.
+                City25Alerts.Place(world);
                 var life = City25Paths.Read<CityLife>(City25Paths.Plan + "/city_life.json");
                 var signals = City25Life.Signals(life, world.Signals);
                 City25Life.Pedestrians(output, life, signals, walkers, rig.Player.transform, shops, ShopperSettings());
@@ -180,9 +182,12 @@ namespace Alarma.City.Editor
         {
             City25Paths.Plan + "/city_objects.json", City25Paths.Plan + "/city_life.json", City25Paths.Plan + "/city_traffic.json", City25Paths.Kit + "/kit.json", City25Paths.Kit + "/street_kit.json", City25Paths.Kit + "/district_kit.json", City25Paths.Vehicles + "/vehicle_materials.json", City25Paths.Shops + "/shop_layouts.json", City25Paths.Shops + "/hideout_materials.json", City25Paths.Ground + "/ground.json", City25Paths.Map + "/map_places.json",
             "Assets/Party/Data/Items/item_actions.json", // animaciones y datos de uso de los objetos (ItemActionAssets)
+            "Assets/Party/Art/Props/ShopObjects/catalog.json",
+            "Assets/Party/Scripts/City/Editor/City25/City25Products.cs",
             ActionClips + "/item_action_clips.json",      // clips de cuerpo para usar objetos (ItemActionAnimatorAssets)
             ActionClips + "/npc_reaction_clips.json"      // clips de reacción de los civiles (NpcReactionAssets)
         }.Select(ContentHash).Concat(Directory.GetFiles(City25Paths.Shops, "Local_*.fbx").Concat(Directory.GetFiles(ActionClips, "*.fbx"))
+            .Concat(Directory.GetFiles("Assets/Party/Art/Props/ShopObjects", "*.fbx"))
             .OrderBy(path => path, StringComparer.Ordinal).Select(ModelHash)).Concat(RigScripts.SelectMany(folder => Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
             .OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash))
             .Concat(Directory.GetFiles("Assets/Party/Data/ShopAnimations", "*.asset").OrderBy(path => path, StringComparer.Ordinal).Select(ContentHash)));

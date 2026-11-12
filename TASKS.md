@@ -819,3 +819,73 @@ Alain autorizó expresamente commit y push el 2026-11-10 para respaldar el avanc
 - Civiles: sin camino, con la salida a más de `MaxEscapePath` (30 m) o con la amenaza a menos de `ExitClearance` (2 m) del camino, no corren: se agachan y siguen así mientras la amenaza esté a menos de 15 m. Guardias: si no hay camino durante 4 s vuelven a su puesto.
 - Cámaras (`AI/Security/SecurityCamera`, `City25Cameras`): dos por local con interior, colgadas del techo (sobre la puerta mirando adentro y al fondo mirando a la puerta), modelo `Prop_SecurityCamera`. Barren ±40°, cono de 14 m y 56° con luz verde → amarilla → roja. Si ven 2 s a alguien con un arma en la mano avisan por `CrimeReportChannel` (nuevo `CrimeReportSource`: testigo, cámara o guardia; el aviso en pantalla lo distingue). Ajustes en `Data/NPC/Camaras.asset`. El medidor de sospecha en la interfaz y la máquina de alerta del local (resto de Task 15) y la alarma (Task 16) siguen pendientes.
 - Versión `ciudad25-43`. Hay que ejecutar «Crear y probar juego».
+
+## Ajustes de jugabilidad y resto de Task 15: alerta del local y medidor de sospecha — 2026-11-10 (pendiente de prueba)
+
+- Pedido de Alain: desmayo de 10 s por ahora para el jugador, la policía y los guardias; al iniciar, el personaje no lleva el arma en la mano; seguir con las tasks que faltan.
+- Tiempos: `Data/Player/Vida.asset` `DownedSeconds` 30 → 10 (el GDD y Task 18 dicen 30 s; valor provisional pedido por Alain); `Data/Police/Policia.asset` y `Data/NPC/Guardias.asset` `StunSeconds` → 10 fijo. Los civiles quedan en 6–9 s.
+- Manos libres al empezar: `Inventory.Holster()` y `PlayerInventory` lo llama después de poner el equipo inicial. La tecla del espacio (1) saca el arma; la rueda saca lo del espacio siguiente.
+- Alerta por local (`Scripts/Heist/Alert`): `AlertMachine` es el contexto del patrón State (`AlertStates.cs`: sigilo, sospecha, alarma, policía en camino, asalto), sin dependencias de escena y con pruebas (`Tests/EditMode/Heist`). `ShopAlert` va en cada local con cámaras: lee la sospecha más alta de sus `ISuspicionSource` (las cámaras), cuenta las denuncias hechas dentro de su radio y sigue a `PoliceResponseChannel`; publica por `Core/Events/AlertChannel` (`Data/Events/Alerta.asset`). Tiempos en `Data/Heist/Alerta.asset` (alarma 3 s antes de «policía en camino»; 20 s sin policía y vuelve la calma).
+- Medidor: `UI/Hud/AlertView`, arriba al centro; barra amarilla → roja mientras una cámara ve al jugador armado y texto del nivel. Solo escucha `AlertChannel`.
+- Constructor: `City25Alerts` (versión `ciudad25-45`). Hay que ejecutar «Crear y probar juego».
+- Límites: la respuesta policial es una sola para toda la ciudad, así que dos locales en alarma a la vez comparten sus fases. Sin red (Task 02 pendiente). Las luces y la sirena son Task 16. La casilla de Task 15 sigue sin marcar hasta la prueba de Alain y la red.
+
+## Tamaño de los productos y postura en el mostrador — revisión 46 (2026-11-10, pendiente de prueba)
+
+- Pedido de Alain con capturas de Play: productos gigantes sobre el supermercado y errores de animación en las cajas.
+- Productos: los 18 FBX de `Art/Props/ShopObjects` salen de Blender en centímetros con el objeto a escala 100 y se importaban sin la escala del archivo (25 cm → 25 m). `City25Products` fuerza `useFileScale` y los `.meta` quedan con `useFileScale: 1`. El script `build_shop_objects_r44.py` sigue exportando así; con el importador corregido no afecta.
+- Postura, causa 1: los clips `Pay` y `Browse` abren las piernas en zancada y estiran el brazo; en el mostrador se sumaban a la inclinación por código (piernas dentro del mueble, torso doblado dos veces). Ahora, al tomar el producto y en todo el mostrador, cliente y cajero quedan en `Idle` y solo `PedestrianReach` mueve tronco y mano. `Browse` sigue al mirar la góndola.
+- Postura, causa 2: toda la inclinación (hasta 42° medidos, 60° de tope) la hacía un solo hueso (`Abdomen`). `PedestrianReach.LeanToReach` la reparte como bisagra de cadera: cadera 45 %, abdomen 30 %, torso 25 % (giro máximo de un hueso 18,9°); el cuello levanta la mirada (45 %), el brazo libre acompaña 70 % (antes entraba 9 cm en el mueble; ahora queda 9 cm afuera), parte de 0° en vez de 12° y el desvío lateral se limita a unos 40°. Puertas sin cambios.
+- Medición y vistas: `Art/BlenderScripts/CounterPosture46~/preview.py` (Blender 5.2 sin ventana, diez personajes × seis mostradores × dos alturas, error de contacto 0). Capturas: `docs/Capturas/Mostrador_Postura_R46_a.png` y `_b.png` (izquierda antes, derecha ahora).
+- Regresiones con el código real (`ShopAnimation39~/validate.py`): 2.160 contactos de mostrador, 96 de puertas, 16 de agarre y 8.396 de dominio, en verde; cuatro asambleas compiladas. `CounterContact40~/test_transfers.py` no compila desde el catálogo R44 (no conoce `ShopProductDefinition`); falla ajena a esta revisión, pendiente de actualizar.
+- Constructor `ciudad25-46`. Hay que ejecutar «Crear y probar juego». No se probó en Play: las vistas son de Blender con la postura nominal (a 25 cm del mueble).
+
+### Revisión 46, segunda parte — 2026-11-10 (pendiente de prueba)
+
+- Nuevas capturas de Alain: gente doblada casi 90° en las cajas y clientes caminando con el producto en zancadas enormes.
+- Llevar el producto: el estado `Carry` usaba el clip propio `CarryWalk` (zancada de 1 m). Con un producto en la mano el cliente camina ahora con la locomoción de la Universal Animation Library (CC0) y la mano la sostiene `PedestrianReach`. `Carry` queda solo para la bolsa colgando, y `CityLifeAnimatorFactory` le pone el caminar real cuando existe.
+- Tope humano: `MaxLean` baja de 60° a 48° (los mostradores piden hasta 44° con la persona en su puesto). Si el punto queda fuera de alcance aun así, `PedestrianReach.AtFullReach` lo avisa y `ShoppingPresentation.Contact` acepta el brazo estirado: el objeto recorre el tramo que falta hasta la mano, en vez de doblarse más o esperar diez segundos y cancelar la visita.
+- Medición (`CounterPosture46~/preview.py`, 130 casos reales): todos alcanzan el contacto; inclinación total máxima 44°, giro máximo de un hueso 19,8°. Regresiones (`validate.py`): 2.160 contactos, 96 de puertas, 16 de agarre, 8.396 de dominio, en verde.
+- Sin resolver por falta de prueba en Play: por qué algunos clientes quedan más lejos de la caja que su puesto (25 cm del mueble). Si pasa, ahora se ve como brazo estirado y no como cuerpo doblado.
+
+### Revisión 46, tercera parte — 2026-11-10 (pendiente de prueba)
+
+- Prueba de Alain en Play: al llegar a la caja los NPC siguen caminando y meten las piernas en el mueble; aviso «Contacto bloqueado en Mercado Grande, caja 2, estado ReceivingReceipt»; el vendedor agarra con el brazo quebrado.
+- Caminar en el sitio: `PedestrianReach.AlignSurfaceStand` medía el hombro del cuadro actual (ya inclinado y con el brazo movido, porque la pose se restaura después del `Update` del actor). El puesto cambiaba al acercarse, el ajuste nunca terminaba y el Animator seguía en caminar. Ahora usa la distancia lateral del hombro en reposo (medida una vez en `Configure`) y `PedestrianMovement.ApproachDoor` da por llegado a menos de 1,5 cm.
+- Codo: al sostener un objeto, `SolveArm` y `CommerceSupportHand` apuntan el codo abajo, algo afuera y atrás, en vez de seguir la pose del clip. Las puertas conservan su pose.
+- Contacto: `ShoppingPresentation.Contact` lleva una espera por persona; si la mano no llega en 1,5 s el objeto va hasta ella. Ya no se llega a los diez segundos que cancelaban la visita.
+- Regresiones (`validate.py`) en verde: 2.160 contactos, 96 de puertas, 16 de agarre, 8.396 de dominio; compila. Sin prueba en Play.
+- Pendiente: si algún NPC atraviesa un mueble caminando (no parado en la caja), revisar la grilla de obstáculos del local; no se pudo reproducir sin Play.
+
+### Mano al entregar — 2026-11-11 (pendiente de prueba)
+
+- Pedido de Alain: al dar el objeto el brazo se dobla o parpadea.
+- Causa hallada en el código: `ShoppingPresentation.ObjectHand` elige el sentido de los dedos según el frente del cuerpo; con el objeto casi de costado ese sentido cambiaba de un cuadro al siguiente y la muñeca daba media vuelta ida y vuelta. Además el agarre pedido vence a los 80 ms y la mano saltaba al agarre genérico.
+- `PedestrianReach`: `SetObjectPose` conserva el sentido ya elegido mientras se sigue sujetando, y el giro de la mano se suaviza (`HandTurnRate`); la palma sigue en su punto porque muñeca y giro se calculan juntos. Se quitó `AtFullReach`, que quedó sin uso: la revisión 47 decidió que el objeto no se mueve sin contacto.
+- Regresiones (`ShopAnimation39~/validate.py`) en verde: 2.160 contactos, 96 de puertas, 16 de agarre, 8.396 de dominio; compila. Sin prueba en Play: no se confirmó que el parpadeo visto sea este.
+
+## Manos: palma hacia el objeto y poses de dedos — revisión 48 (2026-11-11, pendiente de prueba)
+
+- Pedido de Alain: poses de dedos hechas en Blender; al dar el objeto el brazo se dobla.
+- Causa de fondo hallada al medir: `SurfaceHandPose` y `CommerceFingerPose` calculaban la «normal de la palma» con `Cross(across, fingers)`. En Blender (ejes diestros) eso da la palma; en Unity (ejes zurdos) da el dorso. Comprobado con las posiciones de huesos de un prefab generado por Unity (`Generated/Ciudad2km/Prefabs/Player01_Thief_Visual.prefab`): con el brazo colgando la normal apuntaba hacia afuera del cuerpo. En el juego la mano quedaba del lado contrario del objeto, el brazo se retorcía para alcanzarlo y los dedos se cerraban hacia atrás. Las vistas de Blender y las pruebas numéricas no lo detectaban. Corregido el orden del producto en los dos archivos; también cambia la mano que empuja las puertas.
+- Poses: `Art/BlenderScripts/build_hand_poses.py` ajusta cinco poses (Cilindro, Caja, Pinza, Plano, Asa) cerrando cada articulación hasta tocar un objeto de prueba, sobre un hombre, y las comprueba en una mujer. Salida `Art/Characters/Animations/hand_poses.json` con la pose de cada uno de los 18 objetos. Capturas: `docs/Capturas/Manos/manos_hombre_*.png` y `manos_mujer_*.png` (pendientes de aprobación de Alain). La pinza deja 3 cm entre pulgar e índice: el pulgar del esqueleto no llega más.
+- Unity: `HandPose` (ScriptableObject, un asset por pose en `Art/Props/ShopObjects/HandPoses`), `ShopProductDefinition.Hand`, `City25Products` crea los assets y asigna. `CommerceFingerPose` dobla ahora las tres articulaciones de cada dedo (antes dos) y pasa de una pose a otra de forma gradual. Billetes y papeles sin definición siguen con el cierre parejo.
+- Pruebas: `validate.py` (2.160 contactos, 96 de puertas, 16 de agarre, 8.396 de dominio, cuatro asambleas) y `ShopObjectsR44~/test_transfers.py` (288 y 185.296) en verde; se actualizaron sus dobles para la clase nueva. Ninguna de estas pruebas distingue palma de dorso: eso solo se confirma en Play.
+- Constructor `ciudad25-48`. Hay que ejecutar «Crear y probar juego». Sin revisar: el agarre de objetos del jugador (`HandGripPose`) y el celular de los testigos usan código aparte y podrían tener el mismo error de sentido.
+
+### Revisión 48, segunda parte: el bolsillo — 2026-11-11 (pendiente de prueba)
+
+- Captura de Alain: clientes acostados sobre la caja con el brazo hacia atrás.
+- Causa: al pagar y al guardar el vuelto la mano va al «bolsillo», un punto fijo a 95 cm del piso. Medido en los diez personajes, queda entre 8 y 9,5 cm más lejos de lo que el brazo alcanza (brazos de 42 a 45 cm). El alcance inclinaba el tronco hasta el tope para bajar el hombro, y la mano quedaba en la cadera: el cuerpo acostado con el brazo atrás. Explica también el aviso «Contacto bloqueado … ReceivingReceipt» y las posturas a 90° de capturas anteriores.
+- `PedestrianReach.PocketPoint`: el bolsillo sale del largo real del brazo (queda a unos 3 cm dentro del alcance, junto a la cadera derecha). Lo usan `PedestrianActor.Pocket` y `ShoppingPresentation.Pocket`.
+- `LeanToReach` ya no inclina el cuerpo hacia puntos que no están adelante (menos de 20 cm por delante del hombro): bolsillo y objeto que ya lleva se alcanzan solo con el brazo.
+- `Configure` devuelve la pose antes de volver a medir.
+- Regresiones en verde: `validate.py` (2.160 contactos, 96 de puertas, 16 de agarre, 8.396 de dominio, cuatro asambleas) y `test_transfers.py` (288 y 185.296). Sin prueba en Play.
+
+### Revisión 48, tercera parte: llevar lo comprado — 2026-11-11 (pendiente de prueba)
+
+- Captura de Alain: al irse con lo comprado el brazo queda doblado y duro frente al pecho.
+- Causa: mientras camina con un producto, el código llevaba la mano a un punto fijo (24 cm a la derecha, 1,22 m de alto, 28 cm adelante) y la mantenía ahí todo el trayecto; el brazo no seguía la animación de caminar.
+- Ahora (`PedestrianActor`, `PedestrianReach.CarryRelaxed`): con un producto de una mano y sin nada que alcanzar, el brazo lo mueve el clip de caminar y el alcance solo cierra los dedos con la pose del objeto. `ShoppingPresentation.RidesHand` orienta el producto para que viaje con la mano (elige una vez cuál extremo va adelante). Al llegar a la fila o la caja vuelve el alcance y el producto gira a su posición de entrega.
+- Sin cambio: objetos a dos manos (pizza, camiseta) y retiros del banco siguen con la mano guiada.
+- Regresiones en verde: `validate.py` y `test_transfers.py`. Sin prueba en Play: falta ver si el objeto roza la pierna al balancear el brazo.

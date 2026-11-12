@@ -63,6 +63,15 @@ namespace Alarma.City.Editor
                 ?? throw new InvalidOperationException("Falta el perfil de atención de " + layout.kind);
             if (tasks.IsWithdrawal) tasks.ProductName = "Retiro de efectivo";
             tasks.ProductPrefab = Prop(layout.product); tasks.MoneyPrefab = Prop("CashStack"); tasks.ReceiptPrefab = Receipt(folder);
+            tasks.Products = City25Products.Load(layout.kind);
+            if (tasks.Products.Length == 0) throw new InvalidOperationException("Negocio sin catálogo: " + layout.kind);
+            if (!tasks.IsWithdrawal) tasks.ProductPrefab = tasks.Products[0].Model;
+            else
+            {
+                // Se conserva el retiro de efectivo; los documentos se entregan en el sobre propio.
+                tasks.ReceiptPrefab = tasks.Products.First(p => p.Id == "Sobre").Model;
+                City25Products.BankDisplay(shop, tasks.Products, tasks.Animation.CounterCenter);
+            }
             AssetDatabase.CreateAsset(tasks, folder + "/Data/Shop_" + index + ".asset");
             activity.Configure(walk, entry, browse, queue, exit, products, Marker(root, shop, "Counter", Stand(tasks.Animation, true), graph), Free("Scan", layout.scan, 3), Free("Receipt", layout.receipt, 3), Free("Till", layout.till, 3), tasks);
             if (!tasks.IsWithdrawal) root.gameObject.AddComponent<ShopStockDisplay>();
@@ -122,9 +131,9 @@ namespace Alarma.City.Editor
             }
 
             // Cada cajero se mueve solo mientras atiende a un cliente de su caja; sin cliente espera quieto.
-            cashier.gameObject.AddComponent<CashierPresentation>().Configure(activity, cashier.GetComponentInChildren<Animator>(), 0);
+            cashier.gameObject.AddComponent<CashierPresentation>().Configure(activity, 0);
             for (int lane = 0; lane < extraCashiers.Count; lane++)
-                extraCashiers[lane].gameObject.AddComponent<CashierPresentation>().Configure(activity, extraCashiers[lane].GetComponentInChildren<Animator>(), lane + 1);
+                extraCashiers[lane].gameObject.AddComponent<CashierPresentation>().Configure(activity, lane + 1);
             return activity;
         }
 

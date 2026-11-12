@@ -65,6 +65,8 @@ namespace Alarma.City.Playtest.Editor
             // Vida del jugador y avisos de la policía (cuenta regresiva, llegada y retirada).
             items.AddComponent<HealthView>().Configure(rig.Health);
             items.AddComponent<PoliceAlertView>().Configure(EventAssets.PoliceResponse());
+            // Medidor de sospecha y nivel de alerta del local (Task 15).
+            items.AddComponent<AlertView>().Configure(EventAssets.Alerts());
             var backpack=items.AddComponent<InventoryScreen>();backpack.Configure(rig.Inventory);
             var ui=new GameObject("Interfaz de revisión").AddComponent<ReviewInterface>();ui.Configure(rig.Input,rig.Player,world,doors,screen,minimap,pause,backpack,hotbar);
             return ui;

@@ -102,3 +102,7 @@ El pack Universal Base Characters y los personajes construidos sobre él ya no s
 ## Celular de los NPC y clips de celular y arresto — 2026-11-10
 
 `Art/Props/Prop_NpcPhone.fbx` es un modelo propio hecho con bpy (`Art/BlenderScripts/build_npc_phone.py`, 800 triángulos, colores planos, sin texturas ni bibliotecas externas). Los clips nuevos `Grabar` (rehecho), `Llamar` y `Esposar` son propios, animados con bpy en `build_npc_reaction_clips.py` sobre el esqueleto de los packs Ultimate Modular de Quaternius (CC0 1.0). El agente usa además `Idle_Gun_Pointing` del mismo pack. Sin Mixamo.
+
+## Poses de dedos para sujetar objetos — 2026-11-11
+
+`Art/Characters/Animations/hand_poses.json` (cinco poses: Cilindro, Caja, Pinza, Plano, Asa) es propio. Lo genera `Art/BlenderScripts/build_hand_poses.py` con bpy sobre la mano de los modelos del elenco, cerrando cada articulación contra un objeto de prueba; no usa clips, modelos ni bibliotecas externas. Capturas: `docs/Capturas/Manos/`.

@@ -83,6 +83,19 @@ namespace Alarma.Player.Tests
         }
 
         [Test]
+        public void HolsterFreesTheHandsAndTheSameSlotDrawsAgain()
+        {
+            var inventory = Create();
+            inventory.Add(pistol, 1);
+            inventory.Equip(0, 0);
+            inventory.Holster();
+            Assert.IsTrue(inventory.ActiveStack.IsEmpty, "Manos libres al empezar.");
+            Assert.AreEqual(pistol, inventory.SelectedStack.Item, "El arma sigue en su espacio.");
+            inventory.Select(0);
+            Assert.AreEqual(pistol, inventory.ActiveStack.Item, "La tecla del espacio la saca.");
+        }
+
+        [Test]
         public void PressingTheSameSlotAgainStowsAndDrawsTheItem()
         {
             var inventory = Create();

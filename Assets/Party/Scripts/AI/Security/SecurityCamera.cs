@@ -10,7 +10,7 @@ namespace Alarma.AI.Security
     // en la mano (IArmed, con línea de visión), lo sigue y va llenando su sospecha; al completarse avisa por el canal de
     // denuncias, que oyen la policía y la interfaz. La luz del cono muestra qué mira y cuánto sospecha: verde, amarillo,
     // rojo. Encuentra a los sospechosos por SuspectSet, igual que guardias y policías. Con red, decide solo el host.
-    public sealed class SecurityCamera : MonoBehaviour
+    public sealed class SecurityCamera : MonoBehaviour, ISuspicionSource
     {
         private const float LookInterval = .2f;
         private static readonly Color Calm = new Color(.3f, 1f, .45f), Alert = new Color(1f, .25f, .2f), Wary = new Color(1f, .85f, .25f);
@@ -23,7 +23,7 @@ namespace Alarma.AI.Security
         private Transform watched;
         private float suspicion, phase, nextLook, nextReport;
 
-        // Sospecha de 0 a 1 (para la interfaz y la alarma del local, Tasks 15 y 16).
+        // Sospecha de 0 a 1: la lee la alerta del local (ShopAlert) por ISuspicionSource.
         public float Suspicion => suspicion;
 
         public void Configure(SecurityCameraSettings cameraSettings, Transform turningHead, Light cone, SuspectSet set, CrimeReportChannel crimeReports)

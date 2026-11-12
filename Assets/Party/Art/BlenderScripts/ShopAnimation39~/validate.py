@@ -48,6 +48,10 @@ for assembly in ['Alarma.CityLife','Alarma.CityLife.Editor','Alarma.Playtest','A
     content=(bee/(assembly+'.rsp')).read_text(encoding='utf-8-sig')
     if assembly=='Alarma.CityLife':
         for file in AI.rglob('*.cs'):
+            # Nombre completo del archivo: «HandPose.cs» no debe darse por incluido por «SurfaceHandPose.cs».
+            if '/'+file.name not in content.replace('\\','/'): content+='\n"'+file.as_posix()+'"\n'
+    if assembly=='Alarma.City.Editor':
+        for file in (ROOT/'Assets/Party/Scripts/City/Editor/City25').rglob('*.cs'):
             if file.name not in content: content+='\n"'+file.as_posix()+'"\n'
     content=re.sub(r'^-out:.*$',f'-out:"{(OUT/(assembly+".dll")).as_posix()}"',content,flags=re.M)
     content=re.sub(r'^-refout:.*$',f'-refout:"{(OUT/(assembly+".ref.dll")).as_posix()}"',content,flags=re.M)

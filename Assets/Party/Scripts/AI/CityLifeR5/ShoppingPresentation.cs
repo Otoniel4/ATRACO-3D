@@ -13,10 +13,23 @@ namespace Alarma.AI.CityLife
         private Transform grip;
         private ShopActivity shop;
         private ExchangeFrame frame;
+        private bool orientCarriedProduct;
+        private PropPose contactPose;
         public bool WaitingForContact { get; private set; }
         public Vector3? CustomerContact { get; private set; }
         public Vector3? CashierContact { get; private set; }
-        public float ProductGripHeight => (productPose.Top.y - productPose.Base.y) * (shop.Tasks.Animation != null ? shop.Tasks.Animation.GripHeight : 0f);
+        public float ProductGripHeight => ProductGripOffset.y;
+        public Vector3 ProductGripOffset => productPose.Item == null ? Vector3.zero :
+            productPose.Facing * (Reference(product, productPose, ItemPlace.CustomerHand) - productPose.Base);
+        public Vector3 CashierGripOffset => productPose.Item == null ? Vector3.zero :
+            productPose.Facing * (Reference(product, productPose, ItemPlace.CashierHand) - productPose.Base);
+        public bool TwoHands => productPose.Definition != null && productPose.Definition.TwoHands;
+        public bool HasPickedUp => product != null && productPose.Place == ItemPlace.CustomerHand;
+        public Vector3? PickupContact => productPose.Item == null ? (Vector3?)null :
+            shop.ProductPoint(station).position + productPose.Facing * ((TwoHands
+                ? (productPose.Definition.RightGrip + productPose.Definition.LeftGrip) * .5f
+                : Reference(product, productPose, ItemPlace.CustomerHand)) - productPose.Base);
+        public string ContactDescription { get; private set; }
         private readonly PropPose productPose = new PropPose(), moneyPose = new PropPose(),
             changePose = new PropPose(), ticketPose = new PropPose();
 
@@ -28,6 +41,8 @@ namespace Alarma.AI.CityLife
             public Quaternion Rotation, Basis, Facing;
             public float Began, Duration, HalfWidth;
             public ItemPlace Place;
+            public ShopProductDefinition Definition;
+            public bool CustomerGripChosen, CashierGripChosen, CustomerReversed, CashierReversed;
 
             public void SetItem(GameObject item)
             {
@@ -35,6 +50,8 @@ namespace Alarma.AI.CityLife
                 Anchor = null;
                 Duration = 0f;
                 Place = ItemPlace.Hidden;
+                CustomerGripChosen = CashierGripChosen = false;
+                Definition = item != null ? item.GetComponent<ShopProductInstance>()?.Definition : null;
                 if (item == null) return;
                 var root = item.transform;
                 Basis = root.localRotation;
@@ -58,6 +75,7 @@ namespace Alarma.AI.CityLife
                 Base = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
                 Top = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
                 HalfWidth = bounds.size.x * .5f;
+                if (Definition != null) Base = Definition.Support;
             }
         }
 
@@ -66,6 +84,10 @@ namespace Alarma.AI.CityLife
         public void Refresh(PedestrianRoutine routine, ExchangeFrame frame)
         {
             this.frame = frame;
+            orientCarriedProduct = routine.State == PedestrianState.Queueing || routine.State == PedestrianState.WaitingForSpace
+                || routine.State == PedestrianState.ApproachingCounter || routine.State == PedestrianState.Placing;
+            if (routine.State == PedestrianState.Leaving && routine.HoldingBag && shop.Tasks.Products != null && shop.Tasks.Products.Length > 0)
+                this.frame = new ExchangeFrame(HandGoal.Carry, frame.Cashier, ItemPlace.CustomerHand, frame.Money, frame.Change, frame.Ticket, frame.CustomerApproach);
             // La caja se elige en la fila, después de empezar la visita: se sigue en cada cuadro para que producto, dinero y
             // boleta aparezcan en el mostrador de su caja (antes quedaban en la caja 1).
             lane = routine.Lane;
@@ -96,6 +118,7 @@ namespace Alarma.AI.CityLife
         {
             if (item == null) return;
             if (pose.Item != item) pose.SetItem(item);
+            contactPose = pose;
             Transform anchor = Parent(place);
             var body = item.transform;
             // Billetes y comprobantes se guardan cuando la mano llega; una salida/cancelación limpia la visita.
@@ -107,10 +130,24 @@ namespace Alarma.AI.CityLife
                 item.SetActive(false); pose.Anchor = null; pose.Place = ItemPlace.Hidden; return;
             }
             var profile = shop.Tasks.Animation;
+            bool settled = item == product && pose.Place == ItemPlace.CustomerHand && place == ItemPlace.CustomerHand
+                && Time.time >= pose.Began + pose.Duration;
+            // Caminando con el producto en la mano relajada, el objeto viaja con la mano (gira con ella).
+            if (settled && RidesHand(pose, out Quaternion riding))
+                pose.Facing = Quaternion.RotateTowards(pose.Facing, riding, 540f * Time.deltaTime);
+            else if (settled && orientCarriedProduct)
+            {
+                // El producto acompaña el giro del cliente alrededor del punto que ya sostiene la palma.
+                // Llegar con el giro del estante dejaba la muñeca de lado, fuera de alcance del mostrador.
+                Vector3 held = Reference(item, pose, ItemPlace.CustomerHand);
+                Quaternion facing = transform.rotation * Quaternion.AngleAxis(held.x < pose.Base.x - .001f ? 180f : 0f, Vector3.up);
+                pose.Facing = Quaternion.RotateTowards(pose.Facing, facing, 120f * Time.deltaTime);
+            }
             Quaternion orientation = pose.Facing;
             if (item == product && place == ItemPlace.CashierHand) orientation *= shop.ExchangeFor(lane).ProductTilt;
             Quaternion rotation = orientation * pose.Basis;
             Vector3 gripPoint = Reference(item, pose, place);
+            if (IsHand(pose.Place) && pose.Anchor != null) ObjectHand(pose.Place, pose.Anchor.position, pose);
             if (pose.Anchor != anchor)
             {
                 Vector3 support = body.position + body.rotation * Quaternion.Inverse(pose.Basis) * gripPoint;
@@ -146,14 +183,42 @@ namespace Alarma.AI.CityLife
                 if (IsHand(place)) Hold(place, pose.Start);
             }
             if (t >= 1f && body.parent != anchor) body.SetParent(anchor, true);
+            if (IsHand(place)) ObjectHand(place, anchor.position, pose);
             if (!item.activeSelf) item.SetActive(true);
         }
 
         private static bool IsHand(ItemPlace place) => place == ItemPlace.CustomerHand || place == ItemPlace.CashierHand;
 
+        // Orientación del producto para que su agarre coincida con la mano tal como la lleva la animación. De las dos
+        // formas de empuñarlo (dedos hacia un extremo o el otro) elige una sola vez la que deja la parte de arriba
+        // hacia adelante y arriba, y la conserva mientras lo lleva.
+        private bool carriedChosen, carriedTurned;
+        private bool RidesHand(PropPose pose, out Quaternion orientation)
+        {
+            orientation = pose.Facing;
+            var actor = ActorHand(ItemPlace.CustomerHand);
+            if (actor == null || pose.Definition == null || !actor.RelaxedCarry) { carriedChosen = false; return false; }
+            var data = pose.Definition;
+            bool reversed = ReverseHands(ItemPlace.CustomerHand, pose);
+            Vector3 fingers = reversed ? data.LeftFingers : data.Fingers, normal = reversed ? data.LeftNormal : data.PalmNormal;
+            Quaternion hand = actor.HandFrame;
+            Quaternion plain = hand * Quaternion.Inverse(Quaternion.LookRotation(fingers, normal));
+            Quaternion turned = hand * Quaternion.Inverse(Quaternion.LookRotation(-fingers, normal));
+            if (!carriedChosen)
+            {
+                Vector3 best = transform.forward + Vector3.up;
+                carriedTurned = Vector3.Dot(turned * Vector3.up, best) > Vector3.Dot(plain * Vector3.up, best);
+                carriedChosen = true;
+            }
+            orientation = carriedTurned ? turned : plain;
+            return true;
+        }
+
         private Vector3 Reference(GameObject item, PropPose pose, ItemPlace place)
         {
             if (!IsHand(place)) return pose.Base;
+            if (pose.Definition != null)
+                return ReverseHands(place, pose) ? pose.Definition.LeftGrip : pose.Definition.RightGrip;
             if (item == product) return Vector3.Lerp(pose.Base, pose.Top, shop.Tasks.Animation != null ? shop.Tasks.Animation.GripHeight : 0f);
             // Billetes/papel: cada persona toma un extremo distinto y las palmas no buscan el mismo centro.
             return pose.Base + Vector3.right * pose.HalfWidth * .8f * (place == ItemPlace.CustomerHand ? 1f : -1f);
@@ -169,8 +234,67 @@ namespace Alarma.AI.CityLife
         {
             Hold(who, point);
             bool touches = hand != null && Vector3.Distance(hand.position, point) <= .025f;
+            touches &= ObjectHand(who, point, contactPose);
+            if (!touches) ContactDescription = (contactPose?.Definition != null ? contactPose.Definition.Id : "dinero/documento")
+                + ", mano " + who + ", distancia " + (hand != null ? Vector3.Distance(hand.position, point).ToString("F3") : "sin mano")
+                + " m, altura " + point.y.ToString("F2") + " m, dos manos " + (contactPose?.Definition != null && contactPose.Definition.TwoHands);
+            // El tiempo agotado nunca equivale a contacto físico: el objeto conserva su apoyo anterior.
             WaitingForContact |= !touches;
             return touches;
+        }
+
+        private PedestrianReach ActorHand(ItemPlace who)
+            => who == ItemPlace.CustomerHand ? GetComponent<PedestrianReach>() : shop.ExchangeFor(lane).CashierHand;
+
+        private bool ReverseHands(ItemPlace who, PropPose pose)
+        {
+            if (who == ItemPlace.CustomerHand && pose.CustomerGripChosen) return pose.CustomerReversed;
+            if (who == ItemPlace.CashierHand && pose.CashierGripChosen) return pose.CashierReversed;
+            var actor = ActorHand(who);
+            if (actor == null) return false;
+            bool reversed = pose.Definition.TwoHands && Vector3.Dot(pose.Facing *
+                (pose.Definition.RightGrip - pose.Definition.LeftGrip), actor.transform.right) < 0f;
+            var data = pose.Definition;
+            if (!data.TwoHands && Mathf.Abs(data.PalmNormal.y) < .1f && Mathf.Abs(data.RightGrip.y - data.LeftGrip.y) < .005f)
+            {
+                var body = pose.Item.transform;
+                Quaternion orientation = body.rotation * Quaternion.Inverse(pose.Basis);
+                Vector3 right = body.position + orientation * data.RightGrip;
+                Vector3 left = body.position + orientation * data.LeftGrip;
+                reversed = (left - actor.transform.position).sqrMagnitude < (right - actor.transform.position).sqrMagnitude;
+            }
+            // Girar el cuerpo no cambia de golpe el extremo que la mano ya está sujetando.
+            // Antes del contacto se puede corregir la elección mientras termina de acercarse y girar.
+            if (pose.Place == who)
+            {
+                if (who == ItemPlace.CustomerHand) { pose.CustomerGripChosen = true; pose.CustomerReversed = reversed; }
+                else { pose.CashierGripChosen = true; pose.CashierReversed = reversed; }
+            }
+            return reversed;
+        }
+
+        private bool ObjectHand(ItemPlace who, Vector3 rightPoint, PropPose pose)
+        {
+            if (pose == null || pose.Definition == null) return true;
+            var actor = ActorHand(who);
+            if (actor == null) return false;
+            var data = pose.Definition;
+            bool reversed = ReverseHands(who, pose);
+            Quaternion orientation = pose.Item.transform.rotation * Quaternion.Inverse(pose.Basis);
+            Vector3 fingers = orientation * (reversed ? data.LeftFingers : data.Fingers);
+            if (Vector3.Dot(fingers, actor.transform.forward) < 0f) fingers = -fingers;
+            float[] grip = data.Hand != null ? data.Hand.Angles : null;
+            actor.SetObjectPose(fingers,
+                orientation * (reversed ? data.LeftNormal : data.PalmNormal), data.FingerCurl, grip);
+            if (!data.TwoHands) return true;
+            Vector3 delta = reversed ? data.RightGrip - data.LeftGrip : data.LeftGrip - data.RightGrip;
+            var support = actor.GetComponent<CommerceSupportHand>() ?? actor.gameObject.AddComponent<CommerceSupportHand>();
+            Vector3 point = rightPoint + orientation * delta;
+            Vector3 leftFingers = orientation * (reversed ? data.Fingers : data.LeftFingers);
+            if (Vector3.Dot(leftFingers, actor.transform.forward) < 0f) leftFingers = -leftFingers;
+            support.Follow(point, leftFingers,
+                orientation * (reversed ? data.PalmNormal : data.LeftNormal), data.FingerCurl, grip);
+            return support.Touches(point);
         }
 
         private Transform Parent(ItemPlace place)
@@ -185,12 +309,25 @@ namespace Alarma.AI.CityLife
         }
 
         // Los billetes, el vuelto y el número se crean al necesitarlos y se reutilizan en la visita.
-        private Vector3 Pocket => transform.TransformPoint(new Vector3(.22f, .95f, .05f));
+        // El bolsillo queda donde la mano de esa persona llega (PedestrianReach.PocketPoint); sin brazo, junto a la cadera.
+        private Vector3 Pocket
+        {
+            get
+            {
+                var hand = ActorHand(ItemPlace.CustomerHand);
+                return hand != null ? hand.PocketPoint : transform.TransformPoint(new Vector3(.22f, .95f, .05f));
+            }
+        }
 
         private GameObject Item(ref GameObject item, GameObject prefab, float scale, ItemPlace place, Vector3 origin)
         {
             if (item != null || prefab == null || place == ItemPlace.Hidden) return item;
             item = Instantiate(prefab, transform);
+            if (prefab == shop.Tasks.ReceiptPrefab && shop.Tasks.IsWithdrawal && shop.Tasks.Products != null)
+            {
+                foreach (var definition in shop.Tasks.Products)
+                    if (definition.Model == prefab) { item.AddComponent<ShopProductInstance>().Definition = definition; break; }
+            }
             item.transform.localScale *= scale;
             item.transform.position = origin;
             item.SetActive(false);

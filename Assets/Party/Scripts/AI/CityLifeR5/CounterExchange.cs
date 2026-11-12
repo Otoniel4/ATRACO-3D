@@ -11,6 +11,7 @@ namespace Alarma.AI.CityLife
         private Transform drop, bag, handoff, cashier;
         private readonly CommerceHandMotion cashierMotion = new CommerceHandMotion();
         private PedestrianReach cashierHand;
+        public PedestrianReach CashierHand => cashierHand;
         private Vector3 cashierHome;
         private float cashierActiveUntil;
         private HandGoal cashierGoal;
@@ -48,12 +49,12 @@ namespace Alarma.AI.CityLife
             => CounterChoreography.Evaluate(routine.State, routine.StateSeconds, routine.Timing, shop.Tasks.IsWithdrawal);
 
         // Punto al que el cliente se acerca desde su lugar de la fila para alcanzar el mostrador.
-        public Vector3 LeanPoint(PedestrianReach hand)
+        public Vector3 LeanPoint(PedestrianReach hand, Vector3 gripOffset = default, bool twoHands = false)
         {
             if (station.workspace == null) return station.counter.position;
             Vector3 stand = station.workspace.position + Toward() * (Profile.CounterWidth * .5f + .255f);
             stand.y = station.counter.position.y;
-            return hand.AlignSurfaceStand(station.workspace.position, stand, -Toward());
+            return twoHands ? stand : hand.AlignSurfaceStand(station.workspace.position + gripOffset, stand, -Toward());
         }
 
         public Transform Anchor(ItemPlace place)
@@ -73,7 +74,8 @@ namespace Alarma.AI.CityLife
 
         // Lo llama el cliente que está en el mostrador (o tomando su producto) en cada cuadro.
         public void Drive(PedestrianRoutine routine, ExchangeFrame frame, PedestrianReach customerHand, Transform pocket, CommerceHandMotion customerMotion,
-            Vector3? customerContact = null, Vector3? cashierContact = null, float productHeight = 0f)
+            Vector3? customerContact = null, Vector3? cashierContact = null, float productHeight = 0f,
+            Vector3? customerGrip = null, Vector3? cashierGrip = null, bool twoHands = false)
         {
             var customerTarget = Target(frame.Customer, routine, pocket);
             float speed = Profile != null ? Profile.HandSpeed : 1.2f;
@@ -83,9 +85,16 @@ namespace Alarma.AI.CityLife
                 : customerTarget != null ? customerTarget.position : (Vector3?)null;
             bool productAction = !shop.Tasks.IsWithdrawal && (routine.State == PedestrianState.PickingUp
                 || routine.State == PedestrianState.Placing || routine.State == PedestrianState.Scanning || routine.State == PedestrianState.Collecting);
-            if (customerPoint.HasValue && productAction && frame.Customer != HandGoal.Carry) customerPoint += Vector3.up * productHeight;
+            if (customerPoint.HasValue && productAction && frame.Customer != HandGoal.Carry) customerPoint += customerGrip ?? Vector3.up * productHeight;
             customerMotion.Follow(customerHand, customerContact ?? customerPoint, speed, smoothing, productAction);
             if (routine.State < PedestrianState.Placing || routine.State > PedestrianState.Collecting) return;
+            if (cashier != null && cashierHand != null && station.workspace != null)
+            {
+                Vector3 stand = station.workspace.position - Toward() * (Profile.CounterWidth * .5f + .255f);
+                stand.y = cashierHome.y;
+                if (!twoHands) stand = cashierHand.AlignSurfaceStand(station.workspace.position + (cashierGrip ?? Vector3.zero), stand, Toward());
+                cashier.position = Vector3.MoveTowards(cashier.position, stand, Time.deltaTime * .3f);
+            }
             cashierGoal = cashierContact.HasValue ? HandGoal.Handoff : frame.Cashier;
             cashierActiveUntil = Time.time + .2f;
             var cashierTarget = Target(frame.Cashier, routine, pocket);
@@ -99,7 +108,7 @@ namespace Alarma.AI.CityLife
                 float count = Mathf.Clamp01(routine.StateSeconds / Mathf.Max(.1f, routine.Timing.Pay) / (.8f / 3f));
                 cashierPoint += Vector3.up * (Mathf.Sin(count * Mathf.PI * 6f) * Mathf.Sin(count * Mathf.PI) * .025f);
             }
-            if (cashierPoint.HasValue && productAction) cashierPoint += Vector3.up * productHeight;
+            if (cashierPoint.HasValue && productAction) cashierPoint += cashierGrip ?? Vector3.up * productHeight;
             cashierMotion.Follow(cashierHand, cashierContact ?? cashierPoint, speed, smoothing, productAction);
         }
 
